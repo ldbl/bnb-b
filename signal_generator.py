@@ -177,12 +177,14 @@ class SignalGenerator:
             
             # 11. Moving Averages Analysis (НОВО от ideas файла)
             ma_analysis = self.ma_analyzer.calculate_emas(daily_df)
+            logger.info(f"Moving Averages анализ резултат: {ma_analysis}")
             if 'error' in ma_analysis:
                 logger.warning(f"Moving Averages анализ неуспешен: {ma_analysis['error']}")
                 ma_analysis = None
             
             # 12. Price Action Patterns Analysis (НОВО от ideas файла)
             patterns_analysis = self.patterns_analyzer.detect_all_patterns(daily_df)
+            logger.info(f"Price Patterns анализ резултат: {patterns_analysis}")
             if 'error' in patterns_analysis:
                 logger.warning(f"Price Patterns анализ неуспешен: {patterns_analysis['error']}")
                 patterns_analysis = None

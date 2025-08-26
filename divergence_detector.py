@@ -92,10 +92,10 @@ class DivergenceDetector:
             rsi_troughs = self._find_peaks(recent_rsi, 'low')
             
             # Проверяваме за bearish divergence (цена нов връх, RSI по-нисък връх)
-            bearish_div = self._check_bearish_divergence(price_peaks, rsi_peaks, recent_prices, recent_rsi)
+            bearish_div = self._check_bearish_divergence(price_peaks, rsi_peaks, recent_prices, recent_rsi, 'rsi')
             
             # Проверяваме за bullish divergence (цена ново дъно, RSI по-високо дъно)
-            bullish_div = self._check_bullish_divergence(price_troughs, rsi_troughs, recent_prices, recent_rsi)
+            bullish_div = self._check_bullish_divergence(price_troughs, rsi_troughs, recent_prices, recent_rsi, 'rsi')
             
             if bearish_div['detected']:
                 return {
@@ -139,10 +139,10 @@ class DivergenceDetector:
             macd_troughs = self._find_peaks(recent_macd, 'low')
             
             # Проверяваме за bearish divergence
-            bearish_div = self._check_bearish_divergence(price_peaks, macd_peaks, recent_prices, recent_macd)
+            bearish_div = self._check_bearish_divergence(price_peaks, macd_peaks, recent_prices, recent_macd, 'macd')
             
             # Проверяваме за bullish divergence
-            bullish_div = self._check_bullish_divergence(price_troughs, macd_troughs, recent_prices, recent_macd)
+            bullish_div = self._check_bullish_divergence(price_troughs, macd_troughs, recent_prices, recent_macd, 'macd')
             
             if bearish_div['detected']:
                 return {
@@ -243,7 +243,8 @@ class DivergenceDetector:
     
     def _check_bearish_divergence(self, price_peaks: List[Tuple[int, float]], 
                                  indicator_peaks: List[Tuple[int, float]],
-                                 prices: np.ndarray, indicators: np.ndarray) -> Dict:
+                                 prices: np.ndarray, indicators: np.ndarray, 
+                                 indicator_type: str = 'generic') -> Dict:
         """Проверява за bearish divergence"""
         try:
             if len(price_peaks) < 2 or len(indicator_peaks) < 2:
@@ -265,12 +266,21 @@ class DivergenceDetector:
                 
                 confidence = min(95, 50 + (price_change + indicator_change) * 100)
                 
-                return {
+                # Връщаме правилните ключове според типа на индикатора
+                result = {
                     'detected': True,
                     'confidence': confidence,
-                    'price_peak': price_peak2[1],
-                    'indicator_peak': indicator_peak2[1]
+                    'price_peak': price_peak2[1]
                 }
+                
+                if indicator_type == 'rsi':
+                    result['rsi_peak'] = indicator_peak2[1]
+                elif indicator_type == 'macd':
+                    result['macd_peak'] = indicator_peak2[1]
+                else:
+                    result['indicator_peak'] = indicator_peak2[1]
+                
+                return result
             
             return {'detected': False, 'confidence': 0}
             
@@ -280,7 +290,8 @@ class DivergenceDetector:
     
     def _check_bullish_divergence(self, price_troughs: List[Tuple[int, float]], 
                                  indicator_troughs: List[Tuple[int, float]],
-                                 prices: np.ndarray, indicators: np.ndarray) -> Dict:
+                                 prices: np.ndarray, indicators: np.ndarray,
+                                 indicator_type: str = 'generic') -> Dict:
         """Проверява за bullish divergence"""
         try:
             if len(price_troughs) < 2 or len(indicator_troughs) < 2:
@@ -302,12 +313,21 @@ class DivergenceDetector:
                 
                 confidence = min(95, 50 + (price_change + indicator_change) * 100)
                 
-                return {
+                # Връщаме правилните ключове според типа на индикатора
+                result = {
                     'detected': True,
                     'confidence': confidence,
-                    'price_trough': price_trough2[1],
-                    'indicator_trough': indicator_trough2[1]
+                    'price_trough': price_trough2[1]
                 }
+                
+                if indicator_type == 'rsi':
+                    result['rsi_trough'] = indicator_trough2[1]
+                elif indicator_type == 'macd':
+                    result['macd_trough'] = indicator_trough2[1]
+                else:
+                    result['indicator_trough'] = indicator_trough2[1]
+                
+                return result
             
             return {'detected': False, 'confidence': 0}
             

@@ -22,7 +22,7 @@ from validator import SignalValidator
 
 # Настройваме logging
 logging.basicConfig(
-    level=logging.INFO,  # Променяме на INFO за да видим debug информацията
+    level=logging.ERROR,  # Променяме на ERROR за да видим само грешките
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler('bnb_trading.log'),
@@ -30,9 +30,9 @@ logging.basicConfig(
     ]
 )
 
-# Задаваме INFO level за основните модули
-for logger_name in ['__main__', 'data_fetcher', 'fibonacci', 'weekly_tails', 'indicators', 'signal_generator', 'validator']:
-    logging.getLogger(logger_name).setLevel(logging.INFO)
+# Задаваме ERROR level за всички модули (само грешки)
+for logger_name in ['__main__', 'data_fetcher', 'fibonacci', 'weekly_tails', 'indicators', 'signal_generator', 'validator', 'trend_analyzer', 'elliott_wave_analyzer', 'divergence_detector', 'moving_averages', 'price_action_patterns', 'optimal_levels', 'whale_tracker', 'ichimoku_module', 'sentiment_module']:
+    logging.getLogger(logger_name).setLevel(logging.ERROR)
 
 logger = logging.getLogger(__name__)
 
@@ -49,14 +49,14 @@ class BNBTradingSystem:
         try:
             # Зареждаме конфигурацията
             self.config = toml.load(config_file)
-            logger.info(f"Конфигурация заредена от {config_file}")
+
             
             # Инициализираме компонентите
             self.data_fetcher = BNBDataFetcher(self.config['data']['symbol'])
             self.signal_generator = SignalGenerator(self.config)
             self.validator = SignalValidator('data/results.csv')
             
-            logger.info("BNB Trading системата инициализирана успешно")
+    
             
         except Exception as e:
             logger.error(f"Грешка при инициализиране на системата: {e}")
@@ -70,10 +70,10 @@ class BNBTradingSystem:
             Dict с резултатите от анализа
         """
         try:
-            logger.info("Започва BNB анализ...")
+    
             
             # 1. Извличаме данни
-            logger.info("Извличане на BNB данни...")
+    
             data = self.data_fetcher.fetch_bnb_data(self.config['data']['lookback_days'])
             
             if not data or 'daily' not in data or 'weekly' not in data:
@@ -82,24 +82,23 @@ class BNBTradingSystem:
             daily_df = data['daily']
             weekly_df = data['weekly']
             
-            logger.info(f"Данни извлечени: Daily={len(daily_df)} редове, Weekly={len(weekly_df)} редове")
+    
             
             # 2. Валидираме качеството на данните
             daily_quality = self.data_fetcher.validate_data_quality(daily_df)
             weekly_quality = self.data_fetcher.validate_data_quality(weekly_df)
             
-            logger.info(f"Качество на daily данните: {daily_quality['data_quality_score']:.2%}")
-            logger.info(f"Качество на weekly данните: {weekly_quality['data_quality_score']:.2%}")
+            
             
             # 3. Генерираме сигнал
-            logger.info("Генериране на trading сигнал...")
+    
             signal = self.signal_generator.generate_signal(daily_df, weekly_df)
             
             if 'error' in signal:
                 raise ValueError(f"Грешка при генериране на сигнал: {signal['error']}")
             
             # 4. Записваме сигнала
-            logger.info("Записване на сигнала...")
+    
             self.validator.save_signal(signal)
             
             # 5. Подготвяме резултатите за показване
@@ -109,23 +108,15 @@ class BNBTradingSystem:
             results['full_signal'] = signal
             
             # Debug информация за новите анализи
-            logger.info(f"Signal keys: {list(signal.keys())}")
-            logger.info(f"Divergence analysis present: {'divergence_analysis' in signal}")
-            logger.info(f"Moving averages analysis present: {'moving_averages_analysis' in signal}")
-            logger.info(f"Price patterns analysis present: {'price_patterns_analysis' in signal}")
+            
             
             # Добавяме новите анализи от ideas файла
             if 'divergence_analysis' in signal:
                 results['divergence_analysis'] = signal['divergence_analysis']
-                logger.info(f"Divergence analysis added to results: {signal['divergence_analysis'] is not None}")
             if 'moving_averages_analysis' in signal:
                 results['moving_averages_analysis'] = signal['moving_averages_analysis']
-                logger.info(f"Moving averages analysis added to results: {signal['moving_averages_analysis'] is not None}")
             if 'price_patterns_analysis' in signal:
                 results['price_patterns_analysis'] = signal['price_patterns_analysis']
-                logger.info(f"Price patterns analysis added to results: {signal['price_patterns_analysis'] is not None}")
-            
-            logger.info("BNB анализ завършен успешно")
             return results
             
         except Exception as e:
@@ -314,32 +305,35 @@ class BNBTradingSystem:
                 print(f"   Среден P&L: {stats['avg_profit_loss_pct']:+.2f}%")
             
             # Divergence Analysis (НОВО от ideas файла)
-            if 'divergence_analysis' in results and results['divergence_analysis']:
-                div_analysis = results['divergence_analysis']
-                if 'error' not in div_analysis:
-                    print(f"\n🔄 DIVERGENCE АНАЛИЗ:")
-                    if div_analysis.get('rsi_divergence', {}).get('type') != 'NONE':
-                        rsi_div = div_analysis['rsi_divergence']
-                        print(f"   📊 RSI Divergence: {rsi_div['type']} (увереност: {rsi_div['confidence']:.1f}%)")
-                        print(f"      Причина: {rsi_div['reason']}")
-                    
-                    if div_analysis.get('macd_divergence', {}).get('type') != 'NONE':
-                        macd_div = div_analysis['macd_divergence']
-                        print(f"   📈 MACD Divergence: {macd_div['type']} (увереност: {macd_div['confidence']:.1f}%)")
-                        print(f"      Причина: {macd_div['reason']}")
-                    
-                    if div_analysis.get('price_volume_divergence') and div_analysis['price_volume_divergence'].get('type') != 'NONE':
-                        pv_div = div_analysis['price_volume_divergence']
-                        print(f"   📊 Price-Volume Divergence: {pv_div['type']} (увереност: {pv_div['confidence']:.1f}%)")
-                        print(f"      Причина: {pv_div['reason']}")
-                    
-                    overall_div = div_analysis.get('overall_divergence', 'NONE')
-                    print(f"   🎯 Общ Divergence: {overall_div}")
+            try:
+                if 'divergence_analysis' in results and results['divergence_analysis']:
+                    div_analysis = results['divergence_analysis']
+                    if div_analysis and isinstance(div_analysis, dict) and 'error' not in div_analysis:
+                        print(f"\n🔄 DIVERGENCE АНАЛИЗ:")
+                        if div_analysis.get('rsi_divergence', {}).get('type') != 'NONE':
+                            rsi_div = div_analysis['rsi_divergence']
+                            print(f"   📊 RSI Divergence: {rsi_div['type']} (увереност: {rsi_div['confidence']:.1f}%)")
+                            print(f"      Причина: {rsi_div['reason']}")
+
+                        if div_analysis.get('macd_divergence', {}).get('type') != 'NONE':
+                            macd_div = div_analysis['macd_divergence']
+                            print(f"   📈 MACD Divergence: {macd_div['type']} (увереност: {macd_div['confidence']:.1f}%)")
+                            print(f"      Причина: {macd_div['reason']}")
+
+                        pv_div_data = div_analysis.get('price_volume_divergence')
+                        if pv_div_data and isinstance(pv_div_data, dict) and pv_div_data.get('type') != 'NONE':
+                            print(f"   📊 Price-Volume Divergence: {pv_div_data['type']} (увереност: {pv_div_data['confidence']:.1f}%)")
+                            print(f"      Причина: {pv_div_data['reason']}")
+
+                        overall_div = div_analysis.get('overall_divergence', 'NONE')
+                        print(f"   🎯 Общ Divergence: {overall_div}")
+            except Exception as e:
+                logger.warning(f"Грешка при показване на Divergence анализ: {e}")
             
             # Moving Averages Analysis (НОВО от ideas файла)
             if 'moving_averages_analysis' in results and results['moving_averages_analysis']:
                 ma_analysis = results['moving_averages_analysis']
-                if 'error' not in ma_analysis:
+                if ma_analysis and 'error' not in ma_analysis:
                     print(f"\n📊 MOVING AVERAGES АНАЛИЗ:")
                     crossover = ma_analysis.get('crossover_signal', {})
                     if crossover.get('signal') != 'NONE':
@@ -394,7 +388,12 @@ class BNBTradingSystem:
                         status = f"{signal['result']} {signal['pnl']}"
                     print(f"   {signal['date']:<12} {signal['type']:<8} {signal['price']:<12} {signal['confidence']:<10} {signal['priority']:<10} {status:<15}")
             
-            print(f"\n⏰ Анализът е извършен на: {results['analysis_date'].strftime('%Y-%m-%d %H:%M:%S')}")
+            analysis_date = results.get('analysis_date', pd.Timestamp.now())
+            if analysis_date and hasattr(analysis_date, 'strftime'):
+                date_str = analysis_date.strftime('%Y-%m-%d %H:%M:%S')
+            else:
+                date_str = pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')
+            print(f"\n⏰ Анализът е извършен на: {date_str}")
             print("="*80)
             
         except Exception as e:
@@ -409,6 +408,7 @@ class BNBTradingSystem:
             signal: Генерираният сигнал
         """
         try:
+
             print("\n" + "🎯" * 20)
             print("🎯 ТЕКУЩ СИГНАЛ ЗА ДНЕС - КЛЮЧОВА ИНФОРМАЦИЯ 🎯")
             print("🎯" * 20)
@@ -601,259 +601,297 @@ class BNBTradingSystem:
                         print(f"      Причина: {signals.get('reason', '')}")
                         print(f"      Ниво на риска: {signals.get('risk_level', 'UNKNOWN')}")
                     
-                                # Elliott Wave правила
-            if elliott_analysis.get('elliott_rules_valid'):
-                print(f"   ✅ ELLIOTT WAVE ПРАВИЛА: Валидни")
-            else:
-                print(f"   ⚠️  ELLIOTT WAVE ПРАВИЛА: Нарушени")
+                    # Elliott Wave правила
+                    if elliott_analysis.get('elliott_rules_valid'):
+                        print(f"   ✅ ELLIOTT WAVE ПРАВИЛА: Валидни")
+                    else:
+                        print(f"   ⚠️  ELLIOTT WAVE ПРАВИЛА: Нарушени")
             
             # Divergence Analysis (НОВО от ideas файла)
-            if 'divergence_analysis' in signal:
-                div_analysis = signal['divergence_analysis']
-                if div_analysis and 'error' not in div_analysis:
-                    print(f"\n🔄 DIVERGENCE АНАЛИЗ:")
-                    if div_analysis.get('rsi_divergence', {}).get('type') != 'NONE':
-                        rsi_div = div_analysis['rsi_divergence']
-                        print(f"   📊 RSI Divergence: {rsi_div['type']} (увереност: {rsi_div['confidence']:.1f}%)")
-                        print(f"      Причина: {rsi_div['reason']}")
-                    
-                    if div_analysis.get('macd_divergence', {}).get('type') != 'NONE':
-                        macd_div = div_analysis['macd_divergence']
-                        print(f"   📈 MACD Divergence: {macd_div['type']} (увереност: {macd_div['confidence']:.1f}%)")
-                        print(f"      Причина: {macd_div['reason']}")
-                    
-                    if div_analysis.get('price_volume_divergence') and div_analysis['price_volume_divergence'].get('type') != 'NONE':
-                        pv_div = div_analysis['price_volume_divergence']
-                        print(f"   📊 Price-Volume Divergence: {pv_div['type']} (увереност: {pv_div['confidence']:.1f}%)")
-                        print(f"      Причина: {pv_div['reason']}")
-                    
-                    overall_div = div_analysis.get('overall_divergence', 'NONE')
-                    print(f"   🎯 Общ Divergence: {overall_div}")
-                elif div_analysis is None:
-                    print(f"\n🔄 DIVERGENCE АНАЛИЗ: Недостъпен (None)")
-                else:
-                    print(f"\n🔄 DIVERGENCE АНАЛИЗ: Грешка - {div_analysis.get('error', 'Unknown error')}")
+            try:
+                if 'divergence_analysis' in signal:
+                    div_analysis = signal['divergence_analysis']
+                    if div_analysis and isinstance(div_analysis, dict) and 'error' not in div_analysis:
+                        print(f"\n🔄 DIVERGENCE АНАЛИЗ:")
+                        if div_analysis.get('rsi_divergence', {}).get('type') != 'NONE':
+                            rsi_div = div_analysis['rsi_divergence']
+                            print(f"   📊 RSI Divergence: {rsi_div['type']} (увереност: {rsi_div['confidence']:.1f}%)")
+                            print(f"      Причина: {rsi_div['reason']}")
+
+                        if div_analysis.get('macd_divergence', {}).get('type') != 'NONE':
+                            macd_div = div_analysis['macd_divergence']
+                            print(f"   📈 MACD Divergence: {macd_div['type']} (увереност: {macd_div['confidence']:.1f}%)")
+                            print(f"      Причина: {macd_div['reason']}")
+
+                        pv_div_data = div_analysis.get('price_volume_divergence')
+                        if pv_div_data and isinstance(pv_div_data, dict) and pv_div_data.get('type') != 'NONE':
+                            print(f"   📊 Price-Volume Divergence: {pv_div_data['type']} (увереност: {pv_div_data['confidence']:.1f}%)")
+                            print(f"      Причина: {pv_div_data['reason']}")
+
+                        overall_div = div_analysis.get('overall_divergence', 'NONE')
+                        print(f"   🎯 Общ Divergence: {overall_div}")
+                    elif div_analysis is None:
+                        print(f"\n🔄 DIVERGENCE АНАЛИЗ: Недостъпен (None)")
+                    else:
+                        error_msg = "Unknown error"
+                        if isinstance(div_analysis, dict) and 'error' in div_analysis:
+                            error_msg = div_analysis['error']
+                        print(f"\n🔄 DIVERGENCE АНАЛИЗ: Грешка - {error_msg}")
+            except Exception as e:
+                logger.warning(f"Грешка при показване на Divergence анализ: {e}")
             
             # Moving Averages Analysis (НОВО от ideas файла)
-            if 'moving_averages_analysis' in signal and signal['moving_averages_analysis']:
-                ma_analysis = signal['moving_averages_analysis']
-                if 'error' not in ma_analysis:
-                    print(f"\n📊 MOVING AVERAGES АНАЛИЗ:")
-                    crossover = ma_analysis.get('crossover_signal', {})
-                    if crossover.get('signal') != 'NONE':
-                        print(f"   🎯 Crossover: {crossover['signal']}")
-                        print(f"      Причина: {crossover['reason']}")
-                        print(f"      Увереност: {crossover['confidence']:.1f}%")
-                        if 'crossover_strength' in crossover:
-                            print(f"      Сила: {crossover['crossover_strength']:.2%}")
-                    
-                    ema_values = ma_analysis.get('ema_values', {})
-                    if ema_values:
-                        print(f"   📈 EMA стойности:")
-                        print(f"      Fast EMA ({ma_analysis.get('fast_period', 10)}): ${ema_values.get('fast_ema', 0):,.2f}")
-                        print(f"      Slow EMA ({ma_analysis.get('slow_period', 50)}): ${ema_values.get('slow_ema', 0):,.2f}")
-                    
-                    if ma_analysis.get('volume_confirmation', False):
-                        print(f"   ✅ Volume Confirmation: Да")
+            try:
+                if 'moving_averages_analysis' in signal and signal['moving_averages_analysis']:
+                    ma_analysis = signal['moving_averages_analysis']
+                    if ma_analysis and 'error' not in ma_analysis:
+                        print(f"\n📊 MOVING AVERAGES АНАЛИЗ:")
+                        crossover = ma_analysis.get('crossover_signal', {})
+                        if crossover and crossover.get('signal') != 'NONE':
+                            print(f"   🎯 Crossover: {crossover['signal']}")
+                            print(f"      Причина: {crossover['reason']}")
+                            print(f"      Увереност: {crossover['confidence']:.1f}%")
+                            if 'crossover_strength' in crossover:
+                                print(f"      Сила: {crossover['crossover_strength']:.2%}")
+
+                        # EMA стойности
+                        fast_ema = ma_analysis.get('fast_ema_current')
+                        slow_ema = ma_analysis.get('slow_ema_current')
+                        if fast_ema and slow_ema:
+                            print(f"   📈 EMA стойности:")
+                            print(f"      Fast EMA (10): ${fast_ema:,.2f}")
+                            print(f"      Slow EMA (50): ${slow_ema:,.2f}")
+
+                        if ma_analysis.get('volume_confirmed', False):
+                            print(f"   ✅ Volume Confirmation: Да")
+            except Exception as e:
+                logger.warning(f"Грешка при показване на Moving Averages анализ: {e}")
             
             # Price Action Patterns Analysis (НОВО от ideas файла)
-            if 'price_patterns_analysis' in signal and signal['price_patterns_analysis']:
-                patterns = signal['price_patterns_analysis']
-                if 'error' not in patterns:
-                    print(f"\n📐 PRICE ACTION PATTERNS:")
-                    overall_pattern = patterns.get('overall_pattern', 'NONE')
-                    print(f"   🎯 Общ Pattern: {overall_pattern}")
-                    
-                    if patterns.get('double_top', {}).get('detected'):
-                        dt = patterns['double_top']
-                        print(f"   🔴 Double Top: {dt['reason']}")
-                        print(f"      Увереност: {dt['confidence']:.1f}% | Сила: {dt['pattern_strength']}")
-                        print(f"      Пикове: ${dt['peak1_price']:.2f}, ${dt['peak2_price']:.2f}")
-                    
-                    if patterns.get('double_bottom', {}).get('detected'):
-                        db = patterns['double_bottom']
-                        print(f"   🟢 Double Bottom: {db['reason']}")
-                        print(f"      Увереност: {db['confidence']:.1f}% | Сила: {db['pattern_strength']}")
-                        print(f"      Дъна: ${db['trough1_price']:.2f}, ${db['trough2_price']:.2f}")
-                    
-                    if patterns.get('head_shoulders', {}).get('detected'):
-                        hs = patterns['head_shoulders']
-                        print(f"   🔴 Head & Shoulders: {hs['reason']}")
-                        print(f"      Увереност: {hs['confidence']:.1f}% | Сила: {hs['pattern_strength']}")
-                        print(f"      Пикове: ${hs['left_shoulder_price']:.2f}, ${hs['head_price']:.2f}, ${hs['right_shoulder_price']:.2f}")
-                    
-                    if patterns.get('inverse_head_shoulders', {}).get('detected'):
-                        ihs = patterns['inverse_head_shoulders']
-                        print(f"   🟢 Inverse H&S: {ihs['reason']}")
-                        print(f"      Увереност: {ihs['confidence']:.1f}% | Сила: {ihs['pattern_strength']}")
-                        print(f"      Дъна: ${ihs['left_shoulder_price']:.2f}, ${ihs['head_price']:.2f}, ${ihs['right_shoulder_price']:.2f}")
-                    
-                    if patterns.get('triangle', {}).get('detected'):
-                        tri = patterns['triangle']
-                        print(f"   🔺 Triangle: {tri['reason']}")
-                        print(f"      Увереност: {tri['confidence']:.1f}% | Сила: {tri['pattern_strength']}")
-                        print(f"      Тип: {tri['triangle_type']}")
-                    
-                    if patterns.get('wedge', {}).get('detected'):
-                        wedge = patterns['wedge']
-                        print(f"   🔶 Wedge: {wedge['reason']}")
-                        print(f"      Увереност: {wedge['confidence']:.1f}% | Сила: {wedge['pattern_strength']}")
-                        print(f"      Тип: {wedge['wedge_type']}")
+            try:
+                if 'price_patterns_analysis' in signal and signal['price_patterns_analysis']:
+                    patterns = signal['price_patterns_analysis']
+                    if 'error' not in patterns:
+                        print(f"\n📐 PRICE ACTION PATTERNS:")
+                        overall_pattern = patterns.get('overall_pattern', 'NONE')
+                        print(f"   🎯 Общ Pattern: {overall_pattern}")
+
+                        if patterns.get('double_top', {}).get('detected'):
+                            dt = patterns['double_top']
+                            print(f"   🔴 Double Top: {dt['reason']}")
+                            print(f"      Увереност: {dt['confidence']:.1f}% | Сила: {dt['pattern_strength']}")
+                            print(f"      Пикове: ${dt['peak1_price']:.2f}, ${dt['peak2_price']:.2f}")
+
+                        if patterns.get('double_bottom', {}).get('detected'):
+                            db = patterns['double_bottom']
+                            print(f"   🟢 Double Bottom: {db['reason']}")
+                            print(f"      Увереност: {db['confidence']:.1f}% | Сила: {db['pattern_strength']}")
+                            print(f"      Дъна: ${db['trough1_price']:.2f}, ${db['trough2_price']:.2f}")
+
+                        if patterns.get('head_shoulders', {}).get('detected'):
+                            hs = patterns['head_shoulders']
+                            print(f"   🔴 Head & Shoulders: {hs['reason']}")
+                            print(f"      Увереност: {hs['confidence']:.1f}% | Сила: {hs['pattern_strength']}")
+                            print(f"      Пикове: ${hs['left_shoulder_price']:.2f}, ${hs['head_price']:.2f}, ${hs['right_shoulder_price']:.2f}")
+
+                        if patterns.get('inverse_head_shoulders', {}).get('detected'):
+                            ihs = patterns['inverse_head_shoulders']
+                            print(f"   🟢 Inverse H&S: {ihs['reason']}")
+                            print(f"      Увереност: {ihs['confidence']:.1f}% | Сила: {ihs['pattern_strength']}")
+                            print(f"      Дъна: ${ihs['left_shoulder_price']:.2f}, ${ihs['head_price']:.2f}, ${ihs['right_shoulder_price']:.2f}")
+
+                        if patterns.get('triangle', {}).get('detected'):
+                            tri = patterns['triangle']
+                            print(f"   🔺 Triangle: {tri['reason']}")
+                            print(f"      Увереност: {tri['confidence']:.1f}% | Сила: {tri['pattern_strength']}")
+                            print(f"      Тип: {tri['triangle_type']}")
+
+                        if patterns.get('wedge', {}).get('detected'):
+                            wedge = patterns['wedge']
+                            print(f"   🔶 Wedge: {wedge['reason']}")
+                            print(f"      Увереност: {wedge['confidence']:.1f}% | Сила: {wedge['pattern_strength']}")
+                            print(f"      Тип: {wedge['wedge_type']}")
+            except Exception as e:
+                logger.warning(f"Грешка при показване на Price Action Patterns анализ: {e}")
             
             # Whale Tracker Analysis - ново!
-            if 'whale_analysis' in signal:
-                whale_analysis = signal['whale_analysis']
-                if 'error' not in whale_analysis:
-                    print(f"\n🐋 WHALE TRACKER АНАЛИЗ (институционални движения):")
-                    
-                    # Whale sentiment
-                    if 'sentiment' in whale_analysis:
-                        sentiment = whale_analysis['sentiment']
-                        print(f"   🧠 WHALE SENTIMENT: {sentiment.get('sentiment', 'UNKNOWN')}")
-                        print(f"      Увереност: {sentiment.get('confidence', 0)}%")
-                        print(f"      Buy/Sell Ratio: {sentiment.get('buy_ratio', 0):.1f}%/{sentiment.get('sell_ratio', 0):.1f}%")
-                    
-                    # High volume periods
-                    if 'high_volume_periods' in whale_analysis:
-                        high_vol = whale_analysis['high_volume_periods']
-                        if high_vol:
-                            mega_whale_count = len([p for p in high_vol if "MEGA WHALE" in p.get("whale_signal", "")])
-                            whale_count = len([p for p in high_vol if "🐳 WHALE" in p.get("whale_signal", "")])
-                            print(f"   📊 WHALE АКТИВНОСТ: {len(high_vol)} сигнала")
-                            print(f"      Mega Whale: {mega_whale_count} | Whale: {whale_count}")
-                            
-                            # Biggest signal
+            try:
+                if 'whale_analysis' in signal and signal['whale_analysis']:
+                    whale_analysis = signal['whale_analysis']
+                    if whale_analysis and 'error' not in whale_analysis:
+                        print(f"\n🐋 WHALE TRACKER АНАЛИЗ (институционални движения):")
+
+                        # Whale sentiment
+                        if 'sentiment' in whale_analysis:
+                            sentiment = whale_analysis['sentiment']
+                            print(f"   🧠 WHALE SENTIMENT: {sentiment.get('sentiment', 'UNKNOWN')}")
+                            print(f"      Увереност: {sentiment.get('confidence', 0)}%")
+                            print(f"      Buy/Sell Ratio: {sentiment.get('buy_ratio', 0):.1f}%/{sentiment.get('sell_ratio', 0):.1f}%")
+
+                        # High volume periods
+                        if 'high_volume_periods' in whale_analysis:
+                            high_vol = whale_analysis['high_volume_periods']
                             if high_vol:
-                                biggest = max(high_vol, key=lambda x: x.get("volume_ratio", 0))
-                                print(f"      Най-голям сигнал: {biggest.get('whale_signal', 'UNKNOWN')}")
-                                print(f"         Volume: {biggest.get('volume', 0):,.0f} BNB ({biggest.get('volume_ratio', 0):.1f}x)")
+                                mega_whale_count = len([p for p in high_vol if "MEGA WHALE" in p.get("whale_signal", "")])
+                                whale_count = len([p for p in high_vol if "🐳 WHALE" in p.get("whale_signal", "")])
+                                print(f"   📊 WHALE АКТИВНОСТ: {len(high_vol)} сигнала")
+                                print(f"      Mega Whale: {mega_whale_count} | Whale: {whale_count}")
+
+                                # Biggest signal
+                                if high_vol:
+                                    biggest = max(high_vol, key=lambda x: x.get("volume_ratio", 0))
+                                    print(f"      Най-голям сигнал: {biggest.get('whale_signal', 'UNKNOWN')}")
+                                    print(f"         Volume: {biggest.get('volume', 0):,.0f} BNB ({biggest.get('volume_ratio', 0):.1f}x)")
+            except Exception as e:
+                logger.warning(f"Грешка при показване на Whale Tracker анализ: {e}")
             
             # Ichimoku Cloud Analysis - ново!
-            if 'ichimoku_analysis' in signal:
-                ichimoku_analysis = signal['ichimoku_analysis']
-                if 'error' not in ichimoku_analysis:
-                    print(f"\n☁️ ICHIMOKU CLOUD АНАЛИЗ (японски технически анализ):")
-                    
-                    # Cloud status
-                    cloud_status = ichimoku_analysis.get('cloud_status', 'UNKNOWN')
-                    print(f"   ☁️ CLOUD СТАТУС: {cloud_status}")
-                    
-                    # Overall trend
-                    overall_trend = ichimoku_analysis.get('overall_trend', 'UNKNOWN')
-                    print(f"   📈 ОБЩ ТРЕНД: {overall_trend}")
-                    
-                    # Action
-                    action = ichimoku_analysis.get('action', 'UNKNOWN')
-                    print(f"   🎯 ДЕЙСТВИЕ: {action}")
-                    
-                    # Key levels
-                    if ichimoku_analysis.get('support_levels'):
-                        print(f"   🛡️ SUPPORT НИВА:")
-                        for level in ichimoku_analysis['support_levels'][:2]:
-                            print(f"      • {level}")
-                    
-                    if ichimoku_analysis.get('resistance_levels'):
-                        print(f"   ⚡ RESISTANCE НИВА:")
-                        for level in ichimoku_analysis['resistance_levels'][:2]:
-                            print(f"      • {level}")
-                    
-                    # Cloud analysis
-                    current_price = ichimoku_analysis.get('current_price', 0)
-                    if current_price > 0:
-                        cloud_top = ichimoku_analysis.get('senkou_span_a', 0) or ichimoku_analysis.get('senkou_span_b', 0)
-                        if cloud_top > 0:
-                            cloud_position = "ABOVE" if current_price > cloud_top else "BELOW" if current_price < cloud_top else "IN"
-                            cloud_distance = abs(current_price - cloud_top)
-                            cloud_distance_pct = (cloud_distance / current_price) * 100
-                            print(f"   ☁️ CLOUD АНАЛИЗ:")
-                            print(f"      Позиция: {cloud_position} облака")
-                            print(f"      Разстояние: ${cloud_distance:.2f} ({cloud_distance_pct:.1f}%)")
-                            print(f"      Cloud Top: ${cloud_top:.2f}")
+            try:
+                if 'ichimoku_analysis' in signal and signal['ichimoku_analysis']:
+                    ichimoku_analysis = signal['ichimoku_analysis']
+                    if ichimoku_analysis and 'error' not in ichimoku_analysis:
+                        print(f"\n☁️ ICHIMOKU CLOUD АНАЛИЗ (японски технически анализ):")
+
+                        # Cloud status
+                        cloud_status = ichimoku_analysis.get('cloud_status', 'UNKNOWN')
+                        print(f"   ☁️ CLOUD СТАТУС: {cloud_status}")
+
+                        # Overall trend
+                        overall_trend = ichimoku_analysis.get('overall_trend', 'UNKNOWN')
+                        print(f"   📈 ОБЩ ТРЕНД: {overall_trend}")
+
+                        # Action
+                        action = ichimoku_analysis.get('action', 'UNKNOWN')
+                        print(f"   🎯 ДЕЙСТВИЕ: {action}")
+
+                        # Key levels
+                        if ichimoku_analysis.get('support_levels'):
+                            print(f"   🛡️ SUPPORT НИВА:")
+                            for level in ichimoku_analysis['support_levels'][:2]:
+                                print(f"      • {level}")
+
+                        if ichimoku_analysis.get('resistance_levels'):
+                            print(f"   ⚡ RESISTANCE НИВА:")
+                            for level in ichimoku_analysis['resistance_levels'][:2]:
+                                print(f"      • {level}")
+
+                        # Cloud analysis
+                        current_price = ichimoku_analysis.get('current_price', 0)
+                        if current_price > 0:
+                            senkou_a = ichimoku_analysis.get('senkou_span_a')
+                            senkou_b = ichimoku_analysis.get('senkou_span_b')
+                            if senkou_a is not None and senkou_b is not None:
+                                cloud_top = senkou_a or senkou_b
+                                if cloud_top > 0:
+                                    cloud_position = "ABOVE" if current_price > cloud_top else "BELOW" if current_price < cloud_top else "IN"
+                                    cloud_distance = abs(current_price - cloud_top)
+                                    cloud_distance_pct = (cloud_distance / current_price) * 100
+                                    print(f"   ☁️ CLOUD АНАЛИЗ:")
+                                    print(f"      Позиция: {cloud_position} облака")
+                                    print(f"      Разстояние: ${cloud_distance:.2f} ({cloud_distance_pct:.1f}%)")
+                                    print(f"      Cloud Top: ${cloud_top:.2f}")
+            except Exception as e:
+                logger.warning(f"Грешка при показване на Ichimoku анализ: {e}")
             
             # Market Sentiment Analysis - ново!
-            if 'sentiment_analysis' in signal:
-                sentiment_analysis = signal['sentiment_analysis']
-                if 'error' not in sentiment_analysis:
-                    print(f"\n🎭 MARKET SENTIMENT АНАЛИЗ (психология на пазара):")
-                    
-                    # Overall sentiment
-                    overall_sentiment = sentiment_analysis.get('overall_sentiment', 'UNKNOWN')
-                    print(f"   🎯 ОБЩ SENTIMENT: {overall_sentiment}")
-                    
-                    # Composite score
-                    composite_score = sentiment_analysis.get('composite_score', 0)
-                    print(f"   📊 COMPOSITE SCORE: {composite_score}/100")
-                    
-                    # Action
-                    action = sentiment_analysis.get('action', 'UNKNOWN')
-                    print(f"   💡 SENTIMENT ACTION: {action}")
-                    
-                    # Individual scores
-                    if 'individual_scores' in sentiment_analysis:
-                        scores = sentiment_analysis['individual_scores']
-                        print(f"   📈 КОМПОНЕНТИ:")
-                        print(f"      Fear & Greed: {scores.get('fear_greed', 0)}/100")
-                        print(f"      Social Media: {scores.get('social_media', 0)}/100")
-                        print(f"      News: {scores.get('news', 0)}/100")
-                        print(f"      Momentum: {scores.get('momentum', 0)}/100")
+            try:
+                if 'sentiment_analysis' in signal:
+                    sentiment_analysis = signal['sentiment_analysis']
+                    if 'error' not in sentiment_analysis:
+                        print(f"\n🎭 MARKET SENTIMENT АНАЛИЗ (психология на пазара):")
+
+                        # Overall sentiment
+                        overall_sentiment = sentiment_analysis.get('overall_sentiment', 'UNKNOWN')
+                        print(f"   🎯 ОБЩ SENTIMENT: {overall_sentiment}")
+
+                        # Composite score
+                        composite_score = sentiment_analysis.get('composite_score', 0)
+                        print(f"   📊 COMPOSITE SCORE: {composite_score}/100")
+
+                        # Action
+                        action = sentiment_analysis.get('action', 'UNKNOWN')
+                        print(f"   💡 SENTIMENT ACTION: {action}")
+
+                        # Individual scores
+                        if 'individual_scores' in sentiment_analysis:
+                            scores = sentiment_analysis['individual_scores']
+                            print(f"   📈 КОМПОНЕНТИ:")
+                            print(f"      Fear & Greed: {scores.get('fear_greed', 0)}/100")
+                            print(f"      Social Media: {scores.get('social_media', 0)}/100")
+                            print(f"      News: {scores.get('news', 0)}/100")
+                            print(f"      Momentum: {scores.get('momentum', 0)}/100")
+            except Exception as e:
+                logger.warning(f"Грешка при показване на Sentiment анализ: {e}")
             
             # Trend Analysis - ново!
-            if 'trend_analysis' in signal:
-                trend_analysis = signal['trend_analysis']
-                if 'error' not in trend_analysis:
-                    print(f"\n📈 TREND АНАЛИЗ (адаптивни entry стратегии):")
-                    
-                    # Основен тренд
-                    if 'combined_trend' in trend_analysis:
-                        combined = trend_analysis['combined_trend']
-                        print(f"   🎯 ОСНОВЕН ТРЕНД: {combined.get('primary_trend', 'UNKNOWN')}")
-                        print(f"      Увереност: {combined.get('trend_confidence', 'UNKNOWN')}")
-                        print(f"      Приключил: {'ДА' if combined.get('trend_completed') else 'НЕ'}")
-                    
-                    # Дневен тренд
-                    if 'daily_trend' in trend_analysis:
-                        daily = trend_analysis['daily_trend']
-                        print(f"   📅 ДНЕВЕН ТРЕНД: {daily.get('direction', 'UNKNOWN')} ({daily.get('strength', 'UNKNOWN')})")
-                        print(f"      Промяна: {daily.get('price_change_pct', 0):+.2f}% (${daily.get('start_price', 0):.0f} → ${daily.get('end_price', 0):.0f})")
-                    
-                    # Седмичен тренд
-                    if 'weekly_trend' in trend_analysis:
-                        weekly = trend_analysis['weekly_trend']
-                        print(f"   📊 СЕДМИЧЕН ТРЕНД: {weekly.get('direction', 'UNKNOWN')} ({weekly.get('strength', 'UNKNOWN')})")
-                        print(f"      Промяна: {weekly.get('price_change_pct', 0):+.2f}% (${weekly.get('start_price', 0):.0f} → ${weekly.get('end_price', 0):.0f})")
-                    
-                    # Range анализ
-                    if 'range_analysis' in trend_analysis:
-                        range_analysis = trend_analysis['range_analysis']
-                        print(f"   📏 RANGE АНАЛИЗ: {range_analysis.get('range_status', 'UNKNOWN')}")
-                        print(f"      Текущ range: {range_analysis.get('current_range_pct', 0):.1f}%")
-                        print(f"      Позиция в range: {range_analysis.get('range_position', 0):.1%}")
-                    
-                    # Адаптивна стратегия
-                    if 'adaptive_strategy' in trend_analysis:
-                        strategy = trend_analysis['adaptive_strategy']
-                        if 'error' not in strategy:
-                            print(f"   🎯 АДАПТИВНА СТРАТЕГИЯ:")
-                            if 'trend_based_entry' in strategy:
-                                entry = strategy['trend_based_entry']
-                                print(f"      Тип: {entry.get('type', 'UNKNOWN')}")
-                                print(f"      Описание: {entry.get('description', '')}")
-                            
-                            if 'timing_recommendation' in strategy:
-                                timing = strategy['timing_recommendation']
-                                print(f"      Време: {timing.get('timing', 'UNKNOWN')}")
-                                print(f"      Причина: {timing.get('reason', '')}")
+            try:
+                if 'trend_analysis' in signal:
+                    trend_analysis = signal['trend_analysis']
+                    if 'error' not in trend_analysis:
+                        print(f"\n📈 TREND АНАЛИЗ (адаптивни entry стратегии):")
+
+                        # Основен тренд
+                        if 'combined_trend' in trend_analysis:
+                            combined = trend_analysis['combined_trend']
+                            print(f"   🎯 ОСНОВЕН ТРЕНД: {combined.get('primary_trend', 'UNKNOWN')}")
+                            print(f"      Увереност: {combined.get('trend_confidence', 'UNKNOWN')}")
+                            print(f"      Приключил: {'ДА' if combined.get('trend_completed') else 'НЕ'}")
+
+                        # Дневен тренд
+                        if 'daily_trend' in trend_analysis:
+                            daily = trend_analysis['daily_trend']
+                            print(f"   📅 ДНЕВЕН ТРЕНД: {daily.get('direction', 'UNKNOWN')} ({daily.get('strength', 'UNKNOWN')})")
+                            print(f"      Промяна: {daily.get('price_change_pct', 0):+.2f}% (${daily.get('start_price', 0):.0f} → ${daily.get('end_price', 0):.0f})")
+
+                        # Седмичен тренд
+                        if 'weekly_trend' in trend_analysis:
+                            weekly = trend_analysis['weekly_trend']
+                            print(f"   📊 СЕДМИЧЕН ТРЕНД: {weekly.get('direction', 'UNKNOWN')} ({weekly.get('strength', 'UNKNOWN')})")
+                            print(f"      Промяна: {weekly.get('price_change_pct', 0):+.2f}% (${weekly.get('start_price', 0):.0f} → ${weekly.get('end_price', 0):.0f})")
+
+                        # Range анализ
+                        if 'range_analysis' in trend_analysis:
+                            range_analysis = trend_analysis['range_analysis']
+                            print(f"   📏 RANGE АНАЛИЗ: {range_analysis.get('range_status', 'UNKNOWN')}")
+                            print(f"      Текущ range: {range_analysis.get('current_range_pct', 0):.1f}%")
+                            print(f"      Позиция в range: {range_analysis.get('range_position', 0):.1%}")
+
+                        # Адаптивна стратегия
+                        if 'adaptive_strategy' in trend_analysis:
+                            strategy = trend_analysis['adaptive_strategy']
+                            if 'error' not in strategy:
+                                print(f"   🎯 АДАПТИВНА СТРАТЕГИЯ:")
+                                if 'trend_based_entry' in strategy:
+                                    entry = strategy['trend_based_entry']
+                                    print(f"      Тип: {entry.get('type', 'UNKNOWN')}")
+                                    print(f"      Описание: {entry.get('description', '')}")
+
+                                if 'timing_recommendation' in strategy:
+                                    timing = strategy['timing_recommendation']
+                                    print(f"      Време: {timing.get('timing', 'UNKNOWN')}")
+                                    print(f"      Причина: {timing.get('reason', '')}")
+            except Exception as e:
+                logger.warning(f"Грешка при показване на Trend анализ: {e}")
             
             # Следващи цели - само основните
-            if 'next_targets' in signal:
-                next_targets = signal['next_targets']
-                print(f"\n🎯 СЛЕДВАЩИ ЦЕЛИ:")
-                if next_targets.get('entry_price'):
-                    print(f"   Entry: ${next_targets['entry_price']:,.2f}")
-                if next_targets.get('exit_price'):
-                    print(f"   Exit: ${next_targets['exit_price']:,.2f}")
+            try:
+                if 'next_targets' in signal:
+                    next_targets = signal['next_targets']
+                    if next_targets and isinstance(next_targets, dict):
+                        print(f"\n🎯 СЛЕДВАЩИ ЦЕЛИ:")
+                        if next_targets.get('entry_price'):
+                            print(f"   Entry: ${next_targets['entry_price']:,.2f}")
+                        if next_targets.get('exit_price'):
+                            print(f"   Exit: ${next_targets['exit_price']:,.2f}")
+            except Exception as e:
+                logger.warning(f"Грешка при показване на следващи цели: {e}")
             
-            print(f"\n⏰ Анализ: {signal.get('analysis_date', pd.Timestamp.now()).strftime('%Y-%m-%d %H:%M')}")
+            analysis_date = signal.get('analysis_date', pd.Timestamp.now())
+            if analysis_date and hasattr(analysis_date, 'strftime'):
+                date_str = analysis_date.strftime('%Y-%m-%d %H:%M')
+            else:
+                date_str = pd.Timestamp.now().strftime('%Y-%m-%d %H:%M')
+            print(f"\n⏰ Анализ: {date_str}")
             print("🎯" * 20)
             
         except Exception as e:
@@ -919,9 +957,14 @@ class BNBTradingSystem:
                     f.write(f"  SHORT сигнали: {stats['short_signals']['accuracy']:.1f}%\n")
                     f.write(f"  Среден P&L: {stats['avg_profit_loss_pct']:+.2f}%\n\n")
                 
-                f.write(f"Анализът е извършен на: {results['analysis_date'].strftime('%Y-%m-%d %H:%M:%S')}\n")
+                analysis_date = results.get('analysis_date', pd.Timestamp.now())
+                if analysis_date and hasattr(analysis_date, 'strftime'):
+                    date_str = analysis_date.strftime('%Y-%m-%d %H:%M:%S')
+                else:
+                    date_str = pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')
+                f.write(f"Анализът е извършен на: {date_str}\n")
             
-            logger.info(f"Резултати експортирани в {output_file}")
+    
             
         except Exception as e:
             logger.error(f"Грешка при експортиране на резултатите: {e}")

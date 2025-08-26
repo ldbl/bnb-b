@@ -38,16 +38,13 @@ class Backtester:
         try:
             # Зареждаме конфигурацията
             self.config = toml.load(config_file)
-            logger.info(f"Конфигурация заредена от {config_file}")
-            
+
             # Инициализираме компонентите
             self.data_fetcher = BNBDataFetcher(self.config['data']['symbol'])
             self.fib_analyzer = FibonacciAnalyzer(self.config)
             self.tails_analyzer = WeeklyTailsAnalyzer(self.config)
             self.indicators = TechnicalIndicators(self.config)
             self.signal_generator = SignalGenerator(self.config)
-            
-            logger.info("Backtester инициализиран успешно")
             
         except Exception as e:
             logger.error(f"Грешка при инициализиране на backtester: {e}")
@@ -64,27 +61,20 @@ class Backtester:
             Dict с резултатите от backtest-а
         """
         try:
-            logger.info(f"Стартиране на backtest за последните {months} месеца...")
-            
             # Изчисляваме дни за lookback
             lookback_days = months * 30
-            
+
             # Извличаме данни
-            logger.info(f"Извличане на {lookback_days} дни данни...")
             data = self.data_fetcher.fetch_bnb_data(lookback_days)
-            
+
             if not data or 'daily' not in data or 'weekly' not in data:
                 raise ValueError("Неуспешно извличане на данни")
-            
+
             daily_df = data['daily']
             weekly_df = data['weekly']
-            
-            logger.info(f"Данни извлечени: Daily={len(daily_df)} редове, Weekly={len(weekly_df)} редове")
-            
+
             # Изпълняваме backtest
             backtest_results = self._execute_backtest(daily_df, weekly_df)
-            
-            logger.info("Backtest завършен успешно")
             return backtest_results
             
         except Exception as e:
@@ -110,8 +100,6 @@ class Backtester:
             # Филтрираме данните за backtest периода
             backtest_daily = daily_df[start_date:end_date]
             backtest_weekly = weekly_df[start_date:end_date]
-            
-            logger.info(f"Backtest период: {start_date.strftime('%Y-%m-%d')} до {end_date.strftime('%Y-%m-%d')}")
             
             # Генерираме сигнали за всеки ден (или седмица)
             signals = []
@@ -142,7 +130,7 @@ class Backtester:
                                 'result': result
                             })
                             
-                            logger.info(f"Сигнал {current_date.strftime('%Y-%m-%d')}: {signal['signal']} - {'УСПЕХ' if result['success'] else 'НЕУСПЕХ'}")
+
                 
                 except Exception as e:
                     logger.warning(f"Грешка при генериране на сигнал за {current_date}: {e}")
@@ -354,7 +342,7 @@ class Backtester:
                 'analysis_date': pd.Timestamp.now()
             }
             
-            logger.info(f"Backtest анализ: {accuracy:.1f}% точност ({successful_signals}/{total_signals})")
+
             return analysis
             
         except Exception as e:
@@ -437,7 +425,8 @@ class Backtester:
                 for i, signal_data in enumerate(analysis['best_signals'], 1):
                     signal = signal_data['signal']
                     result = signal_data['result']
-                    f.write(f"{i}. {signal_data['date'].strftime('%Y-%m-%d')} | {signal['signal']} | ${signal['fibonacci_analysis']['current_price']:,.2f} | {result['profit_loss_pct']:+.2f}%\n")
+                    current_price = signal.get('fibonacci_analysis', {}).get('current_price', 0)
+                    f.write(f"{i}. {signal_data['date'].strftime('%Y-%m-%d')} | {signal['signal']} | ${current_price:,.2f} | {result['profit_loss_pct']:+.2f}%\n")
                 f.write("\n")
                 
                 # Най-лоши сигнали
@@ -446,7 +435,8 @@ class Backtester:
                 for i, signal_data in enumerate(analysis['worst_signals'], 1):
                     signal = signal_data['signal']
                     result = signal_data['result']
-                    f.write(f"{i}. {signal_data['date'].strftime('%Y-%m-%d')} | {signal['signal']} | ${signal['fibonacci_analysis']['current_price']:,.2f} | {result['profit_loss_pct']:+.2f}%\n")
+                    current_price = signal.get('fibonacci_analysis', {}).get('current_price', 0)
+                    f.write(f"{i}. {signal_data['date'].strftime('%Y-%m-%d')} | {signal['signal']} | ${current_price:,.2f} | {result['profit_loss_pct']:+.2f}%\n")
                 f.write("\n")
                 
                 # Детайлни резултати
@@ -459,7 +449,8 @@ class Backtester:
                     f.write(f"Дата: {signal_data['date'].strftime('%Y-%m-%d')}\n")
                     f.write(f"Сигнал: {signal['signal']} (увереност: {signal['confidence']:.2f})\n")
                     f.write(f"Приоритет: {signal['priority']}\n")
-                    f.write(f"Цена: ${signal['fibonacci_analysis']['current_price']:,.2f}\n")
+                    current_price = signal.get('fibonacci_analysis', {}).get('current_price', 0)
+                    f.write(f"Цена: ${current_price:,.2f}\n")
                     
                     # Fibonacci информация
                     if 'fibonacci_analysis' in signal and 'fibonacci_levels' in signal['fibonacci_analysis']:
@@ -537,16 +528,18 @@ class Backtester:
                         div_analysis = signal['divergence_analysis']
                         if 'error' not in div_analysis:
                             f.write("🔄 DIVERGENCE АНАЛИЗ:\n")
-                            if div_analysis.get('rsi_divergence', {}).get('type') != 'NONE':
-                                rsi_div = div_analysis['rsi_divergence']
+                            rsi_div = div_analysis.get('rsi_divergence', {})
+                            if rsi_div and rsi_div.get('type') != 'NONE':
                                 f.write(f"   📊 RSI Divergence: {rsi_div['type']} (увереност: {rsi_div['confidence']:.1f}%)\n")
                                 f.write(f"      Причина: {rsi_div['reason']}\n")
-                            if div_analysis.get('macd_divergence', {}).get('type') != 'NONE':
-                                macd_div = div_analysis['macd_divergence']
+
+                            macd_div = div_analysis.get('macd_divergence', {})
+                            if macd_div and macd_div.get('type') != 'NONE':
                                 f.write(f"   📊 MACD Divergence: {macd_div['type']} (увереност: {macd_div['confidence']:.1f}%)\n")
                                 f.write(f"      Причина: {macd_div['reason']}\n")
-                            if div_analysis.get('price_volume_divergence', {}).get('type') != 'NONE':
-                                pv_div = div_analysis['price_volume_divergence']
+
+                            pv_div = div_analysis.get('price_volume_divergence', {})
+                            if pv_div and pv_div.get('type') != 'NONE':
                                 f.write(f"   📊 Price-Volume Divergence: {pv_div['type']} (увереност: {pv_div['confidence']:.1f}%)\n")
                                 f.write(f"      Причина: {pv_div['reason']}\n")
                             overall_div = div_analysis.get('overall_divergence', 'NONE')
@@ -626,7 +619,7 @@ class Backtester:
                 
                 f.write(f"Генерирано на: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
             
-            logger.info(f"Backtest резултати експортирани в {output_file}")
+
             
         except Exception as e:
             logger.error(f"Грешка при експортиране на backtest резултатите: {e}")
@@ -635,7 +628,30 @@ def main():
     """Главна функция за backtesting"""
     try:
         print("🚀 Стартиране на Backtesting за последните 18 месеца...")
-        
+        logger.info("Започва backtest за 18 месеца")
+
+        # Намаляваме logging нивото за конкретните модули които създават шум
+        signal_logger = logging.getLogger('signal_generator')
+        trend_logger = logging.getLogger('trend_analyzer')
+        whale_logger = logging.getLogger('whale_tracker')
+        ichimoku_logger = logging.getLogger('ichimoku_module')
+        sentiment_logger = logging.getLogger('sentiment_module')
+
+        original_levels = {
+            'signal': signal_logger.level,
+            'trend': trend_logger.level,
+            'whale': whale_logger.level,
+            'ichimoku': ichimoku_logger.level,
+            'sentiment': sentiment_logger.level
+        }
+
+        # Задаваме WARNING ниво за всички шумни модули
+        signal_logger.setLevel(logging.WARNING)
+        trend_logger.setLevel(logging.WARNING)
+        whale_logger.setLevel(logging.WARNING)
+        ichimoku_logger.setLevel(logging.WARNING)
+        sentiment_logger.setLevel(logging.WARNING)
+
         # Създаваме backtester-а
         backtester = Backtester()
         
@@ -661,10 +677,17 @@ def main():
         
         print(f"\n✅ Backtest завършен успешно!")
         print(f"📁 Резултатите са записани в data/backtest_results.txt")
-        
+
     except Exception as e:
         logger.error(f"Критична грешка: {e}")
         print(f"❌ Критична грешка: {e}")
+    finally:
+        # Възстановяваме оригиналните logging нива
+        signal_logger.setLevel(original_levels['signal'])
+        trend_logger.setLevel(original_levels['trend'])
+        whale_logger.setLevel(original_levels['whale'])
+        ichimoku_logger.setLevel(original_levels['ichimoku'])
+        sentiment_logger.setLevel(original_levels['sentiment'])
 
 if __name__ == "__main__":
     main()

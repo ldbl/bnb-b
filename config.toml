@@ -14,16 +14,24 @@ lookback_weeks = 8
 min_tail_size = 0.03
 strong_tail_size = 0.05
 confluence_bonus = 1.5
+# Нови параметри за по-добра SHORT точност
+min_wick_ratio = 3.0
+volume_confirmation = true
+volume_multiplier = 1.5
 
 [indicators]
 rsi_period = 14
-rsi_overbought = 75
-rsi_oversold = 25
+rsi_overbought = 80
+rsi_oversold = 20
 macd_fast = 8
 macd_slow = 17
 macd_signal = 9
 bb_period = 20
 bb_std = 2.0
+# Volume confirmation за BB rejection
+bb_volume_confirmation = true
+bb_volume_multiplier = 1.5
+bb_volume_lookback = 20
 
 [signals]
 fibonacci_weight = 0.35
