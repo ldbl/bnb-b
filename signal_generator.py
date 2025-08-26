@@ -376,10 +376,11 @@ class SignalGenerator:
             
             # 7. Генерираме финален сигнал
             final_signal = self._combine_signals(
-                fib_analysis, 
-                tails_analysis, 
-                indicators_signals, 
-                confluence_info
+                fib_analysis,
+                tails_analysis,
+                indicators_signals,
+                confluence_info,
+                trend_analysis
             )
             
             # 8. Добавяме детайлна информация
@@ -413,8 +414,9 @@ class SignalGenerator:
                 'priority': 'ERROR'
             }
     
-    def _combine_signals(self, fib_analysis: Dict, tails_analysis: Dict, 
-                         indicators_signals: Dict, confluence_info: Dict) -> Dict[str, any]:
+    def _combine_signals(self, fib_analysis: Dict, tails_analysis: Dict,
+                         indicators_signals: Dict, confluence_info: Dict,
+                         trend_analysis: Dict = None) -> Dict[str, any]:
         """
         Комбинира сигналите от различните източници
         
@@ -508,7 +510,15 @@ class SignalGenerator:
                 # Намираме доминантния сигнал
                 final_signal = max(signal_scores, key=signal_scores.get)
                 confidence = signal_scores[final_signal]
-                
+
+                # Phase 1: Trend Filter за SHORT сигнали
+                if final_signal == 'SHORT' and trend_analysis and self.config.get('short_signals', {}).get('trend_filter', False):
+                    trend_filter_applied = self._apply_trend_filter_for_short(trend_analysis)
+                    if trend_filter_applied['blocked']:
+                        final_signal = 'HOLD'
+                        confidence = 0.5
+                        signal_reasons.append(f"SHORT BLOCKED by trend filter: {trend_filter_applied['reason']}")
+
                 # Проверяваме дали отговаря на изискванията (по-гъвкаво)
                 if self.fib_tail_required:
                     has_fib_or_tail = (
@@ -542,6 +552,87 @@ class SignalGenerator:
                 'reason': f'Грешка: {e}',
                 'signal_scores': {'LONG': 0.0, 'SHORT': 0.0, 'HOLD': 0.0},
                 'total_weight': 0.0
+            }
+
+    def _apply_trend_filter_for_short(self, trend_analysis: Dict) -> Dict[str, any]:
+        """
+        Phase 1: Прилага trend filter за SHORT сигнали
+
+        SHORT сигнали се генерират само когато трендът е:
+        - NEUTRAL (странично движение)
+        - WEAK_DOWNTREND (слаб низходящ тренд)
+
+        SHORT се блокира при:
+        - STRONG_UPTREND (силен възходящ тренд)
+        - MODERATE_UPTREND (умерен възходящ тренд)
+
+        Args:
+            trend_analysis: Резултат от trend_analyzer.analyze_trend()
+
+        Returns:
+            Dict с информация дали SHORT е блокиран и причината
+        """
+        try:
+            # Извличаме информация за тренда
+            combined_trend = trend_analysis.get('combined_trend', {})
+            daily_trend = trend_analysis.get('daily_trend', {})
+            weekly_trend = trend_analysis.get('weekly_trend', {})
+
+            if not combined_trend or not daily_trend:
+                return {
+                    'blocked': False,
+                    'reason': 'Недостатъчна информация за тренда'
+                }
+
+            # Извличаме посоката и силата на тренда
+            trend_direction = combined_trend.get('direction', 'UNKNOWN')
+            daily_direction = daily_trend.get('direction', 'UNKNOWN')
+            daily_strength = daily_trend.get('strength', 'UNKNOWN')
+
+            # Конфигурационни параметри
+            config = self.config.get('short_signals', {})
+            trend_threshold = config.get('trend_strength_threshold', 0.3)
+
+            # Логика за блокиране на SHORT сигнали
+            blocked = False
+            reason = ""
+
+            # 1. Блокираме SHORT при силни възходящи трендове
+            if trend_direction in ['UPTREND', 'STRONG_UPTREND'] or daily_direction == 'UPTREND':
+                if daily_strength in ['MODERATE', 'STRONG'] or trend_direction == 'STRONG_UPTREND':
+                    blocked = True
+                    reason = f"SHORT blocked: Strong uptrend detected (Daily: {daily_direction}, Combined: {trend_direction})"
+                elif daily_strength == 'MODERATE' and trend_threshold > 0.2:
+                    blocked = True
+                    reason = f"SHORT blocked: Moderate uptrend above threshold (threshold: {trend_threshold})"
+
+            # 2. Позволяваме SHORT при подходящи условия
+            elif trend_direction in ['NEUTRAL', 'DOWNTREND', 'WEAK_DOWNTREND'] or daily_direction in ['NEUTRAL', 'DOWNTREND']:
+                blocked = False
+                reason = f"SHORT allowed: Suitable trend conditions (Daily: {daily_direction}, Combined: {trend_direction})"
+
+            # 3. По подразбиране блокираме ако нямаме ясна информация
+            else:
+                blocked = True
+                reason = f"SHORT blocked: Unclear trend conditions (Daily: {daily_direction}, Combined: {trend_direction})"
+
+            logger.info(f"Trend filter result: {'BLOCKED' if blocked else 'ALLOWED'} - {reason}")
+
+            return {
+                'blocked': blocked,
+                'reason': reason,
+                'trend_direction': trend_direction,
+                'daily_direction': daily_direction,
+                'daily_strength': daily_strength,
+                'trend_threshold': trend_threshold
+            }
+
+        except Exception as e:
+            logger.error(f"Грешка при прилагане на trend filter: {e}")
+            return {
+                'blocked': False,  # По подразбиране не блокираме при грешка
+                'reason': f'Error in trend filter: {e}',
+                'error': str(e)
             }
     
     def _create_signal_details(self, final_signal: Dict, fib_analysis: Dict, 

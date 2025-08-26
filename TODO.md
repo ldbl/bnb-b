@@ -140,32 +140,72 @@ atr_multiplier = 2.0
 
 ## 📋 **IMPLEMENTATION PLAN**
 
-### **Phase 1: SHORT Signals Fix + BNB Burn (1 седмица)**
-1. [ ] Имплементирай trend filter за SHORT
-2. [ ] Поправи Fibonacci logic
-3. [ ] Добави volume confirmation
-4. [ ] Добави BNB Burn filter за SHORT
-5. [ ] Добави Price Action Rejection Patterns (ЛЕСНО)
-   - [ ] Проверка за rejection от resistance нива
-   - [ ] Long upper wick (rejection) - wick > body * 2
-   - [ ] SHORT само след потвърждение на rejection
-6. [ ] Добави Multi-timeframe Alignment (ЛЕСНО)
-   - [ ] Daily трябва да показва слабост (DOWNTREND или WEAK)
-   - [ ] Weekly не трябва да е в силен UPTREND
-   - [ ] SHORT само когато и двата timeframe са aligned
-7. [ ] Добави Market Regime Detection (ЛЕСНО)
-   - [ ] STRONG_BULL: SHORT изключен
-   - [ ] WEAK_BULL: SHORT с confidence threshold 0.8
-   - [ ] RANGE: SHORT enabled
-   - [ ] BEAR: SHORT enabled
-8. [ ] Добави Signal Quality Scoring за SHORT (ЛЕСНО)
-   - [ ] Fibonacci alignment: 35 точки
-   - [ ] Weekly tails: 30 точки
-   - [ ] Trend alignment: 20 точки
-   - [ ] Volume confirmation: 10 точки
-   - [ ] Divergence: 5 точки
-   - [ ] SHORT само при score > 70
-9. [ ] Тествай с backtest
+### **🚀 Phase 1: SHORT Signals Fix + BNB Burn (АКТИВНА)**
+**Статус: В ПРОГРЕС - Започната на 2024-01-01**
+
+#### **1.1 Trend Filter за SHORT сигнали (АКТИВНА ЗАДАЧА)**
+- [ ] Добави проверка: **НЕ генерирай SHORT при силни UPTREND**
+- [ ] SHORT само когато трендът е **NEUTRAL** или **WEAK_DOWNTREND**
+- [ ] Добави **trend_strength_threshold = 0.3** в config.toml
+- [ ] Използвай съществуващия `trend_analyzer.py`
+- [ ] Интегрирай в `signal_generator.py`
+
+#### **1.2 Fibonacci Logic за SHORT (НАЧАЛНА)**
+- [ ] Поправи логиката: SHORT само на **resistance** нива
+- [ ] Добави проверка: цената трябва да е **ПОД** Fibonacci нивото
+- [ ] SHORT само когато цената **отскача** от resistance ниво
+- [ ] Използвай съществуващия `fibonacci.py`
+
+#### **1.3 Weekly Tails за SHORT (НАЧАЛНА)**
+- [ ] SHORT само при **bearish tails** (долни опашки)
+- [ ] Добави проверка за **tail strength > 0.6**
+- [ ] SHORT само когато опашката е **над** Fibonacci resistance
+- [ ] Използвай съществуващия `weekly_tails.py`
+
+#### **1.4 Volume Confirmation (НАЧАЛНА)**
+- [ ] Добави **volume_confirmation** за SHORT сигнали
+- [ ] SHORT само при **обем > 1.5x среден** за 14 периода
+- [ ] Използвай съществуващия `indicators.py`
+
+#### **1.5 BNB Burn Filter за SHORT (НАЧАЛНА)**
+- [ ] **НЕ генерирай SHORT при burn** (14 дни преди и 7 дни след)
+- [ ] Добави **burn_event** и **pre_burn_window** колонки в `data_fetcher.py`
+- [ ] Автоматично извличане на burn дати от Binance API или bnbburn.info
+- [ ] SHORT само извън burn периодите
+
+#### **1.6 Price Action Rejection Patterns (НАЧАЛНА)**
+- [ ] Проверка за rejection от resistance нива
+- [ ] Long upper wick (rejection) - wick > body * 2
+- [ ] SHORT само след потвърждение на rejection
+- [ ] Интегрирай в `price_action_patterns.py`
+
+#### **1.7 Multi-timeframe Alignment (НАЧАЛНА)**
+- [ ] Daily трябва да показва слабост (DOWNTREND или WEAK)
+- [ ] Weekly не трябва да е в силен UPTREND
+- [ ] SHORT само когато и двата timeframe са aligned
+- [ ] Използвай съществуващите анализатори
+
+#### **1.8 Market Regime Detection (НАЧАЛНА)**
+- [ ] STRONG_BULL: SHORT изключен
+- [ ] WEAK_BULL: SHORT с confidence threshold 0.8
+- [ ] RANGE: SHORT enabled
+- [ ] BEAR: SHORT enabled
+- [ ] Добави market regime classification
+
+#### **1.9 Signal Quality Scoring за SHORT (НАЧАЛНА)**
+- [ ] Fibonacci alignment: 35 точки
+- [ ] Weekly tails: 30 точки
+- [ ] Trend alignment: 20 точки
+- [ ] Volume confirmation: 10 точки
+- [ ] Divergence: 5 точки
+- [ ] SHORT само при score > 70
+- [ ] Имплементирай scoring system
+
+#### **1.10 Backtesting & Validation (НАЧАЛНА)**
+- [ ] Тествай всички SHORT подобрения с backtest
+- [ ] Валидирай accuracy > 60%
+- [ ] Проверявай false signals намаление
+- [ ] Документирай резултатите
 
 ### **Phase 2: LONG Enhancement + BNB Burn (3-4 дни)**
 1. [ ] Добави EMA crossover потвърждение

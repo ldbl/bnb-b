@@ -32,6 +32,9 @@ bb_std = 2.0
 bb_volume_confirmation = true
 bb_volume_multiplier = 1.5
 bb_volume_lookback = 20
+# ATR за volatility analysis
+atr_period = 14
+atr_multiplier = 2.0
 
 [signals]
 fibonacci_weight = 0.35
@@ -111,3 +114,54 @@ min_pattern_distance = 5
 pattern_threshold = 0.02
 volume_confirmation = true
 candle_confirmation = true
+
+# Phase 1: SHORT Signals Improvements
+[short_signals]
+enabled = true
+trend_filter = true
+trend_strength_threshold = 0.3
+min_fibonacci_resistance = true
+volume_confirmation = true
+min_tail_strength = 0.6
+burn_filter = false  # Ще се активира след имплементация
+price_action_rejection = false  # Ще се активира след имплементация
+multi_timeframe_alignment = false  # Ще се активира след имплементация
+market_regime_detection = false  # Ще се активира след имплементация
+signal_quality_scoring = false  # Ще се активира след имплементация
+min_quality_score = 70
+confidence_threshold = 0.8
+
+[long_signals]
+enabled = true
+ema_confirmation = false  # Ще се активира в Phase 2
+min_risk_reward = 2.0
+burn_enhancement = false  # Ще се активира в Phase 2
+
+[bnb_burn]
+enabled = false  # Ще се активира след имплементация
+pre_burn_window_days = 14
+post_burn_window_days = 7
+burn_confidence_bonus = 0.15
+burn_target_pct = 0.05
+
+[market_regimes]
+strong_bull = "SHORT_DISABLED"
+weak_bull = "SHORT_HIGH_CONFIDENCE"
+range = "SHORT_ENABLED"
+bear = "SHORT_ENABLED"
+
+[price_action]
+rejection_wick_multiplier = 2.0
+min_rejection_distance = 0.01
+
+[signal_scoring]
+fibonacci_weight = 35
+weekly_tails_weight = 30
+trend_weight = 20
+volume_weight = 10
+divergence_weight = 5
+
+[risk_management]
+stop_loss_enabled = true
+position_sizing = true
+max_risk_per_trade = 0.02
