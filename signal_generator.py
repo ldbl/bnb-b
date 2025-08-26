@@ -13,6 +13,7 @@ from weekly_tails import WeeklyTailsAnalyzer
 from indicators import TechnicalIndicators
 from optimal_levels import OptimalLevelsAnalyzer
 from trend_analyzer import TrendAnalyzer
+from elliott_wave_analyzer import ElliottWaveAnalyzer
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -43,6 +44,7 @@ class SignalGenerator:
         self.indicators = TechnicalIndicators(config)
         self.optimal_levels_analyzer = OptimalLevelsAnalyzer(config)
         self.trend_analyzer = TrendAnalyzer(config)
+        self.elliott_wave_analyzer = ElliottWaveAnalyzer(config)
         
         logger.info("Signal Generator инициализиран")
         logger.info(f"Приоритет: Fibonacci={self.fibonacci_weight}, Weekly Tails={self.weekly_tails_weight}")
@@ -94,6 +96,12 @@ class SignalGenerator:
                 logger.warning(f"Trend анализ неуспешен: {trend_analysis['error']}")
                 trend_analysis = None
             
+            # 6. Elliott Wave Analysis
+            elliott_wave_analysis = self.elliott_wave_analyzer.analyze_elliott_wave(daily_df, weekly_df)
+            if 'error' in elliott_wave_analysis:
+                logger.warning(f"Elliott Wave анализ неуспешен: {elliott_wave_analysis['error']}")
+                elliott_wave_analysis = None
+            
             # 6. Проверяваме за Fibonacci + Tails съвпадения
             confluence_info = None
             if fib_analysis and tails_analysis:
@@ -119,7 +127,8 @@ class SignalGenerator:
                 indicators_signals,
                 confluence_info,
                 optimal_levels_analysis,
-                trend_analysis
+                trend_analysis,
+                elliott_wave_analysis
             )
             
             logger.info(f"Сигнал генериран: {final_signal['signal']} (увереност: {final_signal['confidence']:.2f})")
@@ -269,7 +278,7 @@ class SignalGenerator:
     def _create_signal_details(self, final_signal: Dict, fib_analysis: Dict, 
                               tails_analysis: Dict, indicators_signals: Dict, 
                               confluence_info: Dict, optimal_levels_analysis: Dict = None, 
-                              trend_analysis: Dict = None) -> Dict[str, any]:
+                              trend_analysis: Dict = None, elliott_wave_analysis: Dict = None) -> Dict[str, any]:
         """
         Създава детайлна информация за сигнала
         
@@ -298,6 +307,7 @@ class SignalGenerator:
                 'confluence_info': confluence_info,
                 'optimal_levels_analysis': optimal_levels_analysis,
                 'trend_analysis': trend_analysis,
+                'elliott_wave_analysis': elliott_wave_analysis,
                 'next_targets': self._get_next_targets(final_signal, fib_analysis, tails_analysis),
                 'risk_level': self._calculate_risk_level(final_signal, fib_analysis, tails_analysis)
             }

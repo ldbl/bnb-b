@@ -24,6 +24,7 @@ bnb_trading/
 ├── signal_generator.py      # Комбинира всички сигнали
 ├── optimal_levels.py        # Оптимални trading нива
 ├── trend_analyzer.py        # Тренд анализ и адаптивни стратегии
+├── elliott_wave_analyzer.py # Elliott Wave структурен анализ
 ├── validator.py             # Валидация на сигналите
 ├── backtester.py            # Backtesting на стратегията
 └── data/                    # Резултати и данни
@@ -75,7 +76,14 @@ python3 main.py
 - Брои докосвания на ценови нива
 - Генерира entry/exit препоръки
 
-### 6. **Signal Generation**
+### 6. **Elliott Wave Analysis**
+- Анализира Elliott Wave структурите
+- Определя текущата вълна (1-5) и степента
+- Валидира Elliott Wave правилата
+- Генерира wave-based trading сигнали
+- Multi-timeframe анализ (daily + weekly)
+
+### 7. **Signal Generation**
 - Комбинира всички анализи
 - Изчислява confidence score
 - Генерира финален сигнал (LONG/SHORT/HOLD)
@@ -123,6 +131,12 @@ confidence_threshold = 0.7
 [trend]
 trend_lookback_days = 30
 trend_threshold = 0.015
+
+[elliott_wave]
+enabled = true
+lookback_periods = 50
+min_wave_strength = 0.02
+confidence_threshold = 60
 ```
 
 ## 📊 Използване
@@ -162,6 +176,8 @@ python3 backtester.py
 - RSI overbought
 - MACD bearish crossover
 - Bollinger Bands горна лента
+- Elliott Wave 5 completion
+- Correction patterns (ABC)
 
 ### **Адаптивни стратегии:**
 - **UPTREND**: Pullback entry към support нива
@@ -192,6 +208,11 @@ python3 backtester.py
    🎯 ОСНОВЕН ТРЕНД: UPTREND (увереност: HIGH)
    📊 СЕДМИЧЕН ТРЕНД: UPTREND (STRONG) +32.18%
    🎯 АДАПТИВНА СТРАТЕГИЯ: PULLBACK_ENTRY
+
+🌊 ELLIOTT WAVE АНАЛИЗ:
+   🎯 ОСНОВЕН АНАЛИЗ: WAVE_5
+   📅 ДНЕВЕН АНАЛИЗ: WAVE_5 (UPTREND)
+   💡 TRADING СИГНАЛИ: PREPARE_SELL
 ```
 
 ## 🔧 Разработка

@@ -479,6 +479,47 @@ class BNBTradingSystem:
                         except:
                             pass
             
+            # Elliott Wave Analysis - ново!
+            if 'elliott_wave_analysis' in signal:
+                elliott_analysis = signal['elliott_wave_analysis']
+                if 'error' not in elliott_analysis:
+                    print(f"\n🌊 ELLIOTT WAVE АНАЛИЗ (структурен анализ):")
+                    
+                    # Основен анализ
+                    if 'combined_analysis' in elliott_analysis:
+                        combined = elliott_analysis['combined_analysis']
+                        print(f"   🎯 ОСНОВЕН АНАЛИЗ: {combined.get('primary_wave', 'UNKNOWN')}")
+                        print(f"      Тренд: {combined.get('primary_trend', 'UNKNOWN')}")
+                        print(f"      Увереност: {combined.get('confidence', 0)}%")
+                        print(f"      Степен: {combined.get('degree', 'UNKNOWN')}")
+                    
+                    # Daily анализ
+                    if 'daily_analysis' in elliott_analysis:
+                        daily = elliott_analysis['daily_analysis']
+                        print(f"   📅 ДНЕВЕН АНАЛИЗ: {daily.get('wave', 'UNKNOWN')}")
+                        print(f"      Тренд: {daily.get('trend', 'UNKNOWN')}")
+                        print(f"      Описание: {daily.get('description', '')}")
+                    
+                    # Weekly анализ
+                    if 'weekly_analysis' in elliott_analysis:
+                        weekly = elliott_analysis['weekly_analysis']
+                        print(f"   📊 СЕДМИЧЕН АНАЛИЗ: {weekly.get('wave', 'UNKNOWN')}")
+                        print(f"      Тренд: {weekly.get('trend', 'UNKNOWN')}")
+                        print(f"      Описание: {weekly.get('description', '')}")
+                    
+                    # Trading сигнали
+                    if 'trading_signals' in elliott_analysis:
+                        signals = elliott_analysis['trading_signals']
+                        print(f"   💡 TRADING СИГНАЛИ: {signals.get('action', 'UNKNOWN')}")
+                        print(f"      Причина: {signals.get('reason', '')}")
+                        print(f"      Ниво на риска: {signals.get('risk_level', 'UNKNOWN')}")
+                    
+                    # Elliott Wave правила
+                    if elliott_analysis.get('elliott_rules_valid'):
+                        print(f"   ✅ ELLIOTT WAVE ПРАВИЛА: Валидни")
+                    else:
+                        print(f"   ⚠️  ELLIOTT WAVE ПРАВИЛА: Нарушени")
+            
             # Trend Analysis - ново!
             if 'trend_analysis' in signal:
                 trend_analysis = signal['trend_analysis']

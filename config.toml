@@ -51,3 +51,9 @@ long_signal_requirements = true
 long_min_fib_level = 0.5
 long_min_tail_strength = 0.4
 long_trend_confirmation = false
+
+[elliott_wave]
+enabled = true
+lookback_periods = 50
+min_wave_strength = 0.02
+confidence_threshold = 60
