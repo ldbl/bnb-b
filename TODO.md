@@ -212,11 +212,12 @@ atr_multiplier = 2.0
 - [x] Интегрирай burn filter в основната логика за SHORT сигнали
 - [x] Тестване на новата логика
 
-#### **1.6 Price Action Rejection Patterns (НАЧАЛНА)**
-- [ ] Проверка за rejection от resistance нива
-- [ ] Long upper wick (rejection) - wick > body * 2
-- [ ] SHORT само след потвърждение на rejection
-- [ ] Интегрирай в `price_action_patterns.py`
+#### **✅ 1.6 Price Action Rejection Patterns (ЗАВЪРШЕНА)**
+- [x] Добави price_action_rejection параметър в config.toml
+- [x] Създай `analyze_rejection_patterns()` метод в price_action_patterns.py
+- [x] Създай `_check_price_action_rejection_for_short()` метод в signal_generator.py
+- [x] Интегрирай rejection filter в основната логика за SHORT сигнали
+- [x] Тестване на новата логика
 
 #### **1.7 Multi-timeframe Alignment (НАЧАЛНА)**
 - [ ] Daily трябва да показва слабост (DOWNTREND или WEAK)

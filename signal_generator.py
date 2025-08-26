@@ -543,6 +543,14 @@ class SignalGenerator:
                         confidence = 0.2
                         signal_reasons.append(f"SHORT BLOCKED by BNB burn filter: {burn_filter_applied['reason']}")
 
+                # Phase 1.6: Price Action Rejection Filter за SHORT сигнали
+                if final_signal == 'SHORT' and daily_df is not None:
+                    rejection_filter_applied = self._check_price_action_rejection_for_short(daily_df, self.patterns_analyzer)
+                    if not rejection_filter_applied['confirmed']:
+                        final_signal = 'HOLD'
+                        confidence = 0.25
+                        signal_reasons.append(f"SHORT BLOCKED by rejection filter: {rejection_filter_applied['reason']}")
+
                 # Проверяваме дали отговаря на изискванията (по-гъвкаво)
                 if self.fib_tail_required:
                     has_fib_or_tail = (
@@ -932,6 +940,73 @@ class SignalGenerator:
             return {
                 'blocked': False,  # По подразбиране не блокираме при грешка
                 'reason': f'Error in BNB burn filter: {e}',
+                'error': str(e)
+            }
+
+    def _check_price_action_rejection_for_short(self, daily_df: pd.DataFrame,
+                                               price_action_analyzer: Any = None) -> Dict[str, any]:
+        """
+        Phase 1.6: Проверява price action rejection patterns за SHORT сигнали
+
+        SHORT сигнали се генерират само когато има силен rejection от resistance нива:
+        - Long upper wick (wick > body * 2.0)
+        - Bearish rejection candles
+        - Rejection strength >= threshold
+
+        Args:
+            daily_df: DataFrame с дневни OHLCV данни
+            price_action_analyzer: PriceActionPatternsAnalyzer instance
+
+        Returns:
+            Dict с информация дали има достатъчно rejection confirmation
+        """
+        try:
+            if daily_df is None or daily_df.empty:
+                return {
+                    'confirmed': False,
+                    'reason': 'Няма данни за price action анализ'
+                }
+
+            if price_action_analyzer is None:
+                return {
+                    'confirmed': False,
+                    'reason': 'Няма price action analyzer instance'
+                }
+
+            # Конфигурационни параметри
+            config = self.config.get('short_signals', {})
+            rejection_enabled = config.get('price_action_rejection', True)
+
+            if not rejection_enabled:
+                return {
+                    'confirmed': True,
+                    'reason': 'Price action rejection изключен'
+                }
+
+            # Анализираме rejection patterns
+            rejection_analysis = price_action_analyzer.analyze_rejection_patterns(daily_df)
+
+            if rejection_analysis.get('rejection_detected', False):
+                return {
+                    'confirmed': True,
+                    'reason': f'Price action rejection confirmed: {rejection_analysis["reason"]}',
+                    'strength': rejection_analysis.get('strength', 0),
+                    'wick_ratio': rejection_analysis.get('wick_ratio', 0),
+                    'date': rejection_analysis.get('date'),
+                    'rejection_details': rejection_analysis
+                }
+            else:
+                return {
+                    'confirmed': False,
+                    'reason': f'Недостатъчен rejection: {rejection_analysis.get("reason", "Unknown")}',
+                    'rejection_details': rejection_analysis
+                }
+
+        except Exception as e:
+            logger.error(f"Грешка при price action rejection check: {e}")
+            return {
+                'confirmed': False,  # По подразбиране не потвърждаваме при грешка
+                'reason': f'Error in price action rejection: {e}',
                 'error': str(e)
             }
     

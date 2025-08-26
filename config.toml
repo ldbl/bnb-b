@@ -30,6 +30,12 @@ volume_multiplier_threshold = 1.5  # Колко пъти по-голям тря�
 # Phase 1.5: BNB Burn filter за SHORT сигнали
 burn_filter = true  # Активиране на burn filter за SHORT сигнали
 
+# Phase 1.6: Price Action Rejection Patterns за SHORT сигнали
+price_action_rejection = true  # Активиране на rejection pattern анализ
+rejection_wick_ratio = 2.0  # Минимален ratio между wick и body за rejection
+rejection_lookback_periods = 5  # Периоди за анализ на rejection patterns
+rejection_strength_threshold = 0.7  # Минимална сила на rejection сигнала
+
 [indicators]
 rsi_period = 14
 rsi_overbought = 80

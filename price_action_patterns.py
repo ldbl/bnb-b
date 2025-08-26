@@ -684,7 +684,125 @@ class PriceActionPatternsAnalyzer:
         except Exception as e:
             logger.error(f"Грешка при проверка на bullish candle: {e}")
             return False
-    
+
+    def analyze_rejection_patterns(self, price_data: pd.DataFrame) -> Dict[str, Any]:
+        """
+        Phase 1.6: Анализира rejection patterns за SHORT сигнали
+
+        Търси силни rejection patterns от resistance нива, особено:
+        - Long upper wick (rejection) - wick > body * rejection_wick_ratio
+        - Bearish rejection candles близо до resistance нива
+        - Множество rejection опити на едно ниво
+
+        Args:
+            price_data: DataFrame с OHLCV данни
+
+        Returns:
+            Dict с информация за rejection patterns
+        """
+        try:
+            if price_data is None or price_data.empty:
+                return {
+                    'rejection_detected': False,
+                    'reason': 'Няма данни за анализ'
+                }
+
+            # Конфигурационни параметри
+            config = self.config.get('short_signals', {})
+            rejection_enabled = config.get('price_action_rejection', True)
+            wick_ratio_threshold = config.get('rejection_wick_ratio', 2.0)
+            lookback_periods = config.get('rejection_lookback_periods', 5)
+            strength_threshold = config.get('rejection_strength_threshold', 0.7)
+
+            if not rejection_enabled:
+                return {
+                    'rejection_detected': False,
+                    'reason': 'Price action rejection изключен'
+                }
+
+            # Взимаме последните N периода за анализ
+            recent_data = price_data.tail(lookback_periods)
+
+            if len(recent_data) < lookback_periods:
+                return {
+                    'rejection_detected': False,
+                    'reason': f'Недостатъчно данни: нужни {lookback_periods}, има {len(recent_data)}'
+                }
+
+            # Анализираме всяка свещ за rejection patterns
+            rejection_signals = []
+
+            for idx in range(len(recent_data)):
+                candle = recent_data.iloc[idx]
+
+                # Извличаме OHLC данни
+                open_price = candle['open'] if 'open' in candle.index else candle['Open']
+                close_price = candle['close'] if 'close' in candle.index else candle['Close']
+                high_price = candle['high'] if 'high' in candle.index else candle['High']
+                low_price = candle['low'] if 'low' in candle.index else candle['Low']
+
+                # Изчисляваме body и shadows
+                body_size = abs(close_price - open_price)
+                upper_shadow = high_price - max(open_price, close_price)
+                lower_shadow = min(open_price, close_price) - low_price
+
+                # Проверяваме за bearish rejection (SHORT сигнал)
+                if close_price < open_price and upper_shadow > 0:  # Bearish candle с upper shadow
+                    wick_ratio = upper_shadow / body_size if body_size > 0 else 0
+
+                    if wick_ratio >= wick_ratio_threshold:
+                        rejection_strength = min(wick_ratio / wick_ratio_threshold, 1.0)
+
+                        rejection_signals.append({
+                            'index': idx,
+                            'date': recent_data.index[idx],
+                            'wick_ratio': wick_ratio,
+                            'strength': rejection_strength,
+                            'high': high_price,
+                            'close': close_price,
+                            'body_size': body_size,
+                            'upper_shadow': upper_shadow
+                        })
+
+            # Оценяваме общия rejection сигнал
+            if rejection_signals:
+                # Взимаме най-силния rejection сигнал
+                strongest_rejection = max(rejection_signals, key=lambda x: x['strength'])
+
+                if strongest_rejection['strength'] >= strength_threshold:
+                    return {
+                        'rejection_detected': True,
+                        'reason': f'Силен rejection pattern: wick ratio {strongest_rejection["wick_ratio"]:.2f} > {wick_ratio_threshold:.2f}',
+                        'strength': strongest_rejection['strength'],
+                        'wick_ratio': strongest_rejection['wick_ratio'],
+                        'date': strongest_rejection['date'],
+                        'high': strongest_rejection['high'],
+                        'close': strongest_rejection['close'],
+                        'all_rejections': len(rejection_signals),
+                        'strongest_rejection': strongest_rejection
+                    }
+                else:
+                    return {
+                        'rejection_detected': False,
+                        'reason': f'Слаб rejection pattern: strength {strongest_rejection["strength"]:.2f} < {strength_threshold:.2f}',
+                        'strength': strongest_rejection['strength'],
+                        'wick_ratio': strongest_rejection['wick_ratio']
+                    }
+            else:
+                return {
+                    'rejection_detected': False,
+                    'reason': f'Няма rejection patterns в последните {lookback_periods} периода',
+                    'analyzed_periods': lookback_periods
+                }
+
+        except Exception as e:
+            logger.error(f"Грешка при анализ на rejection patterns: {e}")
+            return {
+                'rejection_detected': False,
+                'reason': f'Error in rejection analysis: {e}',
+                'error': str(e)
+            }
+
     def _determine_overall_pattern(self, patterns: Dict) -> str:
         """Определя overall pattern от всички открити"""
         try:
