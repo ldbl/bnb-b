@@ -360,23 +360,39 @@ class FibonacciAnalyzer:
             signal_info['support_levels'].sort(key=lambda x: abs(x[1] - current_price))
             signal_info['resistance_levels'].sort(key=lambda x: abs(x[1] - current_price))
             
-            # Генерираме сигнал базиран на Fibonacci нива
+            # Phase 1.2: Подобрена логика за SHORT сигнали
             if proximity_info['active_levels']:
                 active_level = proximity_info['active_levels'][0]
                 level = active_level['level']
-                
-                if level in [0.236, 0.382]:  # Support нива
+
+                if level in [0.236, 0.382]:  # Support нива - LONG сигнали
                     signal_info['signal'] = 'LONG'
                     signal_info['strength'] = 0.8 if level == 0.382 else 0.6
-                    signal_info['reason'] = f"Цената е на Fibonacci support {level*100:.1f}%"
-                elif level in [0.618, 0.786]:  # Resistance нива
-                    signal_info['signal'] = 'SHORT'
-                    signal_info['strength'] = 0.8 if level == 0.618 else 0.6
-                    signal_info['reason'] = f"Цената е на Fibonacci resistance {level*100:.1f}%"
+                    signal_info['reason'] = f"LONG: Цената е над Fibonacci support {level*100:.1f}% (${active_level['price']:.2f})"
+
+                elif level in [0.618, 0.786]:  # Resistance нива - SHORT сигнали само при строги условия
+                    # Phase 1.2: Проверка дали цената е ПОД resistance нивото
+                    if current_price < active_level['price']:
+                        # Phase 1.2: Проверка за отскок (rejection) от resistance
+                        rejection_confirmed = self._check_resistance_rejection(current_price, active_level['price'], fib_levels)
+                        if rejection_confirmed:
+                            signal_info['signal'] = 'SHORT'
+                            signal_info['strength'] = 0.8 if level == 0.618 else 0.7
+                            signal_info['reason'] = f"SHORT: Отскок от Fibonacci resistance {level*100:.1f}% (${active_level['price']:.2f}) - цена под ниво и rejection потвърден"
+                        else:
+                            signal_info['signal'] = 'HOLD'
+                            signal_info['strength'] = 0.3
+                            signal_info['reason'] = f"HOLD: Близо до resistance {level*100:.1f}% но няма rejection - изчакай потвърждение"
+                    else:
+                        # Цената е НАД resistance нивото - няма SHORT сигнал
+                        signal_info['signal'] = 'HOLD'
+                        signal_info['strength'] = 0.2
+                        signal_info['reason'] = f"HOLD: Цената е над resistance {level*100:.1f}% - няма SHORT възможност"
+
                 elif level == 0.5:  # Средно ниво
                     signal_info['signal'] = 'HOLD'
                     signal_info['strength'] = 0.4
-                    signal_info['reason'] = "Цената е на Fibonacci 50% ниво"
+                    signal_info['reason'] = "HOLD: Цената е на неутрално Fibonacci 50% ниво"
             
             # Добавяме информация за следващите нива
             if signal_info['signal'] == 'LONG':
@@ -397,6 +413,55 @@ class FibonacciAnalyzer:
         except Exception as e:
             logger.error(f"Грешка при генериране на Fibonacci сигнал: {e}")
             return {'signal': 'HOLD', 'reason': f'Грешка: {e}'}
+
+    def _check_resistance_rejection(self, current_price: float, resistance_price: float,
+                                   fib_levels: Dict[float, float]) -> bool:
+        """
+        Phase 1.2: Проверява дали има отскок (rejection) от resistance ниво
+
+        Rejection критерии:
+        1. Цената трябва да е значително под resistance нивото (не в близост)
+        2. Цената трябва да показва низходящо движение след доближаване
+        3. Rejection се потвърждава ако цената е под определен процент от resistance
+
+        Args:
+            current_price: Текущата цена
+            resistance_price: Цена на resistance нивото
+            fib_levels: Всички Fibonacci нива
+
+        Returns:
+            bool: True ако има rejection, False ако няма
+        """
+        try:
+            # Изчисляваме колко е отдалечена цената от resistance
+            price_distance_pct = abs(current_price - resistance_price) / resistance_price
+
+            # Конфигурационни параметри за rejection
+            config = self.config.get('short_signals', {})
+            min_rejection_distance = config.get('min_rejection_distance', 0.01)  # 1% минимум отдалечение
+            rejection_threshold = config.get('rejection_threshold', 0.03)  # 3% за силен rejection
+
+            # Проверка 1: Цената трябва да е достатъчно отдалечена от resistance
+            if price_distance_pct < min_rejection_distance:
+                logger.info(f"Няма rejection: Цената е твърде близо до resistance ({price_distance_pct:.2f}%)")
+                return False
+
+            # Проверка 2: Цената трябва да е под resistance нивото
+            if current_price >= resistance_price:
+                logger.info(f"Няма rejection: Цената е над или на resistance нивото")
+                return False
+
+            # Проверка 3: Rejection е силен ако цената е под rejection_threshold
+            if price_distance_pct >= rejection_threshold:
+                logger.info(f"Силен rejection потвърден: Цената е {price_distance_pct:.2f}% под resistance")
+                return True
+            else:
+                logger.info(f"Слаб rejection: Цената е само {price_distance_pct:.2f}% под resistance")
+                return False
+
+        except Exception as e:
+            logger.error(f"Грешка при проверка на resistance rejection: {e}")
+            return False
     
     def analyze_fibonacci_trend(self, df: pd.DataFrame) -> Dict[str, Any]:
         """

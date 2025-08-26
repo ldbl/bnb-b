@@ -154,6 +154,9 @@ bear = "SHORT_ENABLED"
 rejection_wick_multiplier = 2.0
 min_rejection_distance = 0.01
 
+# Fibonacci SHORT signal rejection parameters
+rejection_threshold = 0.03  # 3% minimum distance for strong rejection
+
 [signal_scoring]
 fibonacci_weight = 35
 weekly_tails_weight = 30
