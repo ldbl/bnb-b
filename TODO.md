@@ -30,16 +30,28 @@
 - [ ] SHORT само при **обем > 1.5x среден** за 14 периода
 - [ ] Използвай съществуващия `indicators.py`
 
+#### **1.5 BNB Burn Filter за SHORT (ЛЕСНО)**
+- [ ] **НЕ генерирай SHORT при burn** (14 дни преди и 7 дни след)
+- [ ] Добави **burn_event** и **pre_burn_window** колонки в `data_fetcher.py`
+- [ ] Автоматично извличане на burn дати от Binance API или bnbburn.info
+- [ ] SHORT само извън burn периодите
+
 ### **2. 📊 Подобряване на LONG сигнали (ЛЕСНО)**
 **Проблем**: 100% точност, но може да пропускаме сигнали
-**Цел**: Запази високата точност, добави EMA потвърждение
+**Цел**: Запази високата точност, добави EMA потвърждение + BNB Burn логика
 
 #### **2.1 EMA Crossover за LONG (ЛЕСНО)**
 - [ ] Добави **EMA10 > EMA50** потвърждение за LONG
 - [ ] Използвай съществуващия `moving_averages.py`
 - [ ] Добави в `signal_generator.py`
 
-#### **2.2 Risk Management (ЛЕСНО)**
+#### **2.2 BNB Burn Enhancement за LONG (ЛЕСНО)**
+- [ ] **Увеличи confidence** за LONG преди burn (14 дни)
+- [ ] **Buy на подкрепа** преди burn ($750-800)
+- [ ] **Sell на 5-7% ръст** след burn ($840-850)
+- [ ] Използвай burn дати за timing
+
+#### **2.3 Risk Management (ЛЕСНО)**
 - [ ] Добави **stop-loss** препоръки в Fibonacci support нива
 - [ ] **Risk/Reward ratio** минимум 1:2
 - [ ] Добави в `signal_generator.py`
@@ -61,9 +73,15 @@
 - [ ] Добави в `backtester.py`
 - [ ] Използвай numpy за изчисления
 
+### **6. 🔥 BNB Burn Backtesting (ЛЕСНО)**
+- [ ] **Тествай burn-aware стратегия** за Q2 2025 (юли burn)
+- [ ] **Валидирай за Q3-Q4 2024** (+31% от $533 до $701)
+- [ ] **Тествай септември 2025** корекция ($834.96→$750-800)
+- [ ] **Метрики**: >5% monthly, >25% quarterly, drawdown <10% monthly
+
 ## ⚙️ **КОНФИГУРАЦИЯ И НАСТРОЙКИ**
 
-### **6. 📝 Config.toml Improvements (ЛЕСНО)**
+### **7. 📝 Config.toml Improvements (ЛЕСНО)**
 ```toml
 [short_signals]
 enabled = true
@@ -72,11 +90,20 @@ trend_strength_threshold = 0.3
 min_fibonacci_resistance = true
 volume_confirmation = true
 min_tail_strength = 0.6
+burn_filter = true
 
 [long_signals]
 enabled = true
 ema_confirmation = true
 min_risk_reward = 2.0
+burn_enhancement = true
+
+[bnb_burn]
+enabled = true
+pre_burn_window_days = 14
+post_burn_window_days = 7
+burn_confidence_bonus = 0.15
+burn_target_pct = 0.05
 
 [risk_management]
 stop_loss_enabled = true
@@ -90,21 +117,24 @@ atr_multiplier = 2.0
 
 ## 📋 **IMPLEMENTATION PLAN**
 
-### **Phase 1: SHORT Signals Fix (1 седмица)**
+### **Phase 1: SHORT Signals Fix + BNB Burn (1 седмица)**
 1. [ ] Имплементирай trend filter за SHORT
 2. [ ] Поправи Fibonacci logic
 3. [ ] Добави volume confirmation
-4. [ ] Тествай с backtest
+4. [ ] Добави BNB Burn filter за SHORT
+5. [ ] Тествай с backtest
 
-### **Phase 2: LONG Enhancement (3-4 дни)**
+### **Phase 2: LONG Enhancement + BNB Burn (3-4 дни)**
 1. [ ] Добави EMA crossover потвърждение
-2. [ ] Добави stop-loss препоръки
-3. [ ] Тествай accuracy
+2. [ ] Добави BNB Burn enhancement за LONG
+3. [ ] Добави stop-loss препоръки
+4. [ ] Тествай accuracy
 
-### **Phase 3: Quality Filters (3-4 дни)**
+### **Phase 3: Quality Filters + Burn Backtesting (3-4 дни)**
 1. [ ] Добави ATR индикатор
 2. [ ] Multi-timeframe confirmation
 3. [ ] Sharpe ratio и drawdown
+4. [ ] Тествай burn-aware стратегия
 
 ## 🎯 **SUCCESS METRICS**
 
@@ -113,8 +143,14 @@ atr_multiplier = 2.0
 - **LONG**: 80%+ (сега 100%)
 - **SHORT**: 60%+ (сега 0%)
 
+### **BNB Burn Targets:**
+- **Monthly**: >5% ръст след burn
+- **Quarterly**: >25% ръст след burn
+- **Entry**: Buy на $750-800 преди burn
+- **Exit**: Sell на $840-850 след burn
+
 ### **Risk Metrics:**
-- **Max Drawdown**: < 15%
+- **Max Drawdown**: < 10% monthly, < 15% quarterly
 - **Sharpe Ratio**: > 1.5
 - **Win Rate**: > 60%
 
@@ -122,23 +158,24 @@ atr_multiplier = 2.0
 
 ### **Хайдушкият кодекс:**
 - **Rule #0**: Без over-engineering ✅
-- **Rule #1**: Котвата (ясни нива) ✅
-- **Rule #2**: Търпение (изчакване на потвърждение) ✅
-- **Rule #5**: Излизане на такт ✅
-- **Rule #6**: Една битка (избягване на фалшиви сигнали) ✅
+- **Rule #1**: Котвата (ясни нива $750-800) ✅
+- **Rule #2**: Търпение (изчакване на burn) ✅
+- **Rule #5**: Излизане на такт ($840-850) ✅
+- **Rule #6**: Една битка (избягване на SHORT при burn) ✅
 
 ### **Философия:**
 - **"Две напред, една назад"** - дисциплинирани сигнали
 - **Качество над количество** - по-добре 0 сигнала отколкото грешен
 - **Простота** - използвай съществуващите модули
+- **BNB Burn timing** - улавяне на 5-7% ръст
 
 ---
 
 ## 📅 **TIMELINE**
 
-- **Week 1**: SHORT signals fix
-- **Week 2**: LONG enhancement + quality filters
-- **Week 3**: Testing & optimization
+- **Week 1**: SHORT signals fix + BNB Burn filter
+- **Week 2**: LONG enhancement + BNB Burn enhancement
+- **Week 3**: Quality filters + Burn backtesting
 
 ---
 
