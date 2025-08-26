@@ -212,8 +212,8 @@ class BNBTradingSystem:
             
             if not data or 'daily' not in data or 'weekly' not in data:
                 raise ValueError("Неуспешно извличане на данни")
-            
-                        daily_df = data['daily']
+
+            daily_df = data['daily']
             weekly_df = data['weekly']
 
             # 1.5 Добавяме BNB burn колони към дневните данни
