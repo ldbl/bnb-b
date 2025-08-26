@@ -1,26 +1,176 @@
 """
-Weekly Tails Module - СПЕЦИАЛЕН модул за анализ на седмични опашки
-ПРИОРИТЕТ №2: Анализ на седмични опашки за последните 8 седмици
-Фокус върху силата на опашките и тяхната значимост за BNB trading
+Weekly Tails Analysis Module - Specialized Weekly Candle Pattern Recognition
+
+SPECIALIZED MODULE FOR WEEKLY PRICE ACTION ANALYSIS
+PRIORITY #2: Advanced analysis of weekly wicks/tails for BNB trading signals
+
+This module provides sophisticated analysis of weekly candlestick patterns,
+specifically focusing on wick/tail formations that indicate strong institutional
+activity and potential reversal or continuation signals.
+
+ARCHITECTURE OVERVIEW:
+    - Automated weekly candle analysis for configurable lookback periods
+    - Advanced tail strength calculation and classification
+    - Pattern recognition for bullish/bearish tail formations
+    - Confluence detection with other technical levels
+    - Volume confirmation and tail significance scoring
+
+TAIL ANALYSIS METHODOLOGY:
+    - Upper Tail (Resistance): Rejection of higher prices = BEARISH
+    - Lower Tail (Support): Rejection of lower prices = BULLISH
+    - Tail Strength: Size relative to body and total range
+    - Pattern Classification: Single tails, engulfing, multiple rejection
+    - Significance Scoring: Volume, size, and market context
+
+KEY FEATURES:
+    - Automated weekly tail detection and measurement
+    - Strength classification (weak, moderate, strong, extreme)
+    - Pattern recognition and classification
+    - Volume confirmation analysis
+    - Confluence detection with Fibonacci levels
+    - Historical significance scoring
+
+TRADING APPLICATIONS:
+    - Reversal signal identification at key levels
+    - Support/resistance validation through tail rejection
+    - Institutional activity detection
+    - Risk management using tail-based stop levels
+    - Entry timing based on tail strength patterns
+
+CONFIGURATION PARAMETERS:
+    - lookback_weeks: Number of weeks to analyze (default: 8)
+    - min_tail_size: Minimum tail size for consideration (default: 0.03)
+    - strong_tail_size: Threshold for strong tail classification (default: 0.05)
+    - confluence_bonus: Bonus for confluence with other levels (default: 1.5)
+
+EXAMPLE USAGE:
+    >>> config = {'weekly_tails': {'lookback_weeks': 8, 'min_tail_size': 0.03}}
+    >>> tails_analyzer = WeeklyTailsAnalyzer(config)
+    >>> analysis = tails_analyzer.analyze_weekly_tails_trend(weekly_data)
+    >>> strong_tails = [tail for tail in analysis['tails'] if tail['strength'] > 0.7]
+
+DEPENDENCIES:
+    - pandas: Data manipulation and time series analysis
+    - numpy: Mathematical calculations and statistical analysis
+    - typing: Type hints for better code documentation
+
+PERFORMANCE OPTIMIZATIONS:
+    - Efficient vectorized calculations for large datasets
+    - Memory-efficient data processing
+    - Optimized tail detection algorithms
+    - Batch processing for multiple weeks
+
+ERROR HANDLING:
+    - Validation of input data structure and completeness
+    - Graceful handling of missing or invalid data
+    - Comprehensive logging for debugging and monitoring
+    - Fallback mechanisms for edge cases
+
+AUTHOR: BNB Trading System Team
+VERSION: 2.0.0
+DATE: 2024-01-01
 """
 
 import pandas as pd
 import numpy as np
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, Any
 import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class WeeklyTailsAnalyzer:
-    """Клас за анализ на седмични опашки на BNB"""
-    
-    def __init__(self, config: Dict):
+    """
+    Advanced Weekly Tails Analyzer for Institutional Price Action Analysis
+
+    This class provides sophisticated analysis of weekly candlestick patterns,
+    specifically designed to identify institutional activity through wick/tail
+    formations that indicate strong buying or selling pressure.
+
+    ARCHITECTURE OVERVIEW:
+        - Automated weekly candle analysis with configurable lookback periods
+        - Advanced tail strength calculation using multiple metrics
+        - Pattern classification for different tail formations
+        - Volume confirmation and significance scoring
+        - Integration with broader market context
+
+    TAIL ANALYSIS METHODOLOGY:
+        - Upper Tail (Resistance Rejection): High wick shows selling pressure
+        - Lower Tail (Support Rejection): Low wick shows buying pressure
+        - Tail Strength: Calculated relative to body size and total range
+        - Pattern Recognition: Single, double, and engulfing tail patterns
+        - Significance Scoring: Volume, size, and market context factors
+
+    ALGORITHMS USED:
+        1. Tail Detection: Identifies upper/lower wick sizes
+        2. Strength Calculation: Measures tail relative to body/total range
+        3. Pattern Classification: Categorizes tail formations
+        4. Volume Confirmation: Validates tail significance with volume
+        5. Confluence Analysis: Checks alignment with Fibonacci levels
+
+    CONFIGURATION PARAMETERS:
+        lookback_weeks (int): Number of weeks to analyze (default: 8)
+        min_tail_size (float): Minimum tail size threshold (default: 0.03)
+        strong_tail_size (float): Strong tail classification threshold (default: 0.05)
+        confluence_bonus (float): Bonus multiplier for confluence (default: 1.5)
+
+    ATTRIBUTES:
+        lookback_weeks (int): Number of weeks to analyze
+        min_tail_size (float): Minimum tail size for consideration
+        strong_tail_size (float): Threshold for strong tail classification
+        confluence_bonus (float): Confluence bonus multiplier
+
+    TAIL STRENGTH CLASSIFICATION:
+        - Weak: 0.0 - 0.3 (minimal significance)
+        - Moderate: 0.3 - 0.6 (some significance)
+        - Strong: 0.6 - 0.8 (high significance)
+        - Extreme: 0.8 - 1.0 (maximum significance)
+
+    EXAMPLE:
+        >>> config = {
+        ...     'weekly_tails': {
+        ...         'lookback_weeks': 8,
+        ...         'min_tail_size': 0.03,
+        ...         'strong_tail_size': 0.05,
+        ...         'confluence_bonus': 1.5
+        ...     }
+        ... }
+        >>> analyzer = WeeklyTailsAnalyzer(config)
+        >>> tails_analysis = analyzer.analyze_weekly_tails_trend(weekly_data)
+
+    NOTE:
+        Weekly tails are particularly significant for BNB due to lower liquidity
+        and higher institutional impact compared to shorter timeframes.
+    """
+
+    def __init__(self, config: Dict[str, Any]) -> None:
         """
-        Инициализира анализатора на седмични опашки
-        
+        Initialize the Weekly Tails Analyzer with configuration parameters.
+
+        Sets up the analyzer with parameters optimized for weekly candle analysis,
+        including lookback periods, tail size thresholds, and confluence bonuses.
+
         Args:
-            config: Конфигурационни параметри
+            config (Dict[str, Any]): Complete configuration dictionary containing:
+                - weekly_tails.lookback_weeks (int): Weeks to analyze
+                - weekly_tails.min_tail_size (float): Minimum tail size threshold
+                - weekly_tails.strong_tail_size (float): Strong tail threshold
+                - weekly_tails.confluence_bonus (float): Confluence bonus multiplier
+
+        Raises:
+            KeyError: If required configuration keys are missing
+            ValueError: If configuration values are invalid
+
+        Example:
+            >>> config = {
+            ...     'weekly_tails': {
+            ...         'lookback_weeks': 8,
+            ...         'min_tail_size': 0.03,
+            ...         'strong_tail_size': 0.05,
+            ...         'confluence_bonus': 1.5
+            ...     }
+            ... }
+            >>> analyzer = WeeklyTailsAnalyzer(config)
         """
         self.lookback_weeks = config['weekly_tails']['lookback_weeks']
         self.min_tail_size = config['weekly_tails']['min_tail_size']

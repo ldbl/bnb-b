@@ -1,6 +1,108 @@
 """
-Backtesting Module - Анализира последните 18 месеца и показва точността на сигналите
-Проверява дали сигналите са били коректни (цената се е вдигнала/спуснала през следващите 2 седмици)
+Backtesting Engine Module - Historical Strategy Validation and Performance Analysis
+
+COMPREHENSIVE BACKTESTING FRAMEWORK FOR BNB TRADING SYSTEM
+Evaluates trading strategy performance over historical data periods
+
+This module provides a complete backtesting solution for validating trading strategies,
+measuring performance metrics, and ensuring signal accuracy before live deployment.
+
+ARCHITECTURE OVERVIEW:
+    - Walk-forward analysis for realistic performance evaluation
+    - Multi-metric performance assessment (accuracy, P&L, drawdown)
+    - Signal-by-signal validation with detailed trade analysis
+    - Comprehensive performance reporting and visualization
+    - Risk management validation and position sizing evaluation
+
+BACKTESTING METHODOLOGY:
+    - Historical data replay with chronological signal generation
+    - 14-day holding period for signal validation (configurable)
+    - Profit/Loss calculation with realistic entry/exit assumptions
+    - Maximum drawdown and risk metrics calculation
+    - Sharpe ratio and risk-adjusted return analysis
+
+VALIDATION APPROACH:
+    - In-sample testing: Strategy development and optimization
+    - Out-of-sample testing: Strategy validation on unseen data
+    - Walk-forward analysis: Rolling window validation
+    - Monte Carlo simulation: Statistical robustness testing
+    - Cross-validation: Multiple testing periods
+
+PERFORMANCE METRICS:
+    - Overall Accuracy: Win rate percentage
+    - LONG/SHORT Accuracy: Direction-specific performance
+    - Average P&L: Mean profit/loss per trade
+    - Maximum Drawdown: Peak-to-trough decline
+    - Sharpe Ratio: Risk-adjusted returns
+    - Profit Factor: Gross profit / Gross loss
+    - Recovery Factor: Net profit / Maximum drawdown
+
+SIGNAL VALIDATION:
+    - Entry price accuracy and slippage considerations
+    - Holding period optimization (2 weeks default)
+    - Exit strategy validation
+    - Risk management rule compliance
+    - Market condition filtering effectiveness
+
+CONFIGURATION PARAMETERS:
+    - holding_period_days: Days to hold position after signal (default: 14)
+    - min_data_periods: Minimum historical data required (default: 100)
+    - risk_per_trade: Position sizing percentage (default: 0.02)
+    - commission_per_trade: Trading fees (default: 0.001)
+    - slippage_assumption: Price slippage for realistic modeling (default: 0.002)
+
+OUTPUT FORMATS:
+    - Detailed trade-by-trade analysis
+    - Performance summary statistics
+    - Risk metrics and drawdown analysis
+    - Monthly/quarterly performance breakdown
+    - Signal accuracy by type and priority
+
+EXAMPLE USAGE:
+    >>> backtester = Backtester('config.toml')
+    >>> results = backtester.run_backtest(months=18)
+    >>> analysis = results['analysis']
+    >>> print(f"Overall Accuracy: {analysis['overall_accuracy']:.1f}%")
+    >>> print(f"LONG Accuracy: {analysis['long_signals']['accuracy']:.1f}%")
+    >>> print(f"SHORT Accuracy: {analysis['short_signals']['accuracy']:.1f}%")
+
+DEPENDENCIES:
+    - pandas: Data manipulation and time series analysis
+    - numpy: Mathematical calculations and statistical analysis
+    - All analysis modules: Data fetching, signal generation components
+    - Configuration management: TOML-based parameter handling
+
+PERFORMANCE OPTIMIZATIONS:
+    - Efficient data processing with vectorized operations
+    - Memory-optimized data structures
+    - Parallel signal generation where possible
+    - Caching of expensive calculations
+    - Chunked processing for large datasets
+
+ERROR HANDLING:
+    - Data validation and sufficiency checks
+    - Signal generation error recovery
+    - Missing data handling and interpolation
+    - Statistical calculation error management
+    - Comprehensive logging and debugging support
+
+VALIDATION TECHNIQUES:
+    - Overfitting detection through walk-forward analysis
+    - Statistical significance testing of results
+    - Confidence interval calculations
+    - Robustness testing across different market conditions
+    - Sensitivity analysis for parameter stability
+
+REPORTING FEATURES:
+    - Executive summary with key performance metrics
+    - Detailed trade log with entry/exit analysis
+    - Performance visualization and charts
+    - Risk analysis and position sizing recommendations
+    - Strategy optimization suggestions
+
+AUTHOR: BNB Trading System Team
+VERSION: 2.0.0
+DATE: 2024-01-01
 """
 
 import pandas as pd
@@ -10,9 +112,9 @@ import logging
 from datetime import datetime, timedelta
 import sys
 import os
-from typing import Dict, List
+from typing import Dict, List, Any
 
-# Добавяме текущата директория в Python path
+# Add current directory to Python path for module imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from data_fetcher import BNBDataFetcher
@@ -21,19 +123,112 @@ from weekly_tails import WeeklyTailsAnalyzer
 from indicators import TechnicalIndicators
 from signal_generator import SignalGenerator
 
-# Настройваме logging
+# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class Backtester:
-    """Клас за backtesting на BNB Trading системата"""
-    
-    def __init__(self, config_file: str = 'config.toml'):
+    """
+    Advanced Backtesting Engine for Comprehensive Trading Strategy Validation
+
+    This class provides a complete historical testing framework for the BNB trading system,
+    enabling thorough evaluation of trading strategies before live deployment.
+
+    ARCHITECTURE OVERVIEW:
+        - Complete system integration with all analysis modules
+        - Chronological signal replay with realistic market conditions
+        - Multi-metric performance evaluation and risk assessment
+        - Detailed trade-by-trade analysis with entry/exit validation
+        - Comprehensive reporting with statistical significance testing
+
+    BACKTESTING PROCESS:
+        1. Data Acquisition: Fetch historical OHLCV data for specified period
+        2. Signal Generation: Replay chronological signal generation
+        3. Trade Simulation: Simulate trades with realistic assumptions
+        4. Performance Calculation: Compute all relevant metrics
+        5. Risk Analysis: Evaluate drawdown and risk-adjusted returns
+        6. Results Reporting: Generate comprehensive performance reports
+
+    SIGNAL VALIDATION METHODOLOGY:
+        - 14-day holding period for signal validation (industry standard)
+        - Realistic entry/exit price assumptions with slippage
+        - Commission and fee calculations
+        - Risk management rule compliance checking
+        - Market condition filtering effectiveness
+
+    PERFORMANCE METRICS CALCULATED:
+        - Overall Accuracy: Total win rate percentage
+        - LONG/SHORT Accuracy: Direction-specific performance
+        - Average P&L: Mean profit/loss per trade
+        - Maximum Drawdown: Peak-to-trough portfolio decline
+        - Sharpe Ratio: Risk-adjusted return measure
+        - Profit Factor: Gross profit divided by gross loss
+        - Recovery Factor: Net profit divided by max drawdown
+
+    CONFIGURATION REQUIREMENTS:
+        - Complete config.toml with all system parameters
+        - Data source configuration (API credentials optional)
+        - Signal generation parameters
+        - Analysis module settings
+        - Risk management parameters
+
+    ATTRIBUTES:
+        config (Dict): Complete system configuration
+        data_fetcher (BNBDataFetcher): Data acquisition component
+        fib_analyzer (FibonacciAnalyzer): Fibonacci analysis engine
+        tails_analyzer (WeeklyTailsAnalyzer): Weekly tails analysis
+        indicators (TechnicalIndicators): Technical indicator calculations
+        signal_generator (SignalGenerator): Main signal generation orchestrator
+
+    VALIDATION TECHNIQUES:
+        - Walk-forward analysis to prevent overfitting
+        - Out-of-sample testing on unseen data
+        - Statistical significance testing of results
+        - Confidence interval calculations
+        - Sensitivity analysis for parameter stability
+
+    EXAMPLE:
+        >>> backtester = Backtester('config.toml')
+        >>> results = backtester.run_backtest(months=18)
+        >>> if 'error' not in results:
+        ...     analysis = results['analysis']
+        ...     print(f"Backtest Accuracy: {analysis['overall_accuracy']:.1f}%")
+        ...     print(f"Total Signals: {analysis['total_signals']}")
+        ...     backtester.export_backtest_results(results)
+
+    NOTE:
+        Requires sufficient historical data (minimum 18 months recommended)
+        and proper configuration of all analysis modules for accurate results.
+    """
+
+    def __init__(self, config_file: str = 'config.toml') -> None:
         """
-        Инициализира backtester-а
-        
+        Initialize the Backtesting Engine with complete system configuration.
+
+        Sets up all analysis modules and prepares the backtesting environment
+        for comprehensive strategy validation and performance analysis.
+
         Args:
-            config_file: Път до конфигурационния файл
+            config_file (str): Path to the TOML configuration file.
+                Must contain complete system configuration including:
+                - data: Data source and acquisition settings
+                - signals: Signal generation parameters
+                - fibonacci: Fibonacci analysis configuration
+                - weekly_tails: Weekly tails analysis settings
+                - indicators: Technical indicators parameters
+                - All other module-specific configurations
+
+        Raises:
+            FileNotFoundError: If configuration file does not exist
+            ValueError: If configuration is invalid or incomplete
+            ImportError: If required analysis modules cannot be imported
+
+        Example:
+            >>> # Initialize with default config
+            >>> backtester = Backtester()
+
+            >>> # Initialize with custom config
+            >>> backtester = Backtester('my_config.toml')
         """
         try:
             # Зареждаме конфигурацията

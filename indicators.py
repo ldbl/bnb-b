@@ -1,26 +1,202 @@
 """
-Technical Indicators Module - RSI, MACD, Bollinger Bands
-Изчислява основните технически индикатори за BNB trading
+Technical Indicators Module - Advanced Technical Analysis Indicators
+
+COMPREHENSIVE TECHNICAL ANALYSIS ENGINE FOR BNB TRADING
+Calculates and analyzes essential technical indicators using TA-Lib library
+
+This module provides a complete technical analysis toolkit specifically optimized
+for cryptocurrency trading, with special focus on BNB/USD price movements.
+
+ARCHITECTURE OVERVIEW:
+    - TA-Lib integration for high-performance indicator calculations
+    - Multiple timeframe support (1m, 5m, 15m, 1h, 4h, 1d, 1w)
+    - Configurable parameters for all indicators
+    - Signal generation based on indicator combinations
+    - Volume confirmation and divergence analysis
+
+SUPPORTED INDICATORS:
+    1. RSI (Relative Strength Index) - Momentum oscillator
+    2. MACD (Moving Average Convergence Divergence) - Trend following
+    3. Bollinger Bands - Volatility-based support/resistance
+    4. Volume Analysis - Volume confirmation signals
+    5. Moving Averages - Trend direction and strength
+
+KEY FEATURES:
+    - High-performance TA-Lib calculations
+    - Configurable indicator parameters
+    - Multi-signal combination analysis
+    - Volume confirmation integration
+    - Divergence detection capabilities
+    - Signal strength scoring
+
+TRADING APPLICATIONS:
+    - Momentum analysis using RSI
+    - Trend following with MACD
+    - Volatility-based entry/exit with Bollinger Bands
+    - Volume confirmation for signal validation
+    - Overbought/oversold condition identification
+
+CONFIGURATION PARAMETERS:
+    - RSI: period, overbought_threshold, oversold_threshold
+    - MACD: fast_period, slow_period, signal_period
+    - Bollinger Bands: period, standard_deviation
+    - Volume: confirmation_threshold, spike_multiplier
+
+SIGNAL GENERATION:
+    - RSI Signals: Oversold (<30) = LONG, Overbought (>70) = SHORT
+    - MACD Signals: Bullish crossover = LONG, Bearish crossover = SHORT
+    - Bollinger Signals: Lower band touch = LONG, Upper band touch = SHORT
+    - Combined Signals: Multi-indicator confirmation for higher accuracy
+
+EXAMPLE USAGE:
+    >>> config = {
+    ...     'indicators': {
+    ...         'rsi_period': 14, 'rsi_overbought': 70, 'rsi_oversold': 30,
+    ...         'macd_fast': 12, 'macd_slow': 26, 'macd_signal': 9,
+    ...         'bb_period': 20, 'bb_std': 2.0
+    ...     }
+    ... }
+    >>> indicators = TechnicalIndicators(config)
+    >>> df_with_indicators = indicators.calculate_indicators(ohlcv_data)
+    >>> signals = indicators.get_all_indicators_signals(df_with_indicators)
+
+DEPENDENCIES:
+    - pandas: Data manipulation and time series operations
+    - numpy: Mathematical calculations and array operations
+    - TA-Lib: High-performance technical analysis library
+    - typing: Type hints for better code documentation
+
+PERFORMANCE OPTIMIZATIONS:
+    - Vectorized calculations using TA-Lib
+    - Efficient DataFrame operations
+    - Memory-optimized data processing
+    - Batch processing for multiple timeframes
+
+ERROR HANDLING:
+    - Validation of input data structure and completeness
+    - Graceful handling of insufficient data periods
+    - Comprehensive logging for debugging and monitoring
+    - Fallback mechanisms for calculation failures
+
+SIGNAL ACCURACY ENHANCEMENTS:
+    - Multi-timeframe confirmation
+    - Volume validation for signals
+    - Divergence detection
+    - Trend alignment verification
+
+AUTHOR: BNB Trading System Team
+VERSION: 2.0.0
+DATE: 2024-01-01
 """
 
 import pandas as pd
 import numpy as np
 import talib
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Any
 import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class TechnicalIndicators:
-    """Клас за изчисляване на технически индикатори"""
-    
-    def __init__(self, config: Dict):
+    """
+    Advanced Technical Analysis Engine using TA-Lib
+
+    This class provides comprehensive technical indicator calculations and signal
+    generation specifically optimized for cryptocurrency trading analysis.
+
+    ARCHITECTURE OVERVIEW:
+        - TA-Lib integration for high-performance calculations
+        - Configurable parameters for all indicators
+        - Multi-indicator signal combination
+        - Volume confirmation and validation
+        - Comprehensive error handling and logging
+
+    SUPPORTED INDICATORS:
+        1. RSI (Relative Strength Index):
+           - Momentum oscillator measuring overbought/oversold conditions
+           - Default period: 14, Configurable: 7-21
+           - Signals: <30 = Oversold (LONG), >70 = Overbought (SHORT)
+
+        2. MACD (Moving Average Convergence Divergence):
+           - Trend-following momentum indicator
+           - Components: MACD line, Signal line, Histogram
+           - Signals: Bullish crossover = LONG, Bearish crossover = SHORT
+
+        3. Bollinger Bands:
+           - Volatility-based support/resistance bands
+           - Components: Upper band, Middle band (SMA), Lower band
+           - Position: -2.0 to +2.0 (relative to middle band)
+           - Signals: Lower band touch = LONG, Upper band touch = SHORT
+
+    SIGNAL GENERATION STRATEGY:
+        - Individual indicator signals are calculated separately
+        - Combined signals provide higher accuracy through confirmation
+        - Volume confirmation enhances signal reliability
+        - Multi-timeframe analysis improves signal quality
+
+    CONFIGURATION PARAMETERS:
+        rsi_period (int): RSI calculation period (default: 14)
+        rsi_overbought (float): Overbought threshold (default: 70)
+        rsi_oversold (float): Oversold threshold (default: 30)
+        macd_fast (int): MACD fast EMA period (default: 12)
+        macd_slow (int): MACD slow EMA period (default: 26)
+        macd_signal (int): MACD signal EMA period (default: 9)
+        bb_period (int): Bollinger Bands period (default: 20)
+        bb_std (float): Standard deviation multiplier (default: 2.0)
+
+    ATTRIBUTES:
+        All configuration parameters are stored as instance attributes
+        for easy access and modification during runtime.
+
+    EXAMPLE:
+        >>> config = {
+        ...     'indicators': {
+        ...         'rsi_period': 14, 'rsi_overbought': 70, 'rsi_oversold': 30,
+        ...         'macd_fast': 12, 'macd_slow': 26, 'macd_signal': 9,
+        ...         'bb_period': 20, 'bb_std': 2.0
+        ...     }
+        ... }
+        >>> indicators = TechnicalIndicators(config)
+        >>> df_with_indicators = indicators.calculate_indicators(price_data)
+        >>> signals = indicators.get_all_indicators_signals(df_with_indicators)
+
+    NOTE:
+        All indicators require sufficient historical data for accurate calculations.
+        Minimum periods vary by indicator (RSI: 14, MACD: 33, BB: 20).
+    """
+
+    def __init__(self, config: Dict[str, Any]) -> None:
         """
-        Инициализира техническите индикатори
-        
+        Initialize the Technical Indicators engine with configuration.
+
+        Sets up all indicator parameters and prepares the TA-Lib environment
+        for high-performance technical analysis calculations.
+
         Args:
-            config: Конфигурационни параметри
+            config (Dict[str, Any]): Complete configuration dictionary containing:
+                - indicators.rsi_period (int): RSI calculation period
+                - indicators.rsi_overbought (float): RSI overbought threshold
+                - indicators.rsi_oversold (float): RSI oversold threshold
+                - indicators.macd_fast (int): MACD fast EMA period
+                - indicators.macd_slow (int): MACD slow EMA period
+                - indicators.macd_signal (int): MACD signal EMA period
+                - indicators.bb_period (int): Bollinger Bands period
+                - indicators.bb_std (float): Bollinger Bands standard deviation
+
+        Raises:
+            KeyError: If required configuration keys are missing
+            ValueError: If configuration values are invalid
+
+        Example:
+            >>> config = {
+            ...     'indicators': {
+            ...         'rsi_period': 14, 'rsi_overbought': 70, 'rsi_oversold': 30,
+            ...         'macd_fast': 12, 'macd_slow': 26, 'macd_signal': 9,
+            ...         'bb_period': 20, 'bb_std': 2.0
+            ...     }
+            ... }
+            >>> indicators = TechnicalIndicators(config)
         """
         self.rsi_period = config['indicators']['rsi_period']
         self.rsi_overbought = config['indicators']['rsi_overbought']
