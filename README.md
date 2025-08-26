@@ -13,6 +13,7 @@
 - **📊 Volume Confirmation за SHORT сигнали** - SHORT само при висок volume
 - **🔥 BNB Burn Filter за SHORT сигнали** - SHORT блокиране през burn периоди
 - **📐 Price Action Rejection Patterns за SHORT сигнали** - SHORT само при силен rejection
+- **📈 Multi-timeframe Alignment за SHORT сигнали** - SHORT само при alignment между daily/weekly
 
 ### 🔄 ТЕКУЩИ ЗАДАЧИ (Phase 1):
 - **1.1 Trend Filter за SHORT** ✅ **ЗАВЪРШЕНА**
@@ -21,7 +22,8 @@
 - **1.4 Volume Confirmation** ✅ **ЗАВЪРШЕНА**
 - **1.5 BNB Burn Filter** ✅ **ЗАВЪРШЕНА**
 - **1.6 Price Action Rejection Patterns** ✅ **ЗАВЪРШЕНА**
-- **1.7 Multi-timeframe Alignment** 🔄 **АКТИВНА ЗАДАЧА**
+- **1.7 Multi-timeframe Alignment** ✅ **ЗАВЪРШЕНА**
+- **1.8 Market Regime Detection** 🔄 **АКТИВНА ЗАДАЧА**
 
 ### 🎯 ЦЕЛИ НА PHASE 1:
 - **SHORT Accuracy: 0% → 60%+** (критична цел)
