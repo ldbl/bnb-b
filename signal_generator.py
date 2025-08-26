@@ -17,6 +17,9 @@ from elliott_wave_analyzer import ElliottWaveAnalyzer
 from whale_tracker import WhaleTracker
 from ichimoku_module import IchimokuAnalyzer
 from sentiment_module import SentimentAnalyzer
+from divergence_detector import DivergenceDetector
+from moving_averages import MovingAveragesAnalyzer
+from price_action_patterns import PriceActionPatternsAnalyzer
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -51,6 +54,11 @@ class SignalGenerator:
         self.whale_tracker = WhaleTracker()
         self.ichimoku_analyzer = IchimokuAnalyzer()
         self.sentiment_analyzer = SentimentAnalyzer()
+        
+        # Нови анализатори от ideas файла
+        self.divergence_detector = DivergenceDetector(config)
+        self.ma_analyzer = MovingAveragesAnalyzer(config)
+        self.patterns_analyzer = PriceActionPatternsAnalyzer(config)
         
         logger.info("Signal Generator инициализиран")
         logger.info(f"Приоритет: Fibonacci={self.fibonacci_weight}, Weekly Tails={self.weekly_tails_weight}")
@@ -137,6 +145,48 @@ class SignalGenerator:
                 logger.warning(f"Sentiment анализ неуспешен: {sentiment_analysis['error']}")
                 sentiment_analysis = None
             
+            # 10. Divergence Analysis (НОВО от ideas файла)
+            logger.info(f"Стартиране на Divergence анализ...")
+            logger.info(f"Daily data columns: {daily_df.columns.tolist()}")
+            logger.info(f"Daily with indicators columns: {daily_with_indicators.columns.tolist()}")
+            
+            # Проверяваме дали има RSI и MACD данни
+            rsi_values = daily_with_indicators['RSI'].tolist() if 'RSI' in daily_with_indicators.columns else []
+            macd_values = daily_with_indicators['MACD'].tolist() if 'MACD' in daily_with_indicators.columns else []
+            
+            logger.info(f"RSI values count: {len(rsi_values)}")
+            logger.info(f"MACD values count: {len(macd_values)}")
+            
+            divergence_analysis = self.divergence_detector.detect_all_divergences(
+                daily_df, 
+                {
+                    'rsi': {'rsi_values': rsi_values},
+                    'macd': {'macd_values': macd_values}
+                }
+            )
+            
+            logger.info(f"Divergence анализ резултат: {divergence_analysis}")
+            
+            if divergence_analysis and 'error' in divergence_analysis:
+                logger.warning(f"Divergence анализ неуспешен: {divergence_analysis['error']}")
+                divergence_analysis = None
+            elif divergence_analysis is None:
+                logger.warning("Divergence анализ е None")
+            else:
+                logger.info("Divergence анализ успешен")
+            
+            # 11. Moving Averages Analysis (НОВО от ideas файла)
+            ma_analysis = self.ma_analyzer.calculate_emas(daily_df)
+            if 'error' in ma_analysis:
+                logger.warning(f"Moving Averages анализ неуспешен: {ma_analysis['error']}")
+                ma_analysis = None
+            
+            # 12. Price Action Patterns Analysis (НОВО от ideas файла)
+            patterns_analysis = self.patterns_analyzer.detect_all_patterns(daily_df)
+            if 'error' in patterns_analysis:
+                logger.warning(f"Price Patterns анализ неуспешен: {patterns_analysis['error']}")
+                patterns_analysis = None
+            
             # 6. Проверяваме за Fibonacci + Tails съвпадения
             confluence_info = None
             if fib_analysis and tails_analysis:
@@ -166,7 +216,10 @@ class SignalGenerator:
                 elliott_wave_analysis,
                 whale_analysis,
                 ichimoku_analysis,
-                sentiment_analysis
+                sentiment_analysis,
+                divergence_analysis,
+                ma_analysis,
+                patterns_analysis
             )
             
             logger.info(f"Сигнал генериран: {final_signal['signal']} (увереност: {final_signal['confidence']:.2f})")
@@ -318,7 +371,8 @@ class SignalGenerator:
                               confluence_info: Dict, optimal_levels_analysis: Dict = None, 
                               trend_analysis: Dict = None, elliott_wave_analysis: Dict = None,
                               whale_analysis: Dict = None, ichimoku_analysis: Dict = None,
-                              sentiment_analysis: Dict = None) -> Dict[str, any]:
+                              sentiment_analysis: Dict = None, divergence_analysis: Dict = None,
+                              ma_analysis: Dict = None, patterns_analysis: Dict = None) -> Dict[str, any]:
         """
         Създава детайлна информация за сигнала
         
@@ -351,6 +405,9 @@ class SignalGenerator:
                 'whale_analysis': whale_analysis,
                 'ichimoku_analysis': ichimoku_analysis,
                 'sentiment_analysis': sentiment_analysis,
+                'divergence_analysis': divergence_analysis,
+                'moving_averages_analysis': ma_analysis,
+                'price_patterns_analysis': patterns_analysis,
                 'next_targets': self._get_next_targets(final_signal, fib_analysis, tails_analysis),
                 'risk_level': self._calculate_risk_level(final_signal, fib_analysis, tails_analysis)
             }

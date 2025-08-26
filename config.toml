@@ -82,3 +82,24 @@ social_weight = 0.25
 news_weight = 0.25
 momentum_weight = 0.2
 confidence_threshold = 60
+
+[divergence]
+enabled = true
+min_peak_distance = 5
+min_peak_prominence = 0.02
+lookback_periods = 20
+
+[moving_averages]
+enabled = true
+fast_period = 10
+slow_period = 50
+volume_confirmation = true
+volume_multiplier = 1.5
+volume_lookback = 14
+
+[price_patterns]
+enabled = true
+min_pattern_distance = 5
+pattern_threshold = 0.02
+volume_confirmation = true
+candle_confirmation = true

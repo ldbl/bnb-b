@@ -22,17 +22,17 @@ from validator import SignalValidator
 
 # Настройваме logging
 logging.basicConfig(
-    level=logging.ERROR,  # Променяме от WARNING на ERROR
+    level=logging.INFO,  # Променяме на INFO за да видим debug информацията
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler('bnb_trading.log'),
-        # Премахваме StreamHandler за да не се показват в конзолата
+        logging.StreamHandler()  # Добавяме StreamHandler за да видим в конзолата
     ]
 )
 
-# Премахваме всички INFO съобщения от всички модули
+# Задаваме INFO level за основните модули
 for logger_name in ['__main__', 'data_fetcher', 'fibonacci', 'weekly_tails', 'indicators', 'signal_generator', 'validator']:
-    logging.getLogger(logger_name).setLevel(logging.ERROR)
+    logging.getLogger(logger_name).setLevel(logging.INFO)
 
 logger = logging.getLogger(__name__)
 
@@ -107,6 +107,23 @@ class BNBTradingSystem:
             
             # Добавяме пълния сигнал към резултатите
             results['full_signal'] = signal
+            
+            # Debug информация за новите анализи
+            logger.info(f"Signal keys: {list(signal.keys())}")
+            logger.info(f"Divergence analysis present: {'divergence_analysis' in signal}")
+            logger.info(f"Moving averages analysis present: {'moving_averages_analysis' in signal}")
+            logger.info(f"Price patterns analysis present: {'price_patterns_analysis' in signal}")
+            
+            # Добавяме новите анализи от ideas файла
+            if 'divergence_analysis' in signal:
+                results['divergence_analysis'] = signal['divergence_analysis']
+                logger.info(f"Divergence analysis added to results: {signal['divergence_analysis'] is not None}")
+            if 'moving_averages_analysis' in signal:
+                results['moving_averages_analysis'] = signal['moving_averages_analysis']
+                logger.info(f"Moving averages analysis added to results: {signal['moving_averages_analysis'] is not None}")
+            if 'price_patterns_analysis' in signal:
+                results['price_patterns_analysis'] = signal['price_patterns_analysis']
+                logger.info(f"Price patterns analysis added to results: {signal['price_patterns_analysis'] is not None}")
             
             logger.info("BNB анализ завършен успешно")
             return results
@@ -295,6 +312,76 @@ class BNBTradingSystem:
                 print(f"   LONG сигнали: {stats['long_signals']['accuracy']:.1f}% ({stats['long_signals']['success']}/{stats['long_signals']['total']})")
                 print(f"   SHORT сигнали: {stats['short_signals']['accuracy']:.1f}% ({stats['short_signals']['success']}/{stats['short_signals']['total']})")
                 print(f"   Среден P&L: {stats['avg_profit_loss_pct']:+.2f}%")
+            
+            # Divergence Analysis (НОВО от ideas файла)
+            if 'divergence_analysis' in results and results['divergence_analysis']:
+                div_analysis = results['divergence_analysis']
+                if 'error' not in div_analysis:
+                    print(f"\n🔄 DIVERGENCE АНАЛИЗ:")
+                    if div_analysis.get('rsi_divergence', {}).get('type') != 'NONE':
+                        rsi_div = div_analysis['rsi_divergence']
+                        print(f"   📊 RSI Divergence: {rsi_div['type']} (увереност: {rsi_div['confidence']:.1f}%)")
+                        print(f"      Причина: {rsi_div['reason']}")
+                    
+                    if div_analysis.get('macd_divergence', {}).get('type') != 'NONE':
+                        macd_div = div_analysis['macd_divergence']
+                        print(f"   📈 MACD Divergence: {macd_div['type']} (увереност: {macd_div['confidence']:.1f}%)")
+                        print(f"      Причина: {macd_div['reason']}")
+                    
+                    if div_analysis.get('price_volume_divergence') and div_analysis['price_volume_divergence'].get('type') != 'NONE':
+                        pv_div = div_analysis['price_volume_divergence']
+                        print(f"   📊 Price-Volume Divergence: {pv_div['type']} (увереност: {pv_div['confidence']:.1f}%)")
+                        print(f"      Причина: {pv_div['reason']}")
+                    
+                    overall_div = div_analysis.get('overall_divergence', 'NONE')
+                    print(f"   🎯 Общ Divergence: {overall_div}")
+            
+            # Moving Averages Analysis (НОВО от ideas файла)
+            if 'moving_averages_analysis' in results and results['moving_averages_analysis']:
+                ma_analysis = results['moving_averages_analysis']
+                if 'error' not in ma_analysis:
+                    print(f"\n📊 MOVING AVERAGES АНАЛИЗ:")
+                    crossover = ma_analysis.get('crossover_signal', {})
+                    if crossover.get('signal') != 'NONE':
+                        print(f"   🎯 Crossover: {crossover['signal']}")
+                        print(f"      Причина: {crossover['reason']}")
+                        print(f"      Увереност: {crossover['confidence']:.1f}%")
+                        if 'crossover_strength' in crossover:
+                            print(f"      Сила: {crossover['crossover_strength']:.2%}")
+                    
+                    fast_ema = ma_analysis.get('fast_ema_current')
+                    slow_ema = ma_analysis.get('slow_ema_current')
+                    if fast_ema and slow_ema:
+                        print(f"   📈 EMA стойности:")
+                        print(f"      Fast EMA (10): ${fast_ema:.2f}")
+                        print(f"      Slow EMA (50): ${slow_ema:.2f}")
+                        print(f"      Volume Confirmed: {'✅' if ma_analysis.get('volume_confirmed') else '❌'}")
+            
+            # Price Action Patterns Analysis (НОВО от ideas файла)
+            if 'price_patterns_analysis' in results and results['price_patterns_analysis']:
+                patterns = results['price_patterns_analysis']
+                if 'error' not in patterns:
+                    print(f"\n📐 PRICE ACTION PATTERNS:")
+                    overall_pattern = patterns.get('overall_pattern', 'NONE')
+                    print(f"   🎯 Общ Pattern: {overall_pattern}")
+                    
+                    if patterns.get('double_top', {}).get('detected'):
+                        dt = patterns['double_top']
+                        print(f"   🔴 Double Top: {dt['reason']}")
+                        print(f"      Увереност: {dt['confidence']:.1f}% | Сила: {dt['pattern_strength']}")
+                        print(f"      Пикове: ${dt['peak1_price']:.2f}, ${dt['peak2_price']:.2f}")
+                    
+                    if patterns.get('double_bottom', {}).get('detected'):
+                        db = patterns['double_bottom']
+                        print(f"   🟢 Double Bottom: {db['reason']}")
+                        print(f"      Увереност: {db['confidence']:.1f}% | Сила: {db['pattern_strength']}")
+                        print(f"      Дъна: ${db['trough1_price']:.2f}, ${db['trough2_price']:.2f}")
+                    
+                    if patterns.get('head_shoulders', {}).get('detected'):
+                        hs = patterns['head_shoulders']
+                        print(f"   🔴 Head & Shoulders: {hs['reason']}")
+                        print(f"      Увереност: {hs['confidence']:.1f}%")
+                        print(f"      Глава: ${hs['head_price']:.2f} | Рамене: ${hs['left_shoulder_price']:.2f}")
             
             # Последните сигнали
             if results['recent_signals']:
@@ -519,6 +606,99 @@ class BNBTradingSystem:
                 print(f"   ✅ ELLIOTT WAVE ПРАВИЛА: Валидни")
             else:
                 print(f"   ⚠️  ELLIOTT WAVE ПРАВИЛА: Нарушени")
+            
+            # Divergence Analysis (НОВО от ideas файла)
+            if 'divergence_analysis' in signal:
+                div_analysis = signal['divergence_analysis']
+                if div_analysis and 'error' not in div_analysis:
+                    print(f"\n🔄 DIVERGENCE АНАЛИЗ:")
+                    if div_analysis.get('rsi_divergence', {}).get('type') != 'NONE':
+                        rsi_div = div_analysis['rsi_divergence']
+                        print(f"   📊 RSI Divergence: {rsi_div['type']} (увереност: {rsi_div['confidence']:.1f}%)")
+                        print(f"      Причина: {rsi_div['reason']}")
+                    
+                    if div_analysis.get('macd_divergence', {}).get('type') != 'NONE':
+                        macd_div = div_analysis['macd_divergence']
+                        print(f"   📈 MACD Divergence: {macd_div['type']} (увереност: {macd_div['confidence']:.1f}%)")
+                        print(f"      Причина: {macd_div['reason']}")
+                    
+                    if div_analysis.get('price_volume_divergence') and div_analysis['price_volume_divergence'].get('type') != 'NONE':
+                        pv_div = div_analysis['price_volume_divergence']
+                        print(f"   📊 Price-Volume Divergence: {pv_div['type']} (увереност: {pv_div['confidence']:.1f}%)")
+                        print(f"      Причина: {pv_div['reason']}")
+                    
+                    overall_div = div_analysis.get('overall_divergence', 'NONE')
+                    print(f"   🎯 Общ Divergence: {overall_div}")
+                elif div_analysis is None:
+                    print(f"\n🔄 DIVERGENCE АНАЛИЗ: Недостъпен (None)")
+                else:
+                    print(f"\n🔄 DIVERGENCE АНАЛИЗ: Грешка - {div_analysis.get('error', 'Unknown error')}")
+            
+            # Moving Averages Analysis (НОВО от ideas файла)
+            if 'moving_averages_analysis' in signal and signal['moving_averages_analysis']:
+                ma_analysis = signal['moving_averages_analysis']
+                if 'error' not in ma_analysis:
+                    print(f"\n📊 MOVING AVERAGES АНАЛИЗ:")
+                    crossover = ma_analysis.get('crossover_signal', {})
+                    if crossover.get('signal') != 'NONE':
+                        print(f"   🎯 Crossover: {crossover['signal']}")
+                        print(f"      Причина: {crossover['reason']}")
+                        print(f"      Увереност: {crossover['confidence']:.1f}%")
+                        if 'crossover_strength' in crossover:
+                            print(f"      Сила: {crossover['crossover_strength']:.2%}")
+                    
+                    ema_values = ma_analysis.get('ema_values', {})
+                    if ema_values:
+                        print(f"   📈 EMA стойности:")
+                        print(f"      Fast EMA ({ma_analysis.get('fast_period', 10)}): ${ema_values.get('fast_ema', 0):,.2f}")
+                        print(f"      Slow EMA ({ma_analysis.get('slow_period', 50)}): ${ema_values.get('slow_ema', 0):,.2f}")
+                    
+                    if ma_analysis.get('volume_confirmation', False):
+                        print(f"   ✅ Volume Confirmation: Да")
+            
+            # Price Action Patterns Analysis (НОВО от ideas файла)
+            if 'price_patterns_analysis' in signal and signal['price_patterns_analysis']:
+                patterns = signal['price_patterns_analysis']
+                if 'error' not in patterns:
+                    print(f"\n📐 PRICE ACTION PATTERNS:")
+                    overall_pattern = patterns.get('overall_pattern', 'NONE')
+                    print(f"   🎯 Общ Pattern: {overall_pattern}")
+                    
+                    if patterns.get('double_top', {}).get('detected'):
+                        dt = patterns['double_top']
+                        print(f"   🔴 Double Top: {dt['reason']}")
+                        print(f"      Увереност: {dt['confidence']:.1f}% | Сила: {dt['pattern_strength']}")
+                        print(f"      Пикове: ${dt['peak1_price']:.2f}, ${dt['peak2_price']:.2f}")
+                    
+                    if patterns.get('double_bottom', {}).get('detected'):
+                        db = patterns['double_bottom']
+                        print(f"   🟢 Double Bottom: {db['reason']}")
+                        print(f"      Увереност: {db['confidence']:.1f}% | Сила: {db['pattern_strength']}")
+                        print(f"      Дъна: ${db['trough1_price']:.2f}, ${db['trough2_price']:.2f}")
+                    
+                    if patterns.get('head_shoulders', {}).get('detected'):
+                        hs = patterns['head_shoulders']
+                        print(f"   🔴 Head & Shoulders: {hs['reason']}")
+                        print(f"      Увереност: {hs['confidence']:.1f}% | Сила: {hs['pattern_strength']}")
+                        print(f"      Пикове: ${hs['left_shoulder_price']:.2f}, ${hs['head_price']:.2f}, ${hs['right_shoulder_price']:.2f}")
+                    
+                    if patterns.get('inverse_head_shoulders', {}).get('detected'):
+                        ihs = patterns['inverse_head_shoulders']
+                        print(f"   🟢 Inverse H&S: {ihs['reason']}")
+                        print(f"      Увереност: {ihs['confidence']:.1f}% | Сила: {ihs['pattern_strength']}")
+                        print(f"      Дъна: ${ihs['left_shoulder_price']:.2f}, ${ihs['head_price']:.2f}, ${ihs['right_shoulder_price']:.2f}")
+                    
+                    if patterns.get('triangle', {}).get('detected'):
+                        tri = patterns['triangle']
+                        print(f"   🔺 Triangle: {tri['reason']}")
+                        print(f"      Увереност: {tri['confidence']:.1f}% | Сила: {tri['pattern_strength']}")
+                        print(f"      Тип: {tri['triangle_type']}")
+                    
+                    if patterns.get('wedge', {}).get('detected'):
+                        wedge = patterns['wedge']
+                        print(f"   🔶 Wedge: {wedge['reason']}")
+                        print(f"      Увереност: {wedge['confidence']:.1f}% | Сила: {wedge['pattern_strength']}")
+                        print(f"      Тип: {wedge['wedge_type']}")
             
             # Whale Tracker Analysis - ново!
             if 'whale_analysis' in signal:
