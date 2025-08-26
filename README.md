@@ -12,6 +12,7 @@
 - **🌀 Fibonacci Logic за SHORT сигнали** - Обновена логика с rejection validation
 - **📊 Volume Confirmation за SHORT сигнали** - SHORT само при висок volume
 - **🔥 BNB Burn Filter за SHORT сигнали** - SHORT блокиране през burn периоди
+- **📐 Price Action Rejection Patterns за SHORT сигнали** - SHORT само при силен rejection
 
 ### 🔄 ТЕКУЩИ ЗАДАЧИ (Phase 1):
 - **1.1 Trend Filter за SHORT** ✅ **ЗАВЪРШЕНА**
@@ -19,7 +20,8 @@
 - **1.3 Weekly Tails за SHORT** ✅ **ЗАВЪРШЕНА**
 - **1.4 Volume Confirmation** ✅ **ЗАВЪРШЕНА**
 - **1.5 BNB Burn Filter** ✅ **ЗАВЪРШЕНА**
-- **1.6 Price Action Rejection Patterns** 🔄 **АКТИВНА ЗАДАЧА**
+- **1.6 Price Action Rejection Patterns** ✅ **ЗАВЪРШЕНА**
+- **1.7 Multi-timeframe Alignment** 🔄 **АКТИВНА ЗАДАЧА**
 
 ### 🎯 ЦЕЛИ НА PHASE 1:
 - **SHORT Accuracy: 0% → 60%+** (критична цел)
