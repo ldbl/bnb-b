@@ -10,13 +10,14 @@
 - **📚 Complete Module Documentation** - Всички 15 модула документирани с enterprise-level quality
 - **🚀 Trend Filter за SHORT сигнали** - Имплементиран и тестван
 - **🌀 Fibonacci Logic за SHORT сигнали** - Обновена логика с rejection validation
+- **📊 Volume Confirmation за SHORT сигнали** - SHORT само при висок volume
 
 ### 🔄 ТЕКУЩИ ЗАДАЧИ (Phase 1):
 - **1.1 Trend Filter за SHORT** ✅ **ЗАВЪРШЕНА**
 - **1.2 Fibonacci Logic за SHORT** ✅ **ЗАВЪРШЕНА**
-- **1.3 Weekly Tails за SHORT** 🔄 **АКТИВНА ЗАДАЧА**
-- **1.4 Volume Confirmation** 🔄 **НАЧАЛНА**
-- **1.5 BNB Burn Filter** 🔄 **НАЧАЛНА**
+- **1.3 Weekly Tails за SHORT** ✅ **ЗАВЪРШЕНА**
+- **1.4 Volume Confirmation** ✅ **ЗАВЪРШЕНА**
+- **1.5 BNB Burn Filter** 🔄 **АКТИВНА ЗАДАЧА**
 
 ### 🎯 ЦЕЛИ НА PHASE 1:
 - **SHORT Accuracy: 0% → 60%+** (критична цел)
