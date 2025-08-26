@@ -1,0 +1,53 @@
+[data]
+symbol = "BNB/USDT"
+lookback_days = 500
+timeframes = ["1d", "1w"]
+
+[fibonacci]
+swing_lookback = 100
+key_levels = [0.382, 0.618]
+proximity_threshold = 0.01
+min_swing_size = 0.15
+
+[weekly_tails]
+lookback_weeks = 8
+min_tail_size = 0.03
+strong_tail_size = 0.05
+confluence_bonus = 1.5
+
+[indicators]
+rsi_period = 14
+rsi_overbought = 75
+rsi_oversold = 25
+macd_fast = 8
+macd_slow = 17
+macd_signal = 9
+bb_period = 20
+bb_std = 2.0
+
+[signals]
+fibonacci_weight = 0.35
+weekly_tails_weight = 0.35
+rsi_weight = 0.15
+macd_weight = 0.10
+bb_weight = 0.05
+min_confirmations = 2
+confidence_threshold = 0.7
+fib_tail_required = true
+
+# Балансирани параметри за 75%+ точност
+trend_filter = true
+trend_lookback_days = 30
+trend_threshold = 0.015
+
+# Балансирани изисквания за SHORT сигнали
+short_signal_requirements = true
+short_min_fib_level = 0.5
+short_min_tail_strength = 0.6
+short_trend_confirmation = true
+
+# Балансирани изисквания за LONG сигнали
+long_signal_requirements = true
+long_min_fib_level = 0.5
+long_min_tail_strength = 0.4
+long_trend_confirmation = false

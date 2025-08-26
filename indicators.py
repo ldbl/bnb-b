@@ -1,0 +1,401 @@
+"""
+Technical Indicators Module - RSI, MACD, Bollinger Bands
+Изчислява основните технически индикатори за BNB trading
+"""
+
+import pandas as pd
+import numpy as np
+import talib
+from typing import Dict, Tuple
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+class TechnicalIndicators:
+    """Клас за изчисляване на технически индикатори"""
+    
+    def __init__(self, config: Dict):
+        """
+        Инициализира техническите индикатори
+        
+        Args:
+            config: Конфигурационни параметри
+        """
+        self.rsi_period = config['indicators']['rsi_period']
+        self.rsi_overbought = config['indicators']['rsi_overbought']
+        self.rsi_oversold = config['indicators']['rsi_oversold']
+        self.macd_fast = config['indicators']['macd_fast']
+        self.macd_slow = config['indicators']['macd_slow']
+        self.macd_signal = config['indicators']['macd_signal']
+        self.bb_period = config['indicators']['bb_period']
+        self.bb_std = config['indicators']['bb_std']
+        
+        logger.info("Технически индикатори инициализирани")
+        logger.info(f"RSI: период={self.rsi_period}, overbought={self.rsi_overbought}, oversold={self.rsi_oversold}")
+        logger.info(f"MACD: fast={self.macd_fast}, slow={self.macd_slow}, signal={self.macd_signal}")
+        logger.info(f"Bollinger Bands: период={self.bb_period}, std={self.bb_std}")
+    
+    def calculate_indicators(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Изчислява всички технически индикатори
+        
+        Args:
+            df: DataFrame с OHLCV данни
+            
+        Returns:
+            DataFrame с добавени индикатори
+        """
+        try:
+            # Копираме DataFrame-а
+            df_with_indicators = df.copy()
+            
+            # Изчисляваме RSI
+            df_with_indicators['RSI'] = self._calculate_rsi(df['Close'])
+            
+            # Изчисляваме MACD
+            macd_data = self._calculate_macd(df['Close'])
+            df_with_indicators['MACD'] = macd_data['macd']
+            df_with_indicators['MACD_Signal'] = macd_data['signal']
+            df_with_indicators['MACD_Histogram'] = macd_data['histogram']
+            
+            # Изчисляваме Bollinger Bands
+            bb_data = self._calculate_bollinger_bands(df['Close'])
+            df_with_indicators['BB_Upper'] = bb_data['upper']
+            df_with_indicators['BB_Middle'] = bb_data['middle']
+            df_with_indicators['BB_Lower'] = bb_data['lower']
+            df_with_indicators['BB_Width'] = bb_data['width']
+            df_with_indicators['BB_Position'] = bb_data['position']
+            
+            # Премахваме NaN стойности
+            df_with_indicators.dropna(inplace=True)
+            
+            logger.info(f"Технически индикатори изчислени за {len(df_with_indicators)} редове")
+            
+            return df_with_indicators
+            
+        except Exception as e:
+            logger.error(f"Грешка при изчисляване на индикатори: {e}")
+            return df
+    
+    def _calculate_rsi(self, prices: pd.Series) -> pd.Series:
+        """
+        Изчислява RSI (Relative Strength Index)
+        
+        Args:
+            prices: Серия с цени
+            
+        Returns:
+            Серия с RSI стойности
+        """
+        try:
+            rsi = talib.RSI(prices.values, timeperiod=self.rsi_period)
+            return pd.Series(rsi, index=prices.index)
+        except Exception as e:
+            logger.error(f"Грешка при изчисляване на RSI: {e}")
+            return pd.Series(index=prices.index)
+    
+    def _calculate_macd(self, prices: pd.Series) -> Dict[str, pd.Series]:
+        """
+        Изчислява MACD (Moving Average Convergence Divergence)
+        
+        Args:
+            prices: Серия с цени
+            
+        Returns:
+            Dict с MACD, Signal и Histogram
+        """
+        try:
+            macd, signal, histogram = talib.MACD(
+                prices.values, 
+                fastperiod=self.macd_fast, 
+                slowperiod=self.macd_slow, 
+                signalperiod=self.macd_signal
+            )
+            
+            return {
+                'macd': pd.Series(macd, index=prices.index),
+                'signal': pd.Series(signal, index=prices.index),
+                'histogram': pd.Series(histogram, index=prices.index)
+            }
+        except Exception as e:
+            logger.error(f"Грешка при изчисляване на MACD: {e}")
+            return {
+                'macd': pd.Series(index=prices.index),
+                'signal': pd.Series(index=prices.index),
+                'histogram': pd.Series(index=prices.index)
+            }
+    
+    def _calculate_bollinger_bands(self, prices: pd.Series) -> Dict[str, pd.Series]:
+        """
+        Изчислява Bollinger Bands
+        
+        Args:
+            prices: Серия с цени
+            
+        Returns:
+            Dict с Upper, Middle, Lower, Width и Position
+        """
+        try:
+            upper, middle, lower = talib.BBANDS(
+                prices.values, 
+                timeperiod=self.bb_period, 
+                nbdevup=self.bb_std, 
+                nbdevdn=self.bb_std, 
+                matype=0
+            )
+            
+            # Изчисляваме допълнителни метрики
+            width = (upper - lower) / middle  # Bollinger Band Width
+            position = (prices - lower) / (upper - lower)  # Position within bands (0-1)
+            
+            return {
+                'upper': pd.Series(upper, index=prices.index),
+                'middle': pd.Series(middle, index=prices.index),
+                'lower': pd.Series(lower, index=prices.index),
+                'width': pd.Series(width, index=prices.index),
+                'position': pd.Series(position, index=prices.index)
+            }
+        except Exception as e:
+            logger.error(f"Грешка при изчисляване на Bollinger Bands: {e}")
+            return {
+                'upper': pd.Series(index=prices.index),
+                'middle': pd.Series(index=prices.index),
+                'lower': pd.Series(index=prices.index),
+                'width': pd.Series(index=prices.index),
+                'position': pd.Series(index=prices.index)
+            }
+    
+    def get_rsi_signal(self, current_rsi: float) -> Dict[str, any]:
+        """
+        Генерира RSI сигнал
+        
+        Args:
+            current_rsi: Текуща RSI стойност
+            
+        Returns:
+            Dict с RSI сигнал информация
+        """
+        try:
+            if pd.isna(current_rsi):
+                return {'signal': 'HOLD', 'reason': 'RSI не е наличен', 'strength': 0.0}
+            
+            if current_rsi <= self.rsi_oversold:
+                signal = 'LONG'
+                strength = 0.8
+                reason = f"RSI oversold ({current_rsi:.1f} <= {self.rsi_oversold})"
+            elif current_rsi >= self.rsi_overbought:
+                signal = 'SHORT'
+                strength = 0.8
+                reason = f"RSI overbought ({current_rsi:.1f} >= {self.rsi_overbought})"
+            elif current_rsi <= 40:
+                signal = 'LONG'
+                strength = 0.6
+                reason = f"RSI близо до oversold ({current_rsi:.1f})"
+            elif current_rsi >= 60:
+                signal = 'SHORT'
+                strength = 0.6
+                reason = f"RSI близо до overbought ({current_rsi:.1f})"
+            else:
+                signal = 'HOLD'
+                strength = 0.3
+                reason = f"RSI в неутрална зона ({current_rsi:.1f})"
+            
+            return {
+                'signal': signal,
+                'strength': strength,
+                'reason': reason,
+                'rsi_value': current_rsi
+            }
+            
+        except Exception as e:
+            logger.error(f"Грешка при генериране на RSI сигнал: {e}")
+            return {'signal': 'HOLD', 'reason': f'Грешка: {e}', 'strength': 0.0}
+    
+    def get_macd_signal(self, macd: float, signal: float, histogram: float) -> Dict[str, any]:
+        """
+        Генерира MACD сигнал
+        
+        Args:
+            macd: Текуща MACD стойност
+            signal: Текуща Signal стойност
+            histogram: Текуща Histogram стойност
+            
+        Returns:
+            Dict с MACD сигнал информация
+        """
+        try:
+            if pd.isna(macd) or pd.isna(signal):
+                return {'signal': 'HOLD', 'reason': 'MACD не е наличен', 'strength': 0.0}
+            
+            # Проверяваме за bullish cross (MACD > Signal)
+            if macd > signal:
+                if histogram > 0:  # Положителен histogram
+                    signal_type = 'LONG'
+                    strength = 0.7
+                    reason = "MACD bullish cross + положителен histogram"
+                else:
+                    signal_type = 'LONG'
+                    strength = 0.5
+                    reason = "MACD bullish cross"
+            elif macd < signal:
+                if histogram < 0:  # Отрицателен histogram
+                    signal_type = 'SHORT'
+                    strength = 0.7
+                    reason = "MACD bearish cross + отрицателен histogram"
+                else:
+                    signal_type = 'SHORT'
+                    strength = 0.5
+                    reason = "MACD bearish cross"
+            else:
+                signal_type = 'HOLD'
+                strength = 0.3
+                reason = "MACD = Signal (неутрален)"
+            
+            return {
+                'signal': signal_type,
+                'strength': strength,
+                'reason': reason,
+                'macd_value': macd,
+                'signal_value': signal,
+                'histogram_value': histogram
+            }
+            
+        except Exception as e:
+            logger.error(f"Грешка при генериране на MACD сигнал: {e}")
+            return {'signal': 'HOLD', 'reason': f'Грешка: {e}', 'strength': 0.0}
+    
+    def get_bollinger_signal(self, current_price: float, upper: float, lower: float, position: float) -> Dict[str, any]:
+        """
+        Генерира Bollinger Bands сигнал
+        
+        Args:
+            current_price: Текуща цена
+            upper: Горна Bollinger Band
+            lower: Долна Bollinger Band
+            position: Позиция в bands (0-1)
+            
+        Returns:
+            Dict с Bollinger Bands сигнал информация
+        """
+        try:
+            if pd.isna(upper) or pd.isna(lower):
+                return {'signal': 'HOLD', 'reason': 'Bollinger Bands не са налични', 'strength': 0.0}
+            
+            # Проверяваме дали цената е под долната band (oversold)
+            if current_price <= lower:
+                signal = 'LONG'
+                strength = 0.6
+                reason = f"Цената е под долната Bollinger Band (${current_price:.2f} <= ${lower:.2f})"
+            # Проверяваме дали цената е над горната band (overbought)
+            elif current_price >= upper:
+                signal = 'SHORT'
+                strength = 0.6
+                reason = f"Цената е над горната Bollinger Band (${current_price:.2f} >= ${upper:.2f})"
+            # Проверяваме позицията в bands
+            elif position <= 0.2:
+                signal = 'LONG'
+                strength = 0.5
+                reason = f"Цената е близо до долната band (позиция: {position:.1%})"
+            elif position >= 0.8:
+                signal = 'SHORT'
+                strength = 0.5
+                reason = f"Цената е близо до горната band (позиция: {position:.1%})"
+            else:
+                signal = 'HOLD'
+                strength = 0.3
+                reason = f"Цената е в средата на Bollinger Bands (позиция: {position:.1%})"
+            
+            return {
+                'signal': signal,
+                'strength': strength,
+                'reason': reason,
+                'current_price': current_price,
+                'upper_band': upper,
+                'lower_band': lower,
+                'position': position
+            }
+            
+        except Exception as e:
+            logger.error(f"Грешка при генериране на Bollinger Bands сигнал: {e}")
+            return {'signal': 'HOLD', 'reason': f'Грешка: {e}', 'strength': 0.0}
+    
+    def get_all_indicators_signals(self, df: pd.DataFrame) -> Dict[str, any]:
+        """
+        Връща сигналите от всички индикатори
+        
+        Args:
+            df: DataFrame с изчислени индикатори
+            
+        Returns:
+            Dict с сигналите от всички индикатори
+        """
+        try:
+            if df.empty:
+                return {'error': 'DataFrame е празен'}
+            
+            # Взимаме последните стойности
+            latest = df.iloc[-1]
+            
+            # RSI сигнал
+            rsi_signal = self.get_rsi_signal(latest['RSI'])
+            
+            # MACD сигнал
+            macd_signal = self.get_macd_signal(
+                latest['MACD'], 
+                latest['MACD_Signal'], 
+                latest['MACD_Histogram']
+            )
+            
+            # Bollinger Bands сигнал
+            bb_signal = self.get_bollinger_signal(
+                latest['Close'],
+                latest['BB_Upper'],
+                latest['BB_Lower'],
+                latest['BB_Position']
+            )
+            
+            all_signals = {
+                'rsi': rsi_signal,
+                'macd': macd_signal,
+                'bollinger': bb_signal,
+                'current_price': latest['Close'],
+                'analysis_date': df.index[-1]
+            }
+            
+            logger.info("Всички индикаторни сигнали генерирани")
+            return all_signals
+            
+        except Exception as e:
+            logger.error(f"Грешка при генериране на всички индикаторни сигнали: {e}")
+            return {'error': f'Грешка: {e}'}
+
+if __name__ == "__main__":
+    # Тест на Technical Indicators модула
+    import toml
+    
+    # Зареждаме конфигурацията
+    config = toml.load('config.toml')
+    
+    # Създаваме тестови данни
+    test_data = pd.DataFrame({
+        'Open': [600, 610, 590, 620, 580, 630, 570, 640],
+        'High': [620, 620, 600, 630, 600, 640, 580, 650],
+        'Low': [590, 600, 580, 610, 570, 620, 560, 630],
+        'Close': [610, 590, 620, 580, 630, 570, 640, 650],
+        'Volume': [1000, 1100, 900, 1200, 800, 1300, 700, 1400]
+    }, index=pd.date_range('2024-01-01', periods=8, freq='D'))
+    
+    # Тестваме Technical Indicators анализатора
+    indicators = TechnicalIndicators(config)
+    df_with_indicators = indicators.calculate_indicators(test_data)
+    
+    print("Технически индикатори резултат:")
+    print(df_with_indicators[['Close', 'RSI', 'MACD', 'MACD_Signal', 'BB_Upper', 'BB_Lower']].tail())
+    
+    # Генерираме сигнали
+    all_signals = indicators.get_all_indicators_signals(df_with_indicators)
+    
+    print(f"\nRSI сигнал: {all_signals['rsi']['signal']} - {all_signals['rsi']['reason']}")
+    print(f"MACD сигнал: {all_signals['macd']['signal']} - {all_signals['macd']['reason']}")
+    print(f"Bollinger сигнал: {all_signals['bollinger']['signal']} - {all_signals['bollinger']['reason']}")

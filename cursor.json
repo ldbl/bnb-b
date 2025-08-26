@@ -1,0 +1,94 @@
+{
+  "workspace": {
+    "name": "BNB Swing Trading System",
+    "description": "Simple BNB trading analysis with Fibonacci, weekly tails, and technical indicators. Target: 75%+ accuracy."
+  },
+  "editor": {
+    "formatOnSave": true,
+    "tabSize": 4,
+    "insertSpaces": true,
+    "rulers": [88],
+    "wordWrap": "bounded",
+    "codeActionsOnSave": {
+      "source.organizeImports": true
+    }
+  },
+  "python": {
+    "defaultInterpreterPath": "./venv/bin/python",
+    "linting": {
+      "enabled": true,
+      "pylintEnabled": true,
+      "flake8Enabled": true,
+      "flake8Args": ["--max-line-length=88", "--ignore=E203,W503"]
+    },
+    "formatting": {
+      "provider": "black",
+      "args": ["--line-length", "88"]
+    },
+    "analysis": {
+      "typeCheckingMode": "basic"
+    }
+  },
+  "files": {
+    "associations": {
+      "*.py": "python",
+      "*.toml": "toml",
+      "*.md": "markdown",
+      "*.csv": "csv"
+    },
+    "exclude": {
+      "**/__pycache__": true,
+      "**/*.pyc": true,
+      "**/venv": true,
+      "**/env": true,
+      "**/.env": true,
+      "**/logs/*.log": true,
+      "**/data/cache": true,
+      "**/*.tmp": true
+    }
+  },
+  "search": {
+    "exclude": {
+      "**/venv": true,
+      "**/env": true,
+      "**/logs": true,
+      "**/data/cache": true,
+      "**/__pycache__": true
+    }
+  },
+  "terminal": {
+    "integrated": {
+      "shell": {
+        "linux": "/bin/bash",
+        "osx": "/bin/zsh",
+        "windows": "powershell.exe"
+      },
+      "cwd": "${workspaceFolder}"
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "ms-python.python",
+      "ms-python.black-formatter",
+      "ms-python.flake8",
+      "ms-python.pylint",
+      "ms-python.isort",
+      "ms-python.vscode-pylance",
+      "redhat.vscode-yaml",
+      "tamasfe.even-better-toml",
+      "mechatroner.rainbow-csv",
+      "ms-toolsai.jupyter"
+    ]
+  },
+  "ai": {
+    "assistant": {
+      "model": "claude-3.5-sonnet",
+      "context": "Simple BNB swing trading system with Fibonacci retracements and weekly tail analysis",
+      "rules": ".cursorrules",
+      "focus": ["fibonacci", "weekly_tails", "technical_analysis", "signal_validation"]
+    }
+  },
+  "trading": {
+    "symbol": "BNB/USDT",
+    "timeframes": ["1d", "1w"],
+    "indicators": {
