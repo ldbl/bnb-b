@@ -22,13 +22,18 @@ from validator import SignalValidator
 
 # Настройваме logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.ERROR,  # Променяме от WARNING на ERROR
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler('bnb_trading.log'),
-        logging.StreamHandler()
+        # Премахваме StreamHandler за да не се показват в конзолата
     ]
 )
+
+# Премахваме всички INFO съобщения от всички модули
+for logger_name in ['__main__', 'data_fetcher', 'fibonacci', 'weekly_tails', 'indicators', 'signal_generator', 'validator']:
+    logging.getLogger(logger_name).setLevel(logging.ERROR)
+
 logger = logging.getLogger(__name__)
 
 class BNBTradingSystem:
@@ -99,6 +104,9 @@ class BNBTradingSystem:
             
             # 5. Подготвяме резултатите за показване
             results = self._prepare_results_for_display(signal, daily_df, weekly_df)
+            
+            # Добавяме пълния сигнал към резултатите
+            results['full_signal'] = signal
             
             logger.info("BNB анализ завършен успешно")
             return results
@@ -229,12 +237,12 @@ class BNBTradingSystem:
                 return
             
             print("\n" + "="*80)
-            print("🚀 BNB TRADING SYSTEM - АНАЛИЗ РЕЗУЛТАТИ")
+            print("🚀 BNB TRADING SYSTEM - ТЕКУЩ СИГНАЛ ЗА ДНЕС")
             print("="*80)
             
             # Текущ сигнал
             current_signal = results['current_signal']
-            print(f"\n📊 ТЕКУЩ СИГНАЛ:")
+            print(f"\n🎯 ТЕКУЩ СИГНАЛ ЗА ДНЕС:")
             print(f"   Сигнал: {current_signal['signal']}")
             print(f"   Увереност: {current_signal['confidence']}")
             print(f"   Приоритет: {current_signal['priority']}")
@@ -306,6 +314,234 @@ class BNBTradingSystem:
             logger.error(f"Грешка при показване на резултатите: {e}")
             print(f"❌ Грешка при показване на резултатите: {e}")
     
+    def display_current_signal_detailed(self, signal: Dict):
+        """
+        Показва детайлна информация за текущия сигнал за днес
+        
+        Args:
+            signal: Генерираният сигнал
+        """
+        try:
+            print("\n" + "🎯" * 20)
+            print("🎯 ТЕКУЩ СИГНАЛ ЗА ДНЕС - КЛЮЧОВА ИНФОРМАЦИЯ 🎯")
+            print("🎯" * 20)
+            
+            # Основна информация за сигнала
+            print(f"\n🚀 СИГНАЛ: {signal['signal']} | Увереност: {signal.get('confidence', 0):.1f} | Приоритет: {signal['priority']}")
+            print(f"💡 Причина: {signal['reason'][:100]}...")
+            
+            # Fibonacci анализ - само най-важното
+            if 'fibonacci_analysis' in signal:
+                fib_analysis = signal['fibonacci_analysis']
+                current_price = fib_analysis.get('current_price', 0)
+                
+                # Показваме Fibonacci Extensions (цели нагоре)
+                if 'fibonacci_extensions' in fib_analysis:
+                    fib_extensions = fib_analysis['fibonacci_extensions']
+                    if fib_extensions:
+                        print(f"\n🚀 FIBONACCI EXTENSIONS (текуща цена: ${current_price:,.2f}):")
+                        
+                        # Сортираме extensions по разстояние от текущата цена (от най-близко до най-далечно)
+                        extensions_with_distances = []
+                        for level, price in fib_extensions.items():
+                            distance = price - current_price
+                            distance_pct = (distance / current_price) * 100
+                            extensions_with_distances.append((level, price, distance, distance_pct))
+                        
+                        # Сортираме по разстояние (от най-близко до най-далечно)
+                        extensions_with_distances.sort(key=lambda x: x[3])
+                        
+                        for level, price, distance, distance_pct in extensions_with_distances:
+                            # Определяме типа на нивото
+                            if level == 1.618:
+                                level_name = f"{level*100:.1f}% (ЗЛАТНО)"
+                            else:
+                                level_name = f"{level*100:.1f}%"
+                            
+                            print(f"  {level_name:<15} ${price:8,.2f} (🔴 съпротива) +{distance_pct:5.2f}% нагоре")
+                
+                print(f"\n🔢 FIBONACCI RETRACEMENT (текуща цена: ${current_price:,.2f}):")
+                
+                if 'fibonacci_levels' in fib_analysis:
+                    fib_levels = fib_analysis['fibonacci_levels']
+                    
+                    # Показваме само най-важните нива
+                    key_levels = [0.236, 0.382, 0.5, 0.618, 0.786]
+                    
+                    # Сортираме нивата по разстояние от текущата цена (от най-близко до най-далечно)
+                    levels_with_distances = []
+                    for level in key_levels:
+                        if level in fib_levels:
+                            price = fib_levels[level]
+                            distance = current_price - price
+                            distance_pct = (distance / current_price) * 100
+                            levels_with_distances.append((level, price, distance, distance_pct))
+                    
+                    # Сортираме по абсолютна стойност на разстоянието (от най-близко до най-далечно)
+                    levels_with_distances.sort(key=lambda x: abs(x[3]))
+                    
+                    for level, price, distance, distance_pct in levels_with_distances:
+                        # Определяме типа на нивото
+                        if level == 0.618:
+                            level_name = "61.8% (ЗЛАТНО СЕЧЕНИЕ)"
+                        elif level == 0.5:
+                            level_name = "50.0% (ПОПУЛЯРНО)"
+                        else:
+                            level_name = f"{level*100:.1f}%"
+                        
+                        # Определяме дали е поддръжка или съпротива
+                        # Ако текущата цена е НАД Fibonacci нивото, то е ПОДДРЪЖКА
+                        # Ако текущата цена е ПОД Fibonacci нивото, то е СЪПРОТИВА
+                        if distance > 0:
+                            level_type = "🟢 поддръжка"
+                            direction = "надолу"
+                        else:
+                            level_type = "🔴 съпротива"
+                            direction = "нагоре"
+                        
+                        print(f"   {level_name:<20} ${price:8,.2f} ({level_type}) - {abs(distance_pct):5.2f}% {direction}")
+            
+            # Technical Indicators - само стойностите
+            if 'indicators_signals' in signal:
+                indicators = signal['indicators_signals']
+                print(f"\n📊 ТЕХНИЧЕСКИ ИНДИКАТОРИ:")
+                
+                # RSI
+                if 'rsi' in indicators:
+                    rsi_value = indicators['rsi'].get('rsi_value', 0)
+                    rsi_status = "🟢 oversold" if rsi_value < 30 else "🔴 overbought" if rsi_value > 70 else "🟡 неутрален"
+                    print(f"   RSI: {rsi_value:5.1f} ({rsi_status})")
+                
+                # MACD
+                if 'macd' in indicators:
+                    macd_value = indicators['macd'].get('macd_value', 0)
+                    macd_status = "🟢 bullish" if macd_value > 0 else "🔴 bearish"
+                    print(f"   MACD: {macd_value:+8.3f} ({macd_status})")
+                
+                # Bollinger Bands
+                if 'bollinger' in indicators:
+                    bb_position = indicators['bollinger'].get('position', 0)
+                    if bb_position < -0.8:
+                        bb_status = "🟢 долна лента (oversold)"
+                    elif bb_position > 0.8:
+                        bb_status = "🔴 горна лента (overbought)"
+                    else:
+                        bb_status = "🟡 централна лента"
+                    print(f"   Bollinger: {bb_position:+6.2f} ({bb_status})")
+            
+            # Weekly Tails - само основната информация
+            if 'weekly_tails_analysis' in signal:
+                tails_analysis = signal['weekly_tails_analysis']
+                if 'tails_signal' in tails_analysis:
+                    tails_signal = tails_analysis['tails_signal']
+                    print(f"\n📈 WEEKLY TAILS: {tails_signal['signal']} (сила: {tails_signal.get('strength', 0):.2f})")
+            
+            # Fibonacci + Tails съвпадения - само топ 3
+            if 'confluence_info' in signal:
+                confluence = signal['confluence_info']
+                if confluence.get('confluence_points'):
+                    print(f"\n🎯 FIBONACCI + TAILS СЪВПАДЕНИЯ:")
+                    for i, point in enumerate(confluence['confluence_points'][:3], 1):
+                        print(f"   {i}. Fib {point['fib_level']*100:.1f}% + {point['tail_signal']} (сила: {point['confluence_score']:.2f})")
+            
+            # Optimal Levels анализ - ново!
+            if 'optimal_levels_analysis' in signal:
+                opt_analysis = signal['optimal_levels_analysis']
+                if 'error' not in opt_analysis:
+                    print(f"\n🎯 ОПТИМАЛНИ TRADING НИВА (базирани на исторически докосвания):")
+                    
+                    # Top Support нива
+                    if 'optimal_levels' in opt_analysis and opt_analysis['optimal_levels'].get('top_support_levels'):
+                        support_levels = opt_analysis['optimal_levels']['top_support_levels']
+                        print(f"   🟢 TOP SUPPORT НИВА:")
+                        for i, (price, touches) in enumerate(support_levels[:3], 1):
+                            print(f"      {i}. ${price:6.0f} ({touches:2d} докосвания)")
+                    
+                    # Top Resistance нива
+                    if 'optimal_levels' in opt_analysis and opt_analysis['optimal_levels'].get('top_resistance_levels'):
+                        resistance_levels = opt_analysis['optimal_levels']['top_resistance_levels']
+                        print(f"   🔴 TOP RESISTANCE НИВА:")
+                        for i, (price, touches) in enumerate(resistance_levels[:3], 1):
+                            print(f"      {i}. ${price:6.0f} ({touches:2d} докосвания)")
+                    
+                    # Trading препоръки
+                    if 'optimal_levels' in opt_analysis:
+                        try:
+                            from optimal_levels import OptimalLevelsAnalyzer
+                            analyzer = OptimalLevelsAnalyzer({})
+                            recommendations = analyzer.get_trading_recommendations(opt_analysis['optimal_levels'])
+                            if 'error' not in recommendations and 'long_strategy' in recommendations:
+                                long_strat = recommendations['long_strategy']
+                                print(f"   📈 LONG СТРАТЕГИЯ:")
+                                print(f"      Entry: ${long_strat.get('entry_price', 0):6.0f} ({long_strat.get('entry_type', 'individual')})")
+                                print(f"      Target: ${long_strat.get('target', 0):6.0f}")
+                                print(f"      Risk/Reward: 1:{long_strat.get('risk_reward', 0):.1f}")
+                        except:
+                            pass
+            
+            # Trend Analysis - ново!
+            if 'trend_analysis' in signal:
+                trend_analysis = signal['trend_analysis']
+                if 'error' not in trend_analysis:
+                    print(f"\n📈 TREND АНАЛИЗ (адаптивни entry стратегии):")
+                    
+                    # Основен тренд
+                    if 'combined_trend' in trend_analysis:
+                        combined = trend_analysis['combined_trend']
+                        print(f"   🎯 ОСНОВЕН ТРЕНД: {combined.get('primary_trend', 'UNKNOWN')}")
+                        print(f"      Увереност: {combined.get('trend_confidence', 'UNKNOWN')}")
+                        print(f"      Приключил: {'ДА' if combined.get('trend_completed') else 'НЕ'}")
+                    
+                    # Дневен тренд
+                    if 'daily_trend' in trend_analysis:
+                        daily = trend_analysis['daily_trend']
+                        print(f"   📅 ДНЕВЕН ТРЕНД: {daily.get('direction', 'UNKNOWN')} ({daily.get('strength', 'UNKNOWN')})")
+                        print(f"      Промяна: {daily.get('price_change_pct', 0):+.2f}% (${daily.get('start_price', 0):.0f} → ${daily.get('end_price', 0):.0f})")
+                    
+                    # Седмичен тренд
+                    if 'weekly_trend' in trend_analysis:
+                        weekly = trend_analysis['weekly_trend']
+                        print(f"   📊 СЕДМИЧЕН ТРЕНД: {weekly.get('direction', 'UNKNOWN')} ({weekly.get('strength', 'UNKNOWN')})")
+                        print(f"      Промяна: {weekly.get('price_change_pct', 0):+.2f}% (${weekly.get('start_price', 0):.0f} → ${weekly.get('end_price', 0):.0f})")
+                    
+                    # Range анализ
+                    if 'range_analysis' in trend_analysis:
+                        range_analysis = trend_analysis['range_analysis']
+                        print(f"   📏 RANGE АНАЛИЗ: {range_analysis.get('range_status', 'UNKNOWN')}")
+                        print(f"      Текущ range: {range_analysis.get('current_range_pct', 0):.1f}%")
+                        print(f"      Позиция в range: {range_analysis.get('range_position', 0):.1%}")
+                    
+                    # Адаптивна стратегия
+                    if 'adaptive_strategy' in trend_analysis:
+                        strategy = trend_analysis['adaptive_strategy']
+                        if 'error' not in strategy:
+                            print(f"   🎯 АДАПТИВНА СТРАТЕГИЯ:")
+                            if 'trend_based_entry' in strategy:
+                                entry = strategy['trend_based_entry']
+                                print(f"      Тип: {entry.get('type', 'UNKNOWN')}")
+                                print(f"      Описание: {entry.get('description', '')}")
+                            
+                            if 'timing_recommendation' in strategy:
+                                timing = strategy['timing_recommendation']
+                                print(f"      Време: {timing.get('timing', 'UNKNOWN')}")
+                                print(f"      Причина: {timing.get('reason', '')}")
+            
+            # Следващи цели - само основните
+            if 'next_targets' in signal:
+                next_targets = signal['next_targets']
+                print(f"\n🎯 СЛЕДВАЩИ ЦЕЛИ:")
+                if next_targets.get('entry_price'):
+                    print(f"   Entry: ${next_targets['entry_price']:,.2f}")
+                if next_targets.get('exit_price'):
+                    print(f"   Exit: ${next_targets['exit_price']:,.2f}")
+            
+            print(f"\n⏰ Анализ: {signal.get('analysis_date', pd.Timestamp.now()).strftime('%Y-%m-%d %H:%M')}")
+            print("🎯" * 20)
+            
+        except Exception as e:
+            logger.error(f"Грешка при показване на детайлния анализ: {e}")
+            print(f"❌ Грешка при показване на детайлния анализ: {e}")
+    
     def export_results(self, results: Dict, output_file: str = 'data/analysis_results.txt'):
         """
         Експортира резултатите в текстов файл
@@ -375,8 +611,6 @@ class BNBTradingSystem:
 def main():
     """Главна функция"""
     try:
-        print("🚀 Стартиране на BNB Trading System...")
-        
         # Създаваме системата
         trading_system = BNBTradingSystem()
         
@@ -387,20 +621,23 @@ def main():
             print(f"❌ Грешка: {results['error']}")
             return
         
-        # Показваме резултатите
-        trading_system.display_results(results)
+        # Използваме пълния сигнал с индикаторите
+        if 'full_signal' in results:
+            full_signal = results['full_signal']
+        else:
+            # Ако нямаме full_signal, трябва да го получим директно от signal_generator
+            # Засега използваме current_signal
+            full_signal = results['current_signal']
         
-        # Експортираме резултатите
+        # Показваме само красивия резултат
+        trading_system.display_current_signal_detailed(full_signal)
+        
+        # Експортираме резултатите тихо
         trading_system.export_results(results)
-        
-        # Експортираме обобщение на резултатите
         trading_system.validator.export_results_summary('data/results_summary.txt')
         
         print("\n✅ Анализът е завършен успешно!")
-        print("📁 Резултатите са записани в:")
-        print("   - data/analysis_results.txt")
-        print("   - data/results_summary.txt")
-        print("   - data/results.csv")
+        print("📁 Резултатите са записани в data/ директорията")
         
     except Exception as e:
         logger.error(f"Критична грешка: {e}")

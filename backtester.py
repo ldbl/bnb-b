@@ -460,6 +460,90 @@ class Backtester:
                     f.write(f"Сигнал: {signal['signal']} (увереност: {signal['confidence']:.2f})\n")
                     f.write(f"Приоритет: {signal['priority']}\n")
                     f.write(f"Цена: ${signal['fibonacci_analysis']['current_price']:,.2f}\n")
+                    
+                    # Fibonacci информация
+                    if 'fibonacci_analysis' in signal and 'fibonacci_levels' in signal['fibonacci_analysis']:
+                        fib_levels = signal['fibonacci_analysis']['fibonacci_levels']
+                        current_price = signal['fibonacci_analysis']['current_price']
+                        
+                        # Намираме най-близкото Fibonacci ниво
+                        closest_level = None
+                        min_distance = float('inf')
+                        for level, price in fib_levels.items():
+                            distance = abs(current_price - price)
+                            if distance < min_distance:
+                                min_distance = distance
+                                closest_level = (level, price)
+                        
+                        if closest_level:
+                            level, price = closest_level
+                            distance_pct = (min_distance / current_price) * 100
+                            level_type = "поддръжка" if current_price > price else "съпротива"
+                            f.write(f"Fibonacci: {level*100:.1f}% ({level_type}) - ${price:,.2f} (разстояние: {distance_pct:.2f}%)\n")
+                    
+                    # RSI информация
+                    if 'indicators_signals' in signal and 'rsi' in signal['indicators_signals']:
+                        rsi_data = signal['indicators_signals']['rsi']
+                        rsi_value = rsi_data.get('rsi_value', 0)
+                        rsi_signal = rsi_data.get('signal', 'HOLD')
+                        rsi_reason = rsi_data.get('reason', '')
+                        
+                        rsi_status = ""
+                        if rsi_value < 30:
+                            rsi_status = "oversold"
+                        elif rsi_value > 70:
+                            rsi_status = "overbought"
+                        else:
+                            rsi_status = "нейтрален"
+                        
+                        f.write(f"RSI: {rsi_value:.1f} ({rsi_status}) - {rsi_signal} - {rsi_reason}\n")
+                    
+                    # MACD информация
+                    if 'indicators_signals' in signal and 'macd' in signal['indicators_signals']:
+                        macd_data = signal['indicators_signals']['macd']
+                        macd_value = macd_data.get('macd_value', 0)
+                        macd_signal = macd_data.get('signal', 'HOLD')
+                        macd_reason = macd_data.get('reason', '')
+                        
+                        macd_status = "bullish" if macd_value > 0 else "bearish"
+                        f.write(f"MACD: {macd_value:+.3f} ({macd_status}) - {macd_signal} - {macd_reason}\n")
+                    
+                    # Bollinger Bands информация
+                    if 'indicators_signals' in signal and 'bollinger' in signal['indicators_signals']:
+                        bb_data = signal['indicators_signals']['bollinger']
+                        bb_position = bb_data.get('position', 0)
+                        bb_signal = bb_data.get('signal', 'HOLD')
+                        bb_reason = bb_data.get('reason', '')
+                        
+                        bb_status = ""
+                        if bb_position < -0.8:
+                            bb_status = "долна лента (oversold)"
+                        elif bb_position > 0.8:
+                            bb_status = "горна лента (overbought)"
+                        else:
+                            bb_status = "централна лента"
+                        
+                        f.write(f"Bollinger Bands: {bb_position:+.2f} ({bb_status}) - {bb_signal} - {bb_reason}\n")
+                    
+                    # Weekly Tails информация
+                    if 'weekly_tails_analysis' in signal and 'tails_signal' in signal['weekly_tails_analysis']:
+                        tails_signal = signal['weekly_tails_analysis']['tails_signal']
+                        tails_strength = tails_signal.get('strength', 0)
+                        tails_reason = tails_signal.get('reason', '')
+                        f.write(f"Weekly Tails: {tails_strength:.2f} - {tails_reason}\n")
+                    
+                    # Divergence информация (ако има)
+                    if 'divergence_analysis' in signal:
+                        div_data = signal['divergence_analysis']
+                        if div_data.get('rsi_bullish_divergence'):
+                            f.write("DIVERGENCE: ✅ Bullish RSI Divergence (цена ↓, RSI ↑)\n")
+                        elif div_data.get('rsi_bearish_divergence'):
+                            f.write("DIVERGENCE: ✅ Bearish RSI Divergence (цена ↑, RSI ↓)\n")
+                        elif div_data.get('macd_bullish_divergence'):
+                            f.write("DIVERGENCE: ✅ Bullish MACD Divergence (цена ↓, MACD ↑)\n")
+                        elif div_data.get('macd_bearish_divergence'):
+                            f.write("DIVERGENCE: ✅ Bearish MACD Divergence (цена ↑, MACD ↓)\n")
+                    
                     f.write(f"Резултат: {'УСПЕХ' if result['success'] else 'НЕУСПЕХ'} ({result['profit_loss_pct']:+.2f}%)\n")
                     f.write(f"Валидация: {result['validation_date'].strftime('%Y-%m-%d')} (${result['validation_price']:,.2f})\n")
                     if result['failure_reason']:

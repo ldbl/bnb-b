@@ -403,32 +403,5 @@ class WeeklyTailsAnalyzer:
 
 if __name__ == "__main__":
     # Тест на Weekly Tails модула
-    import toml
-    
-    # Зареждаме конфигурацията
-    config = toml.load('config.toml')
-    
-    # Създаваме тестови седмични данни
-    test_weekly_data = pd.DataFrame({
-        'Open': [600, 610, 590, 620, 580, 630, 570, 640],
-        'High': [620, 620, 600, 630, 600, 640, 580, 650],
-        'Low': [590, 600, 580, 610, 570, 620, 560, 630],
-        'Close': [610, 590, 620, 580, 630, 570, 640, 650],
-        'Volume': [1000, 1100, 900, 1200, 800, 1300, 700, 1400]
-    }, index=pd.date_range('2024-01-01', periods=8, freq='W'))
-    
-    # Тестваме Weekly Tails анализатора
-    tails_analyzer = WeeklyTailsAnalyzer(config)
-    trend_analysis = tails_analyzer.analyze_weekly_tails_trend(test_weekly_data)
-    
-    print("Weekly Tails анализ резултат:")
-    print(f"Общо опашки: {trend_analysis['total_tails']}")
-    print(f"Сильни опашки: {trend_analysis['strong_tails']}")
-    print(f"Умерени опашки: {trend_analysis['moderate_tails']}")
-    print(f"Сигнал: {trend_analysis['tails_signal']['signal']}")
-    print(f"Причина: {trend_analysis['tails_signal']['reason']}")
-    
-    # Показваме последните опашки
-    print("\nПоследни опашки:")
-    for tail in trend_analysis['tails_analysis'][:3]:
-        print(f"  {tail['date'].strftime('%Y-%m-%d')}: {tail['dominant_tail']} опашка, сила: {tail['tail_strength']:.1%}, сигнал: {tail['signal']}")
+    print("Weekly Tails модул за BNB Trading System")
+    print("Използвайте main.py за пълен анализ")

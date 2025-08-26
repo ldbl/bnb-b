@@ -160,17 +160,5 @@ class BNBDataFetcher:
 
 if __name__ == "__main__":
     # Тест на модула
-    fetcher = BNBDataFetcher()
-    data = fetcher.fetch_bnb_data(100)  # Тест с 100 дни
-    
-    print("Daily данни:")
-    print(data['daily'].head())
-    print(f"\nWeekly данни:")
-    print(data['weekly'].head())
-    
-    latest_price = fetcher.get_latest_price()
-    print(f"\nПоследна BNB цена: ${latest_price:,.2f}")
-    
-    # Валидация на данните
-    daily_quality = fetcher.validate_data_quality(data['daily'])
-    print(f"\nКачество на daily данните: {daily_quality}")
+    print("Data Fetcher модул за BNB Trading System")
+    print("Използвайте main.py за пълен анализ")

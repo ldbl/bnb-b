@@ -279,6 +279,9 @@ class FibonacciAnalyzer:
             if not fib_levels:
                 return {'error': 'Неуспешно изчисляване на Fibonacci нива'}
             
+            # Изчисляваме Fibonacci extensions
+            fib_extensions = self.calculate_fibonacci_extensions(swing_high, swing_low)
+            
             # Анализираме текущата цена
             current_price = df['Close'].iloc[-1]
             fib_signal = self.get_fibonacci_signal(current_price, fib_levels)
@@ -288,6 +291,7 @@ class FibonacciAnalyzer:
                 'swing_low': swing_low,
                 'swing_size': abs(swing_high - swing_low) / swing_low,
                 'fibonacci_levels': fib_levels,
+                'fibonacci_extensions': fib_extensions,
                 'current_price': current_price,
                 'fibonacci_signal': fib_signal,
                 'analysis_date': df.index[-1]
@@ -299,31 +303,45 @@ class FibonacciAnalyzer:
         except Exception as e:
             logger.error(f"Грешка при Fibonacci тренд анализ: {e}")
             return {'error': f'Грешка: {e}'}
+    
+    def calculate_fibonacci_extensions(self, swing_high: float, swing_low: float) -> Dict[float, float]:
+        """
+        Изчислява Fibonacci extension нива за целите нагоре
+        
+        Args:
+            swing_high: Цена на swing high
+            swing_low: Цена на swing low
+            
+        Returns:
+            Dict с Fibonacci extension нива и съответните цени
+        """
+        try:
+            if swing_high is None or swing_low is None:
+                return {}
+            
+            # Изчисляваме разликата между swing high и low
+            price_range = swing_high - swing_low
+            
+            # Extension нива (над 100%)
+            extension_levels = [1.0, 1.272, 1.414, 1.618, 2.0, 2.618]
+            
+            # Изчисляваме extension нива
+            fib_extensions = {}
+            for level in extension_levels:
+                # Extension: swing_low + (level * price_range)
+                fib_extensions[level] = swing_low + (level * price_range)
+            
+            logger.info("Fibonacci extension нива изчислени:")
+            for level, price in fib_extensions.items():
+                logger.info(f"  {level*100:5.1f}%: ${price:,.2f}")
+            
+            return fib_extensions
+            
+        except Exception as e:
+            logger.error(f"Грешка при изчисляване на Fibonacci extensions: {e}")
+            return {}
 
 if __name__ == "__main__":
     # Тест на Fibonacci модула
-    import toml
-    
-    # Зареждаме конфигурацията
-    config = toml.load('config.toml')
-    
-    # Създаваме тестови данни
-    test_data = pd.DataFrame({
-        'Open': [600, 610, 590, 620, 580, 630, 570, 640],
-        'High': [620, 620, 600, 630, 600, 640, 580, 650],
-        'Low': [590, 600, 580, 610, 570, 620, 560, 630],
-        'Close': [610, 590, 620, 580, 630, 570, 640, 650],
-        'Volume': [1000, 1100, 900, 1200, 800, 1300, 700, 1400]
-    }, index=pd.date_range('2024-01-01', periods=8, freq='D'))
-    
-    # Тестваме Fibonacci анализатора
-    fib_analyzer = FibonacciAnalyzer(config)
-    trend_analysis = fib_analyzer.analyze_fibonacci_trend(test_data)
-    
-    print("Fibonacci анализ резултат:")
-    print(f"Swing High: ${trend_analysis['swing_high']:,.2f}")
-    print(f"Swing Low: ${trend_analysis['swing_low']:,.2f}")
-    print(f"Swing Size: {trend_analysis['swing_size']:.1%}")
-    print(f"Текуща цена: ${trend_analysis['current_price']:,.2f}")
-    print(f"Fibonacci сигнал: {trend_analysis['fibonacci_signal']['signal']}")
-    print(f"Причина: {trend_analysis['fibonacci_signal']['reason']}")
+    print("Fibonacci модул за BNB Trading System")
+    print("Използвайте main.py за пълен анализ")

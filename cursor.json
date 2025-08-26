@@ -92,3 +92,9 @@
     "symbol": "BNB/USDT",
     "timeframes": ["1d", "1w"],
     "indicators": {
+      "rsi": "Relative Strength Index",
+      "macd": "Moving Average Convergence Divergence",
+      "bollinger": "Bollinger Bands"
+    }
+  }
+}

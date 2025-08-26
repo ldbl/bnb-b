@@ -419,47 +419,5 @@ class SignalValidator:
 
 if __name__ == "__main__":
     # Тест на Signal Validator модула
-    validator = SignalValidator('test_results.csv')
-    
-    # Създаваме тестови сигнал
-    test_signal = {
-        'signal': 'LONG',
-        'confidence': 0.8,
-        'reason': 'Тестов сигнал',
-        'analysis_date': pd.Timestamp.now(),
-        'fibonacci_analysis': {
-            'current_price': 600.0,
-            'fibonacci_signal': {'signal': 'LONG', 'strength': 0.8}
-        },
-        'weekly_tails_analysis': {
-            'tails_signal': {'signal': 'LONG', 'strength': 0.7}
-        },
-        'priority': 'HIGH',
-        'risk_level': 'MEDIUM'
-    }
-    
-    # Записваме сигнала
-    success = validator.save_signal(test_signal)
-    print(f"Сигнал записан: {success}")
-    
-    # Проверяваме резултата след 2 седмици (симулираме)
-    validation_date = test_signal['analysis_date'] + pd.Timedelta(days=14)
-    current_price = 650.0  # Симулираме успешен LONG
-    
-    result = validator.check_signal_result(
-        test_signal['analysis_date'], 
-        current_price, 
-        target_price=650.0
-    )
-    
-    if 'error' not in result:
-        print(f"Валидация: {result['signal_type']} на {result['signal_date'].strftime('%Y-%m-%d')}")
-        print(f"Резултат: {'УСПЕХ' if result['success'] else 'НЕУСПЕХ'} ({result['profit_loss_pct']:+.2f}%)")
-    
-    # Статистика
-    stats = validator.get_accuracy_stats(30)
-    if 'error' not in stats:
-        print(f"\nСтатистика: {stats['overall_accuracy']:.1f}% точност")
-    
-    # Експортираме обобщение
-    validator.export_results_summary('test_summary.txt')
+    print("Signal Validator модул за BNB Trading System")
+    print("Използвайте main.py за пълен анализ")

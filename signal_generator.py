@@ -11,6 +11,8 @@ import logging
 from fibonacci import FibonacciAnalyzer
 from weekly_tails import WeeklyTailsAnalyzer
 from indicators import TechnicalIndicators
+from optimal_levels import OptimalLevelsAnalyzer
+from trend_analyzer import TrendAnalyzer
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -39,6 +41,8 @@ class SignalGenerator:
         self.fib_analyzer = FibonacciAnalyzer(config)
         self.tails_analyzer = WeeklyTailsAnalyzer(config)
         self.indicators = TechnicalIndicators(config)
+        self.optimal_levels_analyzer = OptimalLevelsAnalyzer(config)
+        self.trend_analyzer = TrendAnalyzer(config)
         
         logger.info("Signal Generator инициализиран")
         logger.info(f"Приоритет: Fibonacci={self.fibonacci_weight}, Weekly Tails={self.weekly_tails_weight}")
@@ -78,7 +82,19 @@ class SignalGenerator:
                 logger.warning(f"Индикаторни сигнали неуспешни: {indicators_signals['error']}")
                 indicators_signals = None
             
-            # 4. Проверяваме за Fibonacci + Tails съвпадения
+            # 4. Optimal Levels анализ
+            optimal_levels_analysis = self.optimal_levels_analyzer.analyze_optimal_levels(daily_df, weekly_df)
+            if 'error' in optimal_levels_analysis:
+                logger.warning(f"Optimal Levels анализ неуспешен: {optimal_levels_analysis['error']}")
+                optimal_levels_analysis = None
+            
+            # 5. Trend Analysis
+            trend_analysis = self.trend_analyzer.analyze_trend(daily_df, weekly_df)
+            if 'error' in trend_analysis:
+                logger.warning(f"Trend анализ неуспешен: {trend_analysis['error']}")
+                trend_analysis = None
+            
+            # 6. Проверяваме за Fibonacci + Tails съвпадения
             confluence_info = None
             if fib_analysis and tails_analysis:
                 confluence_info = self.tails_analyzer.check_fib_tail_confluence(
@@ -87,7 +103,7 @@ class SignalGenerator:
                     tails_analysis['tails_analysis']
                 )
             
-            # 5. Генерираме финален сигнал
+            # 7. Генерираме финален сигнал
             final_signal = self._combine_signals(
                 fib_analysis, 
                 tails_analysis, 
@@ -95,13 +111,15 @@ class SignalGenerator:
                 confluence_info
             )
             
-            # 6. Добавяме детайлна информация
+            # 8. Добавяме детайлна информация
             signal_details = self._create_signal_details(
                 final_signal,
                 fib_analysis,
                 tails_analysis,
                 indicators_signals,
-                confluence_info
+                confluence_info,
+                optimal_levels_analysis,
+                trend_analysis
             )
             
             logger.info(f"Сигнал генериран: {final_signal['signal']} (увереност: {final_signal['confidence']:.2f})")
@@ -250,7 +268,8 @@ class SignalGenerator:
     
     def _create_signal_details(self, final_signal: Dict, fib_analysis: Dict, 
                               tails_analysis: Dict, indicators_signals: Dict, 
-                              confluence_info: Dict) -> Dict[str, any]:
+                              confluence_info: Dict, optimal_levels_analysis: Dict = None, 
+                              trend_analysis: Dict = None) -> Dict[str, any]:
         """
         Създава детайлна информация за сигнала
         
@@ -260,6 +279,8 @@ class SignalGenerator:
             tails_analysis: Weekly Tails анализ
             indicators_signals: Индикаторни сигнали
             confluence_info: Fibonacci + Tails съвпадения
+            optimal_levels_analysis: Optimal Levels анализ
+            trend_analysis: Trend Analysis
             
         Returns:
             Dict с детайлна информация за сигнала
@@ -275,6 +296,8 @@ class SignalGenerator:
                 'weekly_tails_analysis': tails_analysis,
                 'indicators_signals': indicators_signals,
                 'confluence_info': confluence_info,
+                'optimal_levels_analysis': optimal_levels_analysis,
+                'trend_analysis': trend_analysis,
                 'next_targets': self._get_next_targets(final_signal, fib_analysis, tails_analysis),
                 'risk_level': self._calculate_risk_level(final_signal, fib_analysis, tails_analysis)
             }
@@ -443,42 +466,5 @@ class SignalGenerator:
 
 if __name__ == "__main__":
     # Тест на Signal Generator модула
-    import toml
-    
-    # Зареждаме конфигурацията
-    config = toml.load('config.toml')
-    
-    # Създаваме тестови данни
-    test_daily_data = pd.DataFrame({
-        'Open': [600, 610, 590, 620, 580, 630, 570, 640],
-        'High': [620, 620, 600, 630, 600, 640, 580, 650],
-        'Low': [590, 600, 580, 610, 570, 620, 560, 630],
-        'Close': [610, 590, 620, 580, 630, 570, 640, 650],
-        'Volume': [1000, 1100, 900, 1200, 800, 1300, 700, 1400]
-    }, index=pd.date_range('2024-01-01', periods=8, freq='D'))
-    
-    test_weekly_data = pd.DataFrame({
-        'Open': [600, 610, 590, 620],
-        'High': [620, 620, 600, 630],
-        'Low': [590, 600, 580, 610],
-        'Close': [610, 590, 620, 580],
-        'Volume': [1000, 1100, 900, 1200]
-    }, index=pd.date_range('2024-01-01', periods=4, freq='W'))
-    
-    # Тестваме Signal Generator
-    signal_gen = SignalGenerator(config)
-    signal = signal_gen.generate_signal(test_daily_data, test_weekly_data)
-    
-    print("Signal Generator резултат:")
-    print(f"Сигнал: {signal['signal']}")
-    print(f"Увереност: {signal['confidence']:.2f}")
-    print(f"Приоритет: {signal['priority']}")
-    print(f"Причина: {signal['reason']}")
-    print(f"Ниво на риска: {signal['risk_level']}")
-    
-    if 'next_targets' in signal:
-        print(f"\nСледващи цели:")
-        if signal['next_targets'].get('entry_price'):
-            print(f"  Entry: ${signal['next_targets']['entry_price']:,.2f}")
-        if signal['next_targets'].get('exit_price'):
-            print(f"  Exit: ${signal['next_targets']['exit_price']:,.2f}")
+    print("Signal Generator модул за BNB Trading System")
+    print("Използвайте main.py за пълен анализ")

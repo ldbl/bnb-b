@@ -372,30 +372,5 @@ class TechnicalIndicators:
 
 if __name__ == "__main__":
     # Тест на Technical Indicators модула
-    import toml
-    
-    # Зареждаме конфигурацията
-    config = toml.load('config.toml')
-    
-    # Създаваме тестови данни
-    test_data = pd.DataFrame({
-        'Open': [600, 610, 590, 620, 580, 630, 570, 640],
-        'High': [620, 620, 600, 630, 600, 640, 580, 650],
-        'Low': [590, 600, 580, 610, 570, 620, 560, 630],
-        'Close': [610, 590, 620, 580, 630, 570, 640, 650],
-        'Volume': [1000, 1100, 900, 1200, 800, 1300, 700, 1400]
-    }, index=pd.date_range('2024-01-01', periods=8, freq='D'))
-    
-    # Тестваме Technical Indicators анализатора
-    indicators = TechnicalIndicators(config)
-    df_with_indicators = indicators.calculate_indicators(test_data)
-    
-    print("Технически индикатори резултат:")
-    print(df_with_indicators[['Close', 'RSI', 'MACD', 'MACD_Signal', 'BB_Upper', 'BB_Lower']].tail())
-    
-    # Генерираме сигнали
-    all_signals = indicators.get_all_indicators_signals(df_with_indicators)
-    
-    print(f"\nRSI сигнал: {all_signals['rsi']['signal']} - {all_signals['rsi']['reason']}")
-    print(f"MACD сигнал: {all_signals['macd']['signal']} - {all_signals['macd']['reason']}")
-    print(f"Bollinger сигнал: {all_signals['bollinger']['signal']} - {all_signals['bollinger']['reason']}")
+    print("Technical Indicators модул за BNB Trading System")
+    print("Използвайте main.py за пълен анализ")
