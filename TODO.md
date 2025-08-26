@@ -91,6 +91,12 @@ min_fibonacci_resistance = true
 volume_confirmation = true
 min_tail_strength = 0.6
 burn_filter = true
+price_action_rejection = true
+multi_timeframe_alignment = true
+market_regime_detection = true
+signal_quality_scoring = true
+min_quality_score = 70
+confidence_threshold = 0.8
 
 [long_signals]
 enabled = true
@@ -104,6 +110,23 @@ pre_burn_window_days = 14
 post_burn_window_days = 7
 burn_confidence_bonus = 0.15
 burn_target_pct = 0.05
+
+[market_regimes]
+strong_bull = "SHORT_DISABLED"
+weak_bull = "SHORT_HIGH_CONFIDENCE"
+range = "SHORT_ENABLED"
+bear = "SHORT_ENABLED"
+
+[price_action]
+rejection_wick_multiplier = 2.0
+min_rejection_distance = 0.01
+
+[signal_scoring]
+fibonacci_weight = 35
+weekly_tails_weight = 30
+trend_weight = 20
+volume_weight = 10
+divergence_weight = 5
 
 [risk_management]
 stop_loss_enabled = true
@@ -122,7 +145,27 @@ atr_multiplier = 2.0
 2. [ ] Поправи Fibonacci logic
 3. [ ] Добави volume confirmation
 4. [ ] Добави BNB Burn filter за SHORT
-5. [ ] Тествай с backtest
+5. [ ] Добави Price Action Rejection Patterns (ЛЕСНО)
+   - [ ] Проверка за rejection от resistance нива
+   - [ ] Long upper wick (rejection) - wick > body * 2
+   - [ ] SHORT само след потвърждение на rejection
+6. [ ] Добави Multi-timeframe Alignment (ЛЕСНО)
+   - [ ] Daily трябва да показва слабост (DOWNTREND или WEAK)
+   - [ ] Weekly не трябва да е в силен UPTREND
+   - [ ] SHORT само когато и двата timeframe са aligned
+7. [ ] Добави Market Regime Detection (ЛЕСНО)
+   - [ ] STRONG_BULL: SHORT изключен
+   - [ ] WEAK_BULL: SHORT с confidence threshold 0.8
+   - [ ] RANGE: SHORT enabled
+   - [ ] BEAR: SHORT enabled
+8. [ ] Добави Signal Quality Scoring за SHORT (ЛЕСНО)
+   - [ ] Fibonacci alignment: 35 точки
+   - [ ] Weekly tails: 30 точки
+   - [ ] Trend alignment: 20 точки
+   - [ ] Volume confirmation: 10 точки
+   - [ ] Divergence: 5 точки
+   - [ ] SHORT само при score > 70
+9. [ ] Тествай с backtest
 
 ### **Phase 2: LONG Enhancement + BNB Burn (3-4 дни)**
 1. [ ] Добави EMA crossover потвърждение
