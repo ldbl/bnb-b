@@ -207,6 +207,7 @@ weekly_tails_weight = 30
 trend_weight = 20
 volume_weight = 10
 divergence_weight = 5
+min_short_score = 70  # Минимален score за SHORT сигнали
 
 [risk_management]
 stop_loss_enabled = true

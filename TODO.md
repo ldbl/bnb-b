@@ -236,13 +236,17 @@ atr_multiplier = 2.0
 - [x] Интегрирай regime filter в основната логика за SHORT сигнали
 - [x] Тестване на новата логика
 
-#### **1.9 Signal Quality Scoring за SHORT (НАЧАЛНА)**
-- [ ] Fibonacci alignment: 35 точки
-- [ ] Weekly tails: 30 точки
-- [ ] Trend alignment: 20 точки
-- [ ] Volume confirmation: 10 точки
-- [ ] Divergence: 5 точки
-- [ ] SHORT само при score > 70
+#### **✅ 1.9 Signal Quality Scoring за SHORT (ЗАВЪРШЕНА)**
+- [x] Добави min_short_score = 70 в config.toml
+- [x] Създай `_calculate_signal_quality_score()` метод в signal_generator.py
+- [x] Fibonacci alignment: 35 точки (от config)
+- [x] Weekly tails: 30 точки (от config)
+- [x] Trend alignment: 20 точки (от config)
+- [x] Volume confirmation: 10 точки (от config)
+- [x] Divergence: 5 точки (от config)
+- [x] SHORT само при score > 70
+- [x] Интегрирай scoring в основната логика за SHORT сигнали
+- [x] Тестване на новата логика
 - [ ] Имплементирай scoring system
 
 #### **1.10 Backtesting & Validation (НАЧАЛНА)**

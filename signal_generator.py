@@ -567,6 +567,26 @@ class SignalGenerator:
                         confidence = 0.15
                         signal_reasons.append(f"SHORT BLOCKED by market regime filter: {regime_filter_applied['reason']}")
 
+                # Phase 1.9: Signal Quality Scoring за SHORT сигнали
+                if final_signal == 'SHORT':
+                    # Определяме дали има volume confirmation
+                    volume_confirmed = False
+                    if daily_df is not None:
+                        volume_confirmation_result = self._check_volume_confirmation_for_short(daily_df)
+                        volume_confirmed = volume_confirmation_result.get('confirmed', False)
+
+                    # Изчисляваме signal quality score
+                    quality_score = self._calculate_signal_quality_score(
+                        fib_analysis, tails_analysis, trend_analysis,
+                        volume_confirmed, divergence_analysis
+                    )
+
+                    if not quality_score.get('passes_threshold', False):
+                        final_signal = 'HOLD'
+                        confidence = 0.1
+                        signal_reasons.append(f"SHORT BLOCKED by quality scoring: Score {quality_score['percentage_score']:.1f}% < {quality_score['min_threshold']}% threshold")
+                        logger.info(f"Quality score breakdown: {quality_score['score_breakdown']}")
+
                 # Проверяваме дали отговаря на изискванията (по-гъвкаво)
                 if self.fib_tail_required:
                     has_fib_or_tail = (
@@ -1431,6 +1451,170 @@ class SignalGenerator:
                 'regime': 'UNKNOWN',
                 'policy_applied': 'SHORT_ENABLED',
                 'error': str(e)
+            }
+
+    def _calculate_signal_quality_score(self, fib_analysis: Dict, tails_analysis: Dict,
+                                       trend_analysis: Dict, volume_confirmation: bool = False,
+                                       divergence_analysis: Dict = None) -> Dict[str, Any]:
+        """
+        Phase 1.9: Изчислява signal quality score за SHORT сигнали
+
+        Изчислява общ quality score базиран на:
+        - Fibonacci alignment: 35 точки (макс)
+        - Weekly tails: 30 точки (макс)
+        - Trend alignment: 20 точки (макс)
+        - Volume confirmation: 10 точки (макс)
+        - Divergence: 5 точки (макс)
+
+        Общ максимален score: 100 точки
+        Минимален threshold за SHORT: 70 точки
+
+        Args:
+            fib_analysis: Резултат от fibonacci анализ
+            tails_analysis: Резултат от weekly tails анализ
+            trend_analysis: Резултат от trend анализ
+            volume_confirmation: Дали има volume confirmation
+            divergence_analysis: Резултат от divergence анализ (опционално)
+
+        Returns:
+            Dict с quality score и breakdown по компоненти
+        """
+        try:
+            # Извличаме теглата от конфигурацията
+            config = self.config.get('signal_scoring', {})
+            fibonacci_weight = config.get('fibonacci_weight', 35)
+            weekly_tails_weight = config.get('weekly_tails_weight', 30)
+            trend_weight = config.get('trend_weight', 20)
+            volume_weight = config.get('volume_weight', 10)
+            divergence_weight = config.get('divergence_weight', 5)
+
+            score_breakdown = {
+                'fibonacci_score': 0,
+                'fibonacci_max': fibonacci_weight,
+                'fibonacci_reason': 'No Fibonacci analysis',
+
+                'tails_score': 0,
+                'tails_max': weekly_tails_weight,
+                'tails_reason': 'No Weekly tails analysis',
+
+                'trend_score': 0,
+                'trend_max': trend_weight,
+                'trend_reason': 'No Trend analysis',
+
+                'volume_score': 0,
+                'volume_max': volume_weight,
+                'volume_reason': 'No Volume confirmation',
+
+                'divergence_score': 0,
+                'divergence_max': divergence_weight,
+                'divergence_reason': 'No Divergence analysis'
+            }
+
+            total_score = 0
+            max_possible_score = fibonacci_weight + weekly_tails_weight + trend_weight + volume_weight + divergence_weight
+
+            # 1. Fibonacci alignment scoring (35 точки макс)
+            if fib_analysis and 'fibonacci_signal' in fib_analysis:
+                fib_signal = fib_analysis['fibonacci_signal']
+                if fib_signal.get('signal') == 'SHORT':
+                    fib_strength = fib_signal.get('strength', 0)
+                    fib_score = int(fib_strength * fibonacci_weight)
+                    score_breakdown['fibonacci_score'] = fib_score
+                    score_breakdown['fibonacci_reason'] = f'Fibonacci SHORT signal strength: {fib_strength:.2f}'
+                    total_score += fib_score
+                elif fib_signal.get('signal') == 'HOLD':
+                    score_breakdown['fibonacci_reason'] = 'Fibonacci signal is HOLD'
+                else:
+                    score_breakdown['fibonacci_reason'] = f'Fibonacci signal is {fib_signal.get("signal", "UNKNOWN")}'
+
+            # 2. Weekly tails scoring (30 точки макс)
+            if tails_analysis and tails_analysis.get('signal') == 'SHORT':
+                tails_strength = tails_analysis.get('strength', 0)
+                tails_score = int(tails_strength * weekly_tails_weight)
+                score_breakdown['tails_score'] = tails_score
+                score_breakdown['tails_reason'] = f'Weekly tails SHORT strength: {tails_strength:.2f}'
+                total_score += tails_score
+            elif tails_analysis:
+                score_breakdown['tails_reason'] = f'Weekly tails signal: {tails_analysis.get("signal", "UNKNOWN")}'
+
+            # 3. Trend alignment scoring (20 точки макс)
+            if trend_analysis and 'combined_trend' in trend_analysis:
+                combined_trend = trend_analysis['combined_trend']
+                daily_trend = trend_analysis.get('daily_trend', {})
+                weekly_trend = trend_analysis.get('weekly_trend', {})
+
+                # Trend alignment за SHORT: daily слабост + weekly не силен uptrend
+                trend_alignment_score = 0
+
+                # Daily тренд слабост (10 точки)
+                daily_direction = daily_trend.get('direction', '')
+                daily_strength = daily_trend.get('strength', '')
+                if daily_direction in ['DOWNTREND', 'BEARISH'] or daily_strength in ['WEAK', 'MODERATE']:
+                    trend_alignment_score += 10
+
+                # Weekly тренд не силен uptrend (10 точки)
+                weekly_direction = weekly_trend.get('direction', '')
+                weekly_strength = weekly_trend.get('strength', '')
+                if not (weekly_direction in ['UPTREND', 'BULLISH'] and weekly_strength == 'STRONG'):
+                    trend_alignment_score += 10
+
+                trend_score = int((trend_alignment_score / 20.0) * trend_weight)
+                score_breakdown['trend_score'] = trend_score
+                score_breakdown['trend_reason'] = f'Trend alignment: Daily {daily_direction}({daily_strength}), Weekly {weekly_direction}({weekly_strength})'
+                total_score += trend_score
+
+            # 4. Volume confirmation scoring (10 точки макс)
+            if volume_confirmation:
+                score_breakdown['volume_score'] = volume_weight
+                score_breakdown['volume_reason'] = 'Volume confirmation present'
+                total_score += volume_weight
+            else:
+                score_breakdown['volume_reason'] = 'No volume confirmation'
+
+            # 5. Divergence scoring (5 точки макс)
+            if divergence_analysis:
+                # Търсим bearish divergence за SHORT сигнали
+                rsi_divergence = divergence_analysis.get('rsi_divergence', {})
+                macd_divergence = divergence_analysis.get('macd_divergence', {})
+
+                divergence_present = False
+                if rsi_divergence.get('type') == 'bearish' or macd_divergence.get('type') == 'bearish':
+                    divergence_present = True
+
+                if divergence_present:
+                    score_breakdown['divergence_score'] = divergence_weight
+                    score_breakdown['divergence_reason'] = 'Bearish divergence detected'
+                    total_score += divergence_weight
+                else:
+                    score_breakdown['divergence_reason'] = 'No bearish divergence'
+
+            # Изчисляваме percentage score
+            percentage_score = (total_score / max_possible_score) * 100 if max_possible_score > 0 else 0
+
+            # Определяме дали сигнала преминава threshold
+            min_short_score = config.get('min_short_score', 70)
+            passes_threshold = percentage_score >= min_short_score
+
+            return {
+                'total_score': total_score,
+                'max_possible_score': max_possible_score,
+                'percentage_score': percentage_score,
+                'passes_threshold': passes_threshold,
+                'min_threshold': min_short_score,
+                'score_breakdown': score_breakdown,
+                'recommendation': 'SHORT_ALLOWED' if passes_threshold else 'SHORT_BLOCKED'
+            }
+
+        except Exception as e:
+            logger.error(f"Грешка при signal quality scoring: {e}")
+            return {
+                'total_score': 0,
+                'max_possible_score': 100,
+                'percentage_score': 0,
+                'passes_threshold': False,
+                'min_threshold': 70,
+                'error': str(e),
+                'recommendation': 'SHORT_BLOCKED'
             }
     
     def _create_signal_details(self, final_signal: Dict, fib_analysis: Dict, 
