@@ -22,6 +22,11 @@ volume_multiplier = 1.5
 fibonacci_resistance_check = true
 fibonacci_proximity_threshold = 0.02  # Колко близо трябва да е опашката до Fib resistance
 
+# Phase 1.4: Volume confirmation за SHORT сигнали
+volume_confirmation_for_short = true
+volume_lookback_periods = 14  # Периоди за изчисляване на среден обем
+volume_multiplier_threshold = 1.5  # Колко пъти по-голям трябва да е обема
+
 [indicators]
 rsi_period = 14
 rsi_overbought = 80

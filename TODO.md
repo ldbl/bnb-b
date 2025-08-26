@@ -187,19 +187,22 @@ atr_multiplier = 2.0
 - [x] Добави rejection_threshold в config.toml
 - [x] Тестване и валидация на новата логика
 
-#### **🚀 1.3 Weekly Tails за SHORT (АКТИВНА ЗАДАЧА)**
+#### **✅ 1.3 Weekly Tails за SHORT (ЗАВЪРШЕНА)**
 - [x] SHORT само при **bearish tails** (долни опашки) - вече работи
 - [x] Добави проверка за **tail strength > 0.6** - вече работи
-- [ ] SHORT само когато опашката е **над** Fibonacci resistance
-- [ ] Добави `_check_tail_above_fibonacci_resistance()` метод
-- [ ] Интегрирай проверка в `get_weekly_tails_signal()` метода
-- [ ] Добави fibonacci_resistance_check параметър в config.toml
-- [ ] Тестване на новата логика
+- [x] SHORT само когато опашката е **над** Fibonacci resistance
+- [x] Добави `_check_tail_above_fibonacci_resistance()` метод
+- [x] Интегрирай проверка в `signal_generator.py` с `_apply_fibonacci_resistance_filter_for_short()`
+- [x] Добави fibonacci_resistance_check и fibonacci_proximity_threshold в config.toml
+- [x] Тестване на новата логика
 
-#### **1.4 Volume Confirmation (НАЧАЛНА)**
-- [ ] Добави **volume_confirmation** за SHORT сигнали
-- [ ] SHORT само при **обем > 1.5x среден** за 14 периода
-- [ ] Използвай съществуващия `indicators.py`
+#### **✅ 1.4 Volume Confirmation за SHORT (ЗАВЪРШЕНА)**
+- [x] Добави **volume_confirmation** за SHORT сигнали
+- [x] SHORT само при **обем > 1.5x среден** за 14 периода
+- [x] Създай `_check_volume_confirmation_for_short()` метод
+- [x] Добави volume_confirmation_for_short и volume_multiplier_threshold в config.toml
+- [x] Интегрирай в signal_generator.py
+- [x] Тестване на новата логика
 
 #### **1.5 BNB Burn Filter за SHORT (НАЧАЛНА)**
 - [ ] **НЕ генерирай SHORT при burn** (14 дни преди и 7 дни след)

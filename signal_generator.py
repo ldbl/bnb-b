@@ -527,6 +527,14 @@ class SignalGenerator:
                         confidence = 0.4
                         signal_reasons.append(f"SHORT BLOCKED by Fibonacci resistance filter: {fib_resistance_filter_applied['reason']}")
 
+                # Phase 1.4: Volume Confirmation Filter за SHORT сигнали
+                if final_signal == 'SHORT' and daily_df is not None:
+                    volume_confirmation_applied = self._check_volume_confirmation_for_short(daily_df)
+                    if not volume_confirmation_applied['confirmed']:
+                        final_signal = 'HOLD'
+                        confidence = 0.3
+                        signal_reasons.append(f"SHORT BLOCKED by volume confirmation: {volume_confirmation_applied['reason']}")
+
                 # Проверяваме дали отговаря на изискванията (по-гъвкаво)
                 if self.fib_tail_required:
                     has_fib_or_tail = (
@@ -746,6 +754,103 @@ class SignalGenerator:
             return {
                 'blocked': False,  # По подразбиране не блокираме при грешка
                 'reason': f'Error in Fibonacci resistance filter: {e}',
+                'error': str(e)
+            }
+
+    def _check_volume_confirmation_for_short(self, daily_df: pd.DataFrame) -> Dict[str, any]:
+        """
+        Phase 1.4: Проверява volume confirmation за SHORT сигнали
+
+        SHORT сигнали се генерират само когато текущият обем е
+        значително по-висок от средния обем за последните N периода.
+
+        Args:
+            daily_df: DataFrame с дневни OHLCV данни
+
+        Returns:
+            Dict с информация дали има достатъчно volume confirmation
+        """
+        try:
+            if daily_df is None or daily_df.empty:
+                return {
+                    'confirmed': False,
+                    'reason': 'Няма данни за volume анализ'
+                }
+
+            # Конфигурационни параметри
+            config = self.config.get('weekly_tails', {})
+            volume_confirmation = config.get('volume_confirmation_for_short', True)
+            lookback_periods = config.get('volume_lookback_periods', 14)
+            multiplier_threshold = config.get('volume_multiplier_threshold', 1.5)
+
+            if not volume_confirmation:
+                return {
+                    'confirmed': True,
+                    'reason': 'Volume confirmation изключен'
+                }
+
+            # Проверяваме дали има Volume колона
+            if 'Volume' not in daily_df.columns and 'volume' not in daily_df.columns:
+                return {
+                    'confirmed': False,
+                    'reason': 'Няма Volume данни'
+                }
+
+            # Взимаме последните данни
+            volume_col = 'Volume' if 'Volume' in daily_df.columns else 'volume'
+            recent_data = daily_df.tail(lookback_periods + 1)  # +1 за текущия период
+
+            if len(recent_data) < lookback_periods + 1:
+                return {
+                    'confirmed': False,
+                    'reason': f'Недостатъчно данни: нужни {lookback_periods + 1}, има {len(recent_data)}'
+                }
+
+            # Текущият обем (последният запис)
+            current_volume = recent_data[volume_col].iloc[-1]
+
+            # Среден обем за последните N периода (без текущия)
+            avg_volume = recent_data[volume_col].iloc[:-1].mean()
+
+            if avg_volume <= 0:
+                return {
+                    'confirmed': False,
+                    'reason': 'Средният обем е нула или отрицателен'
+                }
+
+            # Изчисляваме колко пъти е по-голям текущият обем
+            volume_multiplier = current_volume / avg_volume
+
+            logger.info(f"Volume analysis: Current: {current_volume:.0f}, "
+                       f"Average: {avg_volume:.0f}, "
+                       f"Multiplier: {volume_multiplier:.2f}, "
+                       f"Threshold: {multiplier_threshold:.2f}")
+
+            # Проверяваме дали обемът е достатъчно висок
+            if volume_multiplier >= multiplier_threshold:
+                return {
+                    'confirmed': True,
+                    'reason': f'Volume confirmation: {volume_multiplier:.2f}x > {multiplier_threshold:.2f}x threshold',
+                    'current_volume': current_volume,
+                    'avg_volume': avg_volume,
+                    'volume_multiplier': volume_multiplier,
+                    'threshold': multiplier_threshold
+                }
+            else:
+                return {
+                    'confirmed': False,
+                    'reason': f'Недостатъчен volume: {volume_multiplier:.2f}x < {multiplier_threshold:.2f}x threshold',
+                    'current_volume': current_volume,
+                    'avg_volume': avg_volume,
+                    'volume_multiplier': volume_multiplier,
+                    'threshold': multiplier_threshold
+                }
+
+        except Exception as e:
+            logger.error(f"Грешка при volume confirmation check: {e}")
+            return {
+                'confirmed': False,  # По подразбиране не потвърждаваме при грешка
+                'reason': f'Error in volume confirmation: {e}',
                 'error': str(e)
             }
     
