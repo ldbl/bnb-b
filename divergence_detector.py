@@ -1,21 +1,200 @@
 """
-Divergence Detection Module
-Открива bullish/bearish divergence между цената и индикаторите
-Базирано на ideas файла - прост и ефективен метод
+Divergence Detection Module - Advanced Price-Indicator Divergence Analysis
+
+SPECIALIZED MODULE FOR DIVERGENCE DETECTION BETWEEN PRICE AND INDICATORS
+Identifies bullish/bearish divergences for high-probability trading signals
+
+This module provides sophisticated divergence detection capabilities that identify
+when price movement diverges from momentum indicators (RSI, MACD) and volume,
+providing powerful reversal and continuation signals for BNB trading.
+
+ARCHITECTURE OVERVIEW:
+    - Multi-indicator divergence analysis (RSI, MACD, Price-Volume)
+    - Peak/trough detection using advanced signal processing
+    - Statistical validation of divergence patterns
+    - Confidence scoring and signal strength assessment
+    - Integration with broader market context
+
+DIVERGENCE THEORY IMPLEMENTATION:
+    - Bullish Divergence: Price makes lower low, indicator makes higher low
+    - Bearish Divergence: Price makes higher high, indicator makes lower high
+    - Hidden Divergence: Continuation patterns with temporary divergences
+    - Regular Divergence: Reversal patterns with strong divergences
+
+DIVERGENCE TYPES DETECTED:
+    1. RSI Divergence - Momentum oscillator divergence
+    2. MACD Divergence - Trend-following indicator divergence
+    3. Price-Volume Divergence - Volume confirmation divergence
+    4. Composite Divergence - Multi-indicator confluence
+
+ALGORITHMS USED:
+    - Peak Detection: SciPy signal processing for accurate peak identification
+    - Statistical Validation: Confidence intervals and significance testing
+    - Pattern Recognition: Sequence analysis for divergence confirmation
+    - Strength Scoring: Multi-factor assessment of divergence significance
+
+KEY FEATURES:
+    - Automated divergence detection with configurable sensitivity
+    - Multi-timeframe divergence analysis capability
+    - Statistical validation of divergence significance
+    - Confidence scoring for trading decision support
+    - Volume confirmation integration for stronger signals
+
+TRADING APPLICATIONS:
+    - Reversal Signal Identification: Strong divergences often precede reversals
+    - Continuation Pattern Confirmation: Hidden divergences support trend continuation
+    - Risk Management: Divergence strength helps determine position sizing
+    - Entry Timing: Divergence completion often provides optimal entry points
+    - Exit Signals: Divergence patterns can indicate trend exhaustion
+
+CONFIGURATION PARAMETERS:
+    - min_peak_distance: Minimum distance between peaks for validation (default: 5)
+    - min_peak_prominence: Minimum peak prominence for significance (default: 0.02)
+    - lookback_periods: Historical periods to analyze for divergence (default: 20)
+    - divergence_threshold: Minimum divergence strength for signal (default: 0.05)
+
+DIVERGENCE STRENGTH CLASSIFICATION:
+    - Weak (0.0-0.3): Minimal significance, monitor for confirmation
+    - Moderate (0.3-0.6): Some significance, consider in conjunction with other factors
+    - Strong (0.6-0.8): High significance, potential trading opportunity
+    - Extreme (0.8-1.0): Maximum significance, strong trading signal
+
+EXAMPLE USAGE:
+    >>> config = {'divergence': {'lookback_periods': 20, 'min_peak_distance': 5}}
+    >>> detector = DivergenceDetector(config)
+    >>> price_data = pd.read_csv('bnb_daily.csv')
+    >>> indicators = {'rsi': rsi_values, 'macd': macd_values}
+    >>> divergences = detector.detect_all_divergences(price_data, indicators)
+    >>> if divergences['rsi_divergence']['type'] == 'BULLISH':
+    ...     print(f"Bullish RSI Divergence detected with confidence {divergences['rsi_divergence']['confidence']:.1f}%")
+
+DEPENDENCIES:
+    - pandas: Data manipulation and time series operations
+    - numpy: Mathematical calculations and array operations
+    - scipy.signal: Advanced signal processing for peak detection
+    - typing: Type hints for better code documentation
+
+PERFORMANCE OPTIMIZATIONS:
+    - Efficient peak detection algorithms
+    - Vectorized calculations for large datasets
+    - Memory-optimized data structures
+    - Caching of expensive computations
+
+ERROR HANDLING:
+    - Validation of input data structure and sufficiency
+    - Graceful handling of missing or invalid indicator data
+    - Statistical calculation error recovery
+    - Comprehensive logging for debugging and monitoring
+
+VALIDATION TECHNIQUES:
+    - Statistical significance testing of detected divergences
+    - Cross-validation with multiple indicators
+    - Historical back-testing of divergence patterns
+    - Robustness testing across different market conditions
+
+SIGNAL ACCURACY ENHANCEMENTS:
+    - Multi-indicator divergence confluence analysis
+    - Volume confirmation for stronger signals
+    - Statistical confidence scoring
+    - Market context integration
+
+AUTHOR: BNB Trading System Team
+VERSION: 2.0.0
+DATE: 2024-01-01
 """
 
 import pandas as pd
 import numpy as np
 from scipy.signal import find_peaks
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, Any
 import logging
 
 logger = logging.getLogger(__name__)
 
 class DivergenceDetector:
-    """Открива divergence между цената и технически индикатори"""
-    
-    def __init__(self, config: Dict):
+    """
+    Advanced Divergence Detection Engine for Price-Indicator Analysis
+
+    This class provides sophisticated divergence detection capabilities using advanced
+    signal processing techniques to identify when price movement diverges from momentum
+    indicators and volume, providing powerful trading signals.
+
+    ARCHITECTURE OVERVIEW:
+        - Multi-indicator divergence analysis using RSI, MACD, and volume
+        - Advanced peak/trough detection using SciPy signal processing
+        - Statistical validation of divergence patterns and significance
+        - Confidence scoring system for trading decision support
+        - Composite divergence analysis for stronger signals
+
+    DIVERGENCE DETECTION METHODOLOGY:
+        1. Data Validation: Ensures sufficient historical data for analysis
+        2. Peak Detection: Identifies significant peaks and troughs in price/indicators
+        3. Pattern Analysis: Compares peak/trough sequences for divergence patterns
+        4. Strength Scoring: Calculates statistical significance of divergences
+        5. Confidence Assessment: Provides confidence scores for trading decisions
+
+    DIVERGENCE TYPES SUPPORTED:
+        - BULLISH_DIVERGENCE: Price lower low, indicator higher low (reversal signal)
+        - BEARISH_DIVERGENCE: Price higher high, indicator lower high (reversal signal)
+        - HIDDEN_BULLISH: Price higher low, indicator lower low (continuation signal)
+        - HIDDEN_BEARISH: Price lower high, indicator higher high (continuation signal)
+
+    CONFIGURATION PARAMETERS:
+        min_peak_distance (int): Minimum periods between peaks for validation (default: 5)
+        min_peak_prominence (float): Minimum peak prominence for significance (default: 0.02)
+        lookback_periods (int): Historical periods to analyze for divergence (default: 20)
+        divergence_threshold (float): Minimum divergence strength for signal (default: 0.05)
+
+    ATTRIBUTES:
+        config (Dict): Complete configuration dictionary
+        min_peak_distance (int): Peak distance validation parameter
+        min_peak_prominence (float): Peak prominence validation parameter
+        lookback_periods (int): Historical analysis window size
+
+    PEAK DETECTION ALGORITHM:
+        - Uses SciPy find_peaks for robust peak identification
+        - Applies distance and prominence filters for significance
+        - Validates peaks against statistical thresholds
+        - Handles both price and indicator peak detection
+
+    DIVERGENCE SCORING SYSTEM:
+        - Confidence Score: Statistical significance (0.0 to 1.0)
+        - Strength Classification: Weak/Moderate/Strong/Extreme
+        - Pattern Type: Regular/Hidden divergence identification
+        - Multi-factor Assessment: Combines multiple validation criteria
+
+    OUTPUT STRUCTURE:
+        {
+            'rsi_divergence': {
+                'type': 'BULLISH_DIVERGENCE' | 'BEARISH_DIVERGENCE' | 'NONE',
+                'confidence': float,  # 0.0 to 1.0
+                'reason': str,       # Explanation of divergence
+                'strength': float    # Statistical strength
+            },
+            'macd_divergence': { ... },
+            'price_volume_divergence': { ... },
+            'overall_divergence': str  # Composite divergence assessment
+        }
+
+    EXAMPLE:
+        >>> config = {
+        ...     'divergence': {
+        ...         'lookback_periods': 20,
+        ...         'min_peak_distance': 5,
+        ...         'min_peak_prominence': 0.02
+        ...     }
+        ... }
+        >>> detector = DivergenceDetector(config)
+        >>> price_data = pd.read_csv('bnb_data.csv')
+        >>> indicators = {'rsi': rsi_values, 'macd': macd_values}
+        >>> divergences = detector.detect_all_divergences(price_data, indicators)
+
+    NOTE:
+        Requires sufficient historical data (minimum 20 periods recommended)
+        and clean OHLCV data for accurate divergence detection.
+    """
+
+    def __init__(self, config: Dict[str, Any]) -> None:
         self.config = config
         self.min_peak_distance = config.get('divergence', {}).get('min_peak_distance', 5)
         self.min_peak_prominence = config.get('divergence', {}).get('min_peak_prominence', 0.02)

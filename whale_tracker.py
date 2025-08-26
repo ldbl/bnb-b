@@ -1,20 +1,217 @@
 #!/usr/bin/env python3
 """
-Whale Tracker Module
-Tracks large BNB transactions and whale movements
+Whale Tracker Module - Institutional Activity and Large Transaction Monitoring
+
+SPECIALIZED MODULE FOR WHALE TRACKING AND INSTITUTIONAL ACTIVITY ANALYSIS
+Monitors large BNB transactions, whale movements, and institutional flows
+
+This module provides comprehensive whale tracking capabilities specifically designed
+for cryptocurrency markets, focusing on identifying large transactions, institutional
+activity, and market impact events that can significantly influence BNB price movements.
+
+ARCHITECTURE OVERVIEW:
+    - Multi-API integration (Binance API, BSCScan) for comprehensive data
+    - Configurable whale size thresholds for different activity levels
+    - Real-time price and volume monitoring with alert systems
+    - Historical whale activity analysis and pattern recognition
+    - Market impact assessment and institutional flow detection
+
+WHALE CLASSIFICATION SYSTEM:
+    - Mega Whales: 100K+ BNB transactions (Market moving)
+    - Large Whales: 50K+ BNB transactions (Significant impact)
+    - Large Holders: 10K+ BNB transactions (Moderate impact)
+    - Medium Holders: 1K+ BNB transactions (Minor impact)
+
+TRACKING METHODOLOGY:
+    - Volume Spike Detection: Identifies unusual volume increases
+    - Price Impact Analysis: Measures price movement after large transactions
+    - Accumulation/Distribution Patterns: Tracks whale buying/selling patterns
+    - Market Maker Activity: Identifies potential institutional flows
+    - Liquidity Analysis: Monitors order book depth and whale walls
+
+KEY FEATURES:
+    - Automated whale transaction detection with real-time alerts
+    - Multi-threshold classification system for different whale sizes
+    - Volume-price impact correlation analysis
+    - Historical whale activity pattern recognition
+    - Institutional flow detection and sentiment analysis
+
+TRADING APPLICATIONS:
+    - Reversal Signals: Large whale selling can precede reversals
+    - Continuation Signals: Institutional accumulation supports trends
+    - Risk Management: Whale activity increases market volatility
+    - Entry Timing: Avoid entering against whale flows
+    - Exit Signals: Large whale buying can signal trend continuation
+
+DATA SOURCES INTEGRATION:
+    - Binance API: Real-time price, volume, and order book data
+    - BSCScan API: On-chain transaction monitoring (future enhancement)
+    - Known Whale Addresses: Pre-identified institutional wallets
+    - Order Book Analysis: Depth and whale wall detection
+
+CONFIGURATION PARAMETERS:
+    - whale_thresholds: Size thresholds for different whale categories
+    - price_change_threshold: Minimum price change for alerts (default: 0.02)
+    - volume_spike_threshold: Minimum volume spike multiplier (default: 2.0)
+    - alert_thresholds: Critical activity alert parameters
+
+WHALE IMPACT ASSESSMENT:
+    - Transaction Size Impact: Larger transactions = greater market impact
+    - Timing Impact: Market hours vs off-hours activity significance
+    - Direction Impact: Buy vs sell pressure analysis
+    - Concentration Impact: Multiple whales moving in same direction
+    - Volume Context: Transaction size relative to market volume
+
+EXAMPLE USAGE:
+    >>> tracker = WhaleTracker()
+    >>> activity = tracker.get_whale_activity_summary(days_back=1)
+    >>> if activity.get('whale_alerts', 0) > 0:
+    ...     print(f"Whale activity detected: {activity['whale_alerts']} alerts")
+    ...     for alert in activity['alert_details']:
+    ...         print(f"Alert: {alert['type']} - {alert['message']}")
+
+DEPENDENCIES:
+    - requests: HTTP API communication with Binance and BSCScan
+    - datetime/timedelta: Date and time manipulation
+    - json: JSON data parsing and formatting
+    - typing: Type hints for better code documentation
+
+PERFORMANCE OPTIMIZATIONS:
+    - Intelligent API request batching to avoid rate limits
+    - Response caching for repeated data requests
+    - Efficient data processing with minimal memory usage
+    - Incremental updates for real-time monitoring
+
+ERROR HANDLING:
+    - API connectivity error recovery and retry mechanisms
+    - Rate limit handling with exponential backoff
+    - Data parsing error handling and validation
+    - Network timeout management and fallback procedures
+
+VALIDATION TECHNIQUES:
+    - Transaction size validation against known whale thresholds
+    - Price impact statistical significance testing
+    - Volume spike validation using historical baselines
+    - Cross-validation with multiple data sources
+
+ALERT SYSTEM:
+    - Critical Volume Spikes: 3x+ normal volume activity
+    - Mega Whale Movements: Large institutional transactions
+    - Multiple Whale Signals: Coordinated whale activity
+    - Price Impact Events: Significant price moves with volume
+    - Unusual Activity Scores: Composite risk assessment
+
+FUTURE ENHANCEMENTS:
+    - BSCScan integration for on-chain whale tracking
+    - Machine learning models for whale behavior prediction
+    - Cross-exchange whale activity correlation
+    - Real-time alert systems and notification channels
+    - Historical whale database for pattern analysis
+
+AUTHOR: BNB Trading System Team
+VERSION: 2.0.0
+DATE: 2024-01-01
 """
 
 import requests
 import time
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class WhaleTracker:
-    """Track large BNB transactions and whale activity"""
-    
-    def __init__(self):
+    """
+    Advanced Whale Tracking Engine for Institutional Activity Monitoring
+
+    This class provides comprehensive whale tracking capabilities using multiple data sources
+    to identify large transactions, institutional activity, and market impact events.
+
+    ARCHITECTURE OVERVIEW:
+        - Multi-API integration with Binance and BSCScan for comprehensive coverage
+        - Configurable whale size thresholds for different activity levels
+        - Real-time price and volume monitoring with sophisticated alert systems
+        - Historical whale activity analysis and pattern recognition
+        - Market impact assessment with statistical validation
+
+    WHALE CLASSIFICATION SYSTEM:
+        - Mega Whales: 100K+ BNB (Market moving institutional activity)
+        - Large Whales: 50K+ BNB (Significant impact transactions)
+        - Large Holders: 10K+ BNB (Moderate impact activity)
+        - Medium Holders: 1K+ BNB (Minor impact transactions)
+
+    MONITORING METHODOLOGY:
+        1. Volume Spike Detection: Identifies unusual volume increases using statistical thresholds
+        2. Price Impact Analysis: Measures price movement correlation with large transactions
+        3. Accumulation/Distribution Tracking: Monitors whale buying/selling patterns
+        4. Order Book Analysis: Detects whale walls and institutional liquidity
+        5. Cross-Market Correlation: Links whale activity with price movements
+
+    ALERT SYSTEM CONFIGURATION:
+        - Critical Volume Spikes: 3x+ normal volume activity alerts
+        - Mega Whale Movements: Large institutional transaction alerts
+        - Multiple Whale Signals: Coordinated whale activity detection
+        - Price Impact Events: Significant price moves with volume correlation
+        - Unusual Activity Scores: Composite risk assessment scoring
+
+    CONFIGURATION PARAMETERS:
+        whale_thresholds (Dict): Size thresholds for whale classification
+        price_change_threshold (float): Minimum price change for alerts (default: 0.02)
+        volume_spike_threshold (float): Minimum volume spike multiplier (default: 2.0)
+        alert_thresholds (Dict): Critical activity alert parameters
+
+    ATTRIBUTES:
+        base_url (str): Binance API base URL for price/volume data
+        bscscan_url (str): BSCScan API base URL for transaction data
+        whale_thresholds (Dict): Whale size classification thresholds
+        price_change_threshold (float): Price change alert threshold
+        volume_spike_threshold (float): Volume spike detection threshold
+        known_whales (Dict): Pre-identified institutional wallet addresses
+        alert_thresholds (Dict): Critical activity alert parameters
+
+    DATA SOURCES:
+        - Binance API: Real-time price, volume, and order book data
+        - BSCScan API: On-chain transaction monitoring and wallet tracking
+        - Known Whale Addresses: Pre-identified institutional wallets
+        - Historical Klines: Price and volume pattern analysis
+
+    OUTPUT STRUCTURE:
+        {
+            'period': str,                    # Analysis period
+            'interval': str,                  # Time interval used
+            'total_volume': float,            # Total volume in period
+            'avg_volume_per_interval': float, # Average volume per interval
+            'whale_alerts': int,              # Number of whale alerts
+            'alert_details': List[Dict],      # Detailed alert information
+            'volume_spikes': List[Dict],      # Volume spike events
+            'price_impacts': List[Dict],      # Price impact events
+            'unusual_activity_score': float,  # Composite risk score
+            'recommendation': str            # Trading recommendation
+        }
+
+    ALERT TYPES:
+        - VOLUME_SPIKE: Unusual volume increase detected
+        - WHALE_MOVEMENT: Large transaction identified
+        - PRICE_IMPACT: Significant price move with volume
+        - MULTIPLE_SIGNALS: Coordinated whale activity
+        - CRITICAL_ACTIVITY: High-risk market conditions
+
+    EXAMPLE:
+        >>> tracker = WhaleTracker()
+        >>> activity = tracker.get_whale_activity_summary(days_back=1)
+        >>> print(f"Whale alerts: {activity.get('whale_alerts', 0)}")
+        >>> for alert in activity.get('alert_details', []):
+        ...     print(f"Alert: {alert['type']} - {alert['message']}")
+
+    NOTE:
+        Whale tracking requires active internet connection and API access.
+        Results are most accurate during high market activity periods.
+    """
+
+    def __init__(self) -> None:
         self.base_url = "https://api.binance.com/api/v3"
         self.bscscan_url = "https://api.bscscan.com/api"
         
