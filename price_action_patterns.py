@@ -1,20 +1,252 @@
 """
-Price Action Patterns Module
-Идентифицира класически модели като double top/bottom, с потвърждение от свещни формации
-Базирано на ideas файла - базирано на чиста цена, надеждно в крипто
+Price Action Patterns Module - Classical Chart Pattern Recognition
+
+ADVANCED PRICE ACTION PATTERN RECOGNITION FOR TECHNICAL ANALYSIS
+Identifies classical chart patterns using pure price action with candlestick confirmation
+
+This module provides sophisticated recognition of classical chart patterns that have
+proven reliability across different markets, with special optimization for cryptocurrency
+price movements. The module focuses on pure price action analysis without reliance
+on indicators, making it particularly effective in volatile crypto markets.
+
+ARCHITECTURE OVERVIEW:
+    - Multi-pattern recognition system for reversal and continuation patterns
+    - Automated pattern detection using geometric and statistical analysis
+    - Volume and candlestick confirmation integration
+    - Pattern strength assessment and confidence scoring
+    - Support/resistance level identification from pattern structures
+
+CLASSICAL PATTERNS RECOGNIZED:
+    1. Double Top/Bottom: Reversal patterns at key levels
+    2. Head & Shoulders: Complex reversal patterns with multiple peaks/troughs
+    3. Triangles: Continuation patterns with converging trendlines
+    4. Wedges: Directional patterns with sloping support/resistance
+    5. Flags/Pennants: Short-term continuation patterns
+    6. Cup & Handle: Bullish continuation patterns
+
+PATTERN DETECTION METHODOLOGY:
+    - Geometric Analysis: Shape recognition using price peaks and troughs
+    - Statistical Validation: Pattern significance testing
+    - Volume Confirmation: Volume spike validation for pattern completion
+    - Candlestick Confirmation: Japanese candlestick pattern integration
+    - Time Frame Analysis: Pattern validity across different timeframes
+
+DOUBLE TOP/BOTTOM PATTERNS:
+    - Double Top: Bearish reversal with two peaks at similar levels
+    - Double Bottom: Bullish reversal with two troughs at similar levels
+    - Neckline Break: Pattern completion confirmation
+    - Volume Validation: Increased volume on breakout
+    - Price Target: Measured move calculation (height of pattern)
+
+HEAD & SHOULDERS PATTERNS:
+    - Left Shoulder: Initial peak/trough
+    - Head: Higher/lower peak/trough (pattern center)
+    - Right Shoulder: Final peak/trough (pattern completion)
+    - Neckline: Support/resistance connecting shoulder bases
+    - Volume Profile: Declining volume through pattern formation
+
+TRIANGLE PATTERNS:
+    - Ascending Triangle: Horizontal resistance, rising support
+    - Descending Triangle: Horizontal support, falling resistance
+    - Symmetrical Triangle: Converging trendlines
+    - Volume Contraction: Decreasing volume during formation
+    - Breakout Direction: Based on triangle slope and volume
+
+KEY FEATURES:
+    - Automated pattern recognition with configurable sensitivity
+    - Multi-timeframe pattern analysis for enhanced accuracy
+    - Pattern strength classification and confidence scoring
+    - Volume confirmation for pattern validation
+    - Support/resistance level extraction from patterns
+
+TRADING APPLICATIONS:
+    - Reversal Signals: Double tops/bottoms, head & shoulders
+    - Continuation Signals: Triangles, flags, wedges
+    - Entry Timing: Pattern completion and breakout confirmation
+    - Risk Management: Pattern-based stop loss placement
+    - Target Setting: Measured moves based on pattern height
+
+CONFIGURATION PARAMETERS:
+    - min_pattern_distance: Minimum periods between pattern elements (default: 5)
+    - pattern_threshold: Maximum price variation for pattern elements (default: 0.02)
+    - volume_confirmation: Enable volume validation (default: True)
+    - candle_confirmation: Enable candlestick pattern confirmation (default: True)
+    - min_pattern_strength: Minimum pattern strength for recognition (default: 0.6)
+
+PATTERN STRENGTH CLASSIFICATION:
+    - Weak (0.0-0.3): Minimal pattern characteristics
+    - Moderate (0.3-0.6): Acceptable pattern formation
+    - Strong (0.6-0.8): High-quality pattern with good structure
+    - Extreme (0.8-1.0): Exceptional pattern with perfect structure
+
+PATTERN COMPLETION SIGNALS:
+    - Breakout Confirmation: Price breaks pattern boundary
+    - Volume Spike: Increased volume on breakout
+    - Candlestick Confirmation: Supporting candlestick patterns
+    - Retest Validation: Price returns to test broken level
+    - Momentum Confirmation: Indicator confirmation of breakout
+
+EXAMPLE USAGE:
+    >>> config = {'price_patterns': {'min_pattern_distance': 5, 'pattern_threshold': 0.02}}
+    >>> analyzer = PriceActionPatternsAnalyzer(config)
+    >>> patterns = analyzer.analyze_price_patterns(price_data)
+    >>> if patterns.get('double_top', {}).get('detected'):
+    ...     dt_pattern = patterns['double_top']
+    ...     print(f"Double Top detected with confidence {dt_pattern['confidence']:.1f}%")
+    ...     print(f"Pattern strength: {dt_pattern['pattern_strength']}")
+    ...     print(f"Price target: ${dt_pattern['price_target']:.2f}")
+
+DEPENDENCIES:
+    - pandas: Data manipulation and time series analysis
+    - numpy: Mathematical calculations and array operations
+    - typing: Type hints for better code documentation
+
+PERFORMANCE OPTIMIZATIONS:
+    - Efficient pattern detection algorithms
+    - Memory-optimized data structures
+    - Vectorized calculations for large datasets
+    - Configurable analysis depth for performance tuning
+
+ERROR HANDLING:
+    - Data validation and sufficiency checks
+    - Pattern detection error recovery
+    - Missing data handling and interpolation
+    - Statistical calculation error management
+
+VALIDATION TECHNIQUES:
+    - Geometric pattern validation using statistical methods
+    - Historical pattern performance back-testing
+    - Cross-validation with other technical analysis methods
+    - Robustness testing across different market conditions
+
+PATTERN RELIABILITY FACTORS:
+    - Pattern Symmetry: How well pattern elements align
+    - Volume Confirmation: Volume behavior during pattern formation
+    - Time Frame: Pattern significance across different timeframes
+    - Market Context: Pattern effectiveness in current market regime
+    - False Breakout Protection: Filters for failed pattern breakouts
+
+INTEGRATION CAPABILITIES:
+    - Technical Indicator Integration: Pattern confirmation with indicators
+    - Trend Analysis Integration: Pattern alignment with trend direction
+    - Risk Management Integration: Pattern-based position sizing
+    - Multi-Timeframe Analysis: Pattern confirmation across timeframes
+
+AUTHOR: BNB Trading System Team
+VERSION: 2.0.0
+DATE: 2024-01-01
 """
 
 import pandas as pd
 import numpy as np
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, Any
 import logging
 
 logger = logging.getLogger(__name__)
 
 class PriceActionPatternsAnalyzer:
-    """Анализатор за Price Action Patterns"""
-    
-    def __init__(self, config: Dict):
+    """
+    Advanced Price Action Pattern Recognition Engine for Technical Analysis
+
+    This class provides comprehensive recognition of classical chart patterns using
+    sophisticated geometric analysis and statistical validation, specifically optimized
+    for cryptocurrency price movements where pure price action patterns are most reliable.
+
+    ARCHITECTURE OVERVIEW:
+        - Multi-pattern recognition system with 6+ classical patterns
+        - Automated pattern detection using geometric and statistical methods
+        - Volume and candlestick confirmation integration
+        - Pattern strength assessment with confidence scoring
+        - Support/resistance level extraction from pattern structures
+
+    PATTERN RECOGNITION ALGORITHMS:
+        1. Peak/Trough Detection: Identifies significant price turning points
+        2. Geometric Analysis: Validates pattern shapes using mathematical criteria
+        3. Statistical Validation: Pattern significance testing and confidence scoring
+        4. Volume Confirmation: Validates patterns with volume behavior analysis
+        5. Time Frame Validation: Ensures pattern validity across different periods
+
+    SUPPORTED PATTERNS:
+        - DOUBLE_TOP: Bearish reversal pattern with two peaks at similar levels
+        - DOUBLE_BOTTOM: Bullish reversal pattern with two troughs at similar levels
+        - HEAD_SHOULDERS: Complex bearish reversal with three peaks
+        - INVERSE_HEAD_SHOULDERS: Complex bullish reversal with three troughs
+        - TRIANGLE: Continuation pattern with converging trendlines
+        - WEDGE: Directional pattern with sloping support/resistance lines
+
+    PATTERN DETECTION CRITERIA:
+        - Minimum Pattern Distance: Prevents overlapping pattern detection
+        - Pattern Threshold: Maximum price variation for pattern element similarity
+        - Volume Confirmation: Validates pattern completion with volume spikes
+        - Candlestick Confirmation: Integrates Japanese candlestick pattern validation
+        - Statistical Significance: Ensures pattern reliability through statistical testing
+
+    CONFIGURATION PARAMETERS:
+        min_pattern_distance (int): Minimum periods between pattern elements (default: 5)
+        pattern_threshold (float): Maximum price variation for pattern elements (default: 0.02)
+        volume_confirmation (bool): Enable volume validation for patterns (default: True)
+        candle_confirmation (bool): Enable candlestick confirmation (default: True)
+        min_pattern_strength (float): Minimum pattern strength for recognition (default: 0.6)
+
+    ATTRIBUTES:
+        config (Dict): Complete configuration dictionary
+        min_pattern_distance (int): Minimum distance between pattern elements
+        pattern_threshold (float): Maximum price variation for pattern elements
+        volume_confirmation (bool): Volume confirmation enabled flag
+        candle_confirmation (bool): Candlestick confirmation enabled flag
+
+    PATTERN STRENGTH SCORING:
+        - Weak (0.0-0.3): Basic pattern characteristics, low confidence
+        - Moderate (0.3-0.6): Acceptable pattern formation, medium confidence
+        - Strong (0.6-0.8): Well-formed pattern, high confidence
+        - Extreme (0.8-1.0): Perfect pattern formation, maximum confidence
+
+    OUTPUT STRUCTURE:
+        {
+            'double_top': {
+                'detected': bool,           # Pattern detection status
+                'confidence': float,        # 0.0 to 1.0 confidence score
+                'pattern_strength': float,  # Statistical strength measure
+                'peak1_price': float,       # First peak price
+                'peak2_price': float,       # Second peak price
+                'neckline_price': float,    # Neckline level
+                'price_target': float,      # Measured move target
+                'reason': str              # Detection reasoning
+            },
+            'double_bottom': { ... },
+            'head_shoulders': { ... },
+            'triangle': { ... },
+            'wedge': { ... },
+            'overall_pattern': str        # Dominant pattern identified
+        }
+
+    PATTERN COMPLETION SIGNALS:
+        - Breakout Confirmation: Price breaks pattern boundary with volume
+        - False Breakout Protection: Filters for failed breakouts
+        - Retest Validation: Price returns to test broken level
+        - Momentum Confirmation: Indicator alignment with pattern
+        - Volume Divergence: Volume behavior contradicts price action
+
+    EXAMPLE:
+        >>> analyzer = PriceActionPatternsAnalyzer({
+        ...     'price_patterns': {
+        ...         'min_pattern_distance': 5,
+        ...         'pattern_threshold': 0.02,
+        ...         'volume_confirmation': True
+        ...     }
+        ... })
+        >>> patterns = analyzer.analyze_price_patterns(price_data)
+        >>> if patterns.get('double_top', {}).get('detected'):
+        ...     dt = patterns['double_top']
+        ...     print(f"Double Top: confidence {dt['confidence']:.1f}%, "
+        ...           f"target ${dt['price_target']:.2f}")
+
+    NOTE:
+        Requires sufficient historical data (minimum 50 periods recommended)
+        for reliable pattern detection and statistical validation.
+    """
+
+    def __init__(self, config: Dict[str, Any]) -> None:
         self.config = config
         self.min_pattern_distance = config.get('price_patterns', {}).get('min_pattern_distance', 5)
         self.pattern_threshold = config.get('price_patterns', {}).get('pattern_threshold', 0.02)

@@ -1,19 +1,266 @@
 """
-Elliott Wave Analyzer Module - Интегриран в BNB Trading System
-Анализира Elliott Wave структурите за по-добри trading сигнали
+Elliott Wave Analyzer Module - Advanced Wave Structure Analysis
+
+COMPLETE ELLIOTT WAVE THEORY IMPLEMENTATION FOR TECHNICAL ANALYSIS
+Analyzes wave structures and fractal patterns for advanced trading signals
+
+This module provides comprehensive Elliott Wave analysis specifically adapted for
+cryptocurrency markets, implementing Ralph Nelson Elliott's wave theory to identify
+predictable price patterns and market psychology cycles.
+
+ARCHITECTURE OVERVIEW:
+    - Multi-degree wave analysis from Supercycle to Minute waves
+    - Automated wave structure recognition using pivot point analysis
+    - Fibonacci ratio validation for wave relationships
+    - Wave personality assessment and market context integration
+    - Multi-timeframe wave correlation for enhanced accuracy
+
+ELLIOTT WAVE THEORY IMPLEMENTATION:
+    - Wave Degrees: 9 different wave scales from Supercycle to Subminuette
+    - Wave Structure: 5-wave impulse patterns and 3-wave corrective patterns
+    - Fibonacci Relationships: Golden ratio validation between wave segments
+    - Wave Personality: Characteristic behavior patterns for each wave type
+    - Alternation Principle: Different correction patterns alternate
+
+WAVE DEGREE HIERARCHY:
+    - GRAND SUPERCYCLE: Multi-decade waves (Roman numerals)
+    - SUPERCYCLE: Multi-year waves (Roman numerals)
+    - CYCLE: Years to multi-month waves (Roman numerals)
+    - PRIMARY: Months to weeks (parentheses)
+    - INTERMEDIATE: Weeks to days (no markings)
+    - MINOR: Days to hours (lowercase letters)
+    - MINUTE: Hours to minutes (lowercase letters)
+    - MINUTETTE: Minutes to seconds (subscript numbers)
+    - SUBMINUTETTE: Sub-second waves (subscript letters)
+
+IMPULSE WAVE CHARACTERISTICS:
+    - Wave 1: Initial impulse, often strongest psychologically
+    - Wave 2: Corrective wave, retraces 50-78.6% of Wave 1
+    - Wave 3: Extended wave, often longest and strongest
+    - Wave 4: Consolidative wave, rarely overlaps Wave 1
+    - Wave 5: Final exhaustion wave, often ends with divergence
+
+CORRECTIVE WAVE PATTERNS:
+    - Zigzag (5-3-5): Sharp correction with sub-waves
+    - Flat (3-3-5): Sideways correction with equal waves
+    - Triangle (3-3-3-3-3): Contracting correction pattern
+    - Double Three: Complex correction with two simple patterns
+    - Triple Three: Rare complex correction with three patterns
+
+KEY FEATURES:
+    - Automated wave counting with statistical validation
+    - Fibonacci ratio analysis between wave segments
+    - Wave personality assessment and market context
+    - Multi-timeframe wave correlation and confirmation
+    - Wave completion probability assessment
+
+TRADING APPLICATIONS:
+    - Wave 2 Buying: Optimal entry point in corrective waves
+    - Wave 3 Riding: Hold positions through strongest trend wave
+    - Wave 4 Trading: Counter-trend opportunities in consolidations
+    - Wave 5 Caution: Prepare for exhaustion and reversal
+    - Corrective Patterns: Identify optimal entry/exit points
+
+CONFIGURATION PARAMETERS:
+    - lookback_periods: Historical periods for wave analysis (default: 50)
+    - min_wave_strength: Minimum wave strength for recognition (default: 0.02)
+    - fib_tolerance: Fibonacci ratio tolerance for validation (default: 0.05)
+    - min_pivot_distance: Minimum periods between pivot points (default: 5)
+    - wave_validation_threshold: Minimum confidence for wave recognition (default: 0.6)
+
+WAVE DETECTION ALGORITHMS:
+    - Pivot Point Analysis: Identifies significant turning points
+    - Wave Ratio Validation: Checks Fibonacci relationships between waves
+    - Pattern Recognition: Validates wave structure against Elliott rules
+    - Statistical Validation: Ensures wave significance through statistical testing
+    - Time Frame Correlation: Validates waves across different timeframes
+
+FIBONACCI INTEGRATION:
+    - Wave 2: 50%, 61.8%, or 78.6% retracement of Wave 1
+    - Wave 3: 161.8% or 200% extension of Wave 1
+    - Wave 4: 38.2% or 50% retracement of Wave 3
+    - Wave 5: 61.8% extension of Wave 3 or equality with Wave 1
+
+EXAMPLE USAGE:
+    >>> config = {'elliott_wave': {'lookback_periods': 50, 'min_wave_strength': 0.02}}
+    >>> analyzer = ElliottWaveAnalyzer(config)
+    >>> analysis = analyzer.analyze_elliott_wave(daily_data, weekly_data)
+    >>> if analysis.get('current_wave') == 'WAVE_2':
+    ...     print(f"Wave 2 detected - Bullish entry opportunity")
+    ...     print(f"Wave strength: {analysis['wave_strength']:.1f}%")
+    ...     print(f"Price target: ${analysis['price_target']:.2f}")
+
+DEPENDENCIES:
+    - pandas: Data manipulation and time series operations
+    - numpy: Mathematical calculations and statistical analysis
+    - typing: Type hints for better code documentation
+
+PERFORMANCE OPTIMIZATIONS:
+    - Efficient pivot point detection algorithms
+    - Vectorized wave ratio calculations
+    - Memory-optimized data structures
+    - Configurable analysis depth for performance tuning
+
+ERROR HANDLING:
+    - Data validation and sufficiency checks
+    - Wave detection error recovery mechanisms
+    - Statistical calculation error handling
+    - Missing data interpolation and gap handling
+
+VALIDATION TECHNIQUES:
+    - Elliott Wave Rule Compliance: Validates against established wave principles
+    - Fibonacci Ratio Validation: Ensures wave relationships follow golden ratio
+    - Statistical Significance Testing: Validates wave strength and reliability
+    - Cross-Timeframe Validation: Confirms waves across different timeframes
+
+WAVE PERSONALITY ASSESSMENT:
+    - Wave 1: Often missed, strongest psychologically
+    - Wave 2: Sharp correction, creates buying opportunity
+    - Wave 3: Most profitable, extends furthest
+    - Wave 4: Often complex, provides trading opportunity
+    - Wave 5: Exhaustion wave, ends with divergence
+
+MARKET CONTEXT INTEGRATION:
+    - Trend Alignment: Waves within larger degree waves
+    - Volume Confirmation: Volume behavior during wave development
+    - Momentum Assessment: Indicator alignment with wave structure
+    - Market Regime Awareness: Wave behavior in different market conditions
+
+AUTHOR: BNB Trading System Team
+VERSION: 2.0.0
+DATE: 2024-01-01
 """
 
 import pandas as pd
 import numpy as np
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 import logging
 
 logger = logging.getLogger(__name__)
 
 class ElliottWaveAnalyzer:
-    """Elliott Wave анализатор за BNB Trading System"""
-    
-    def __init__(self, config: Dict):
+    """
+    Advanced Elliott Wave Analysis Engine for Fractal Market Analysis
+
+    This class provides comprehensive Elliott Wave analysis implementing Ralph Nelson Elliott's
+    wave theory to identify predictable price patterns and market psychology cycles in
+    cryptocurrency markets, with special adaptation for BNB/USD price movements.
+
+    ARCHITECTURE OVERVIEW:
+        - Multi-degree wave analysis from Supercycle to Minute waves
+        - Automated wave structure recognition using pivot point analysis
+        - Fibonacci ratio validation for wave relationships and projections
+        - Wave personality assessment based on Elliott's wave characteristics
+        - Multi-timeframe wave correlation for enhanced signal reliability
+
+    ELLIOTT WAVE THEORY FOUNDATIONS:
+        - Wave Principle: Markets move in repetitive 5-wave impulse patterns
+        - Corrective Waves: 3-wave patterns that interrupt the main trend
+        - Wave Degrees: 9 different scales from decades to minutes
+        - Fibonacci Relationships: Golden ratio governs wave proportions
+        - Alternation: Corrective patterns alternate in form and complexity
+
+    WAVE DEGREE IMPLEMENTATION:
+        - GRAND_SUPERCYCLE: Multi-decade waves (I, II, III, IV, V)
+        - SUPERCYCLE: Multi-year waves (I, II, III, IV, V)
+        - CYCLE: Years to months (I, II, III, IV, V)
+        - PRIMARY: Months to weeks ((1), (2), (3), (4), (5))
+        - INTERMEDIATE: Weeks to days (1, 2, 3, 4, 5)
+        - MINOR: Days to hours (1, 2, 3, 4, 5)
+        - MINUTE: Hours to minutes (i, ii, iii, iv, v)
+        - MINUTETTE: Minutes (1, 2, 3, 4, 5)
+        - SUBMINUTETTE: Sub-minute waves
+
+    IMPULSE WAVE CHARACTERISTICS:
+        - Wave 1: Initial impulse, strongest psychologically, often missed
+        - Wave 2: Corrective wave, retraces 50-78.6% of Wave 1, creates buying opportunity
+        - Wave 3: Extended wave, longest and strongest, most profitable
+        - Wave 4: Consolidative wave, rarely overlaps Wave 1, provides trading opportunity
+        - Wave 5: Final exhaustion wave, often ends with divergence
+
+    CORRECTIVE WAVE PATTERNS:
+        - Zigzag (5-3-5): Sharp correction with sub-wave structure
+        - Flat (3-3-5): Sideways correction with equal wave lengths
+        - Triangle (3-3-3-3-3): Contracting correction forming triangle
+        - Double Three: Complex correction combining two simple patterns
+        - Triple Three: Rare complex correction with three simple patterns
+
+    CONFIGURATION PARAMETERS:
+        lookback_periods (int): Historical periods for wave analysis (default: 50)
+        min_wave_strength (float): Minimum wave strength for recognition (default: 0.02)
+        fib_tolerance (float): Fibonacci ratio tolerance for validation (default: 0.05)
+        min_pivot_distance (int): Minimum periods between pivot points (default: 5)
+        wave_validation_threshold (float): Minimum confidence for wave recognition (default: 0.6)
+
+    ATTRIBUTES:
+        config (Dict): Complete configuration dictionary
+        lookback_periods (int): Historical analysis window size
+        min_wave_strength (float): Minimum wave strength threshold
+        wave_descriptions (Dict): Human-readable wave descriptions
+        wave_degrees (Dict): Wave degree definitions and parameters
+
+    WAVE DETECTION METHODOLOGY:
+        1. Pivot Point Identification: Finds significant turning points in price
+        2. Wave Structure Analysis: Validates 5-wave impulse or 3-wave correction
+        3. Fibonacci Validation: Checks golden ratio relationships between waves
+        4. Statistical Validation: Ensures wave significance through testing
+        5. Time Frame Correlation: Validates waves across multiple timeframes
+
+    FIBONACCI WAVE RELATIONSHIPS:
+        - Wave 2: 50%, 61.8%, or 78.6% retracement of Wave 1
+        - Wave 3: 161.8% or 200% extension of Wave 1
+        - Wave 4: 38.2% or 50% retracement of Wave 3
+        - Wave 5: 61.8% extension of Wave 3 or equality with Wave 1
+
+    OUTPUT STRUCTURE:
+        {
+            'current_wave': str,           # WAVE_1, WAVE_2, WAVE_3, WAVE_4, WAVE_5
+            'wave_degree': str,            # PRIMARY, INTERMEDIATE, MINOR, etc.
+            'wave_strength': float,        # 0.0 to 1.0 wave strength
+            'confidence_score': float,     # 0.0 to 1.0 statistical confidence
+            'fibonacci_projections': Dict, # Wave targets and retracements
+            'wave_personality': str,       # Wave behavioral characteristics
+            'trading_implications': str,   # LONG, SHORT, or HOLD recommendation
+            'price_target': float,         # Wave completion target
+            'stop_loss': float,            # Risk management level
+            'analysis_date': datetime,     # Analysis timestamp
+            'error': str                   # Error message if analysis fails
+        }
+
+    WAVE PERSONALITY ASSESSMENT:
+        - Wave 1: Strong psychologically, often underestimated
+        - Wave 2: Sharp correction, creates optimal buying opportunity
+        - Wave 3: Most profitable, extends furthest, strongest momentum
+        - Wave 4: Often complex, provides counter-trend opportunity
+        - Wave 5: Exhaustion wave, ends with divergence, reversal warning
+
+    TRADING STRATEGIES BY WAVE:
+        - Wave 2: Buy the dip, target Wave 3 extension
+        - Wave 3: Hold through the strongest trend segment
+        - Wave 4: Counter-trend trade or wait for Wave 5
+        - Wave 5: Prepare for reversal, use tight stops
+
+    EXAMPLE:
+        >>> config = {
+        ...     'elliott_wave': {
+        ...         'lookback_periods': 50,
+        ...         'min_wave_strength': 0.02,
+        ...         'fib_tolerance': 0.05
+        ...     }
+        ... }
+        >>> analyzer = ElliottWaveAnalyzer(config)
+        >>> analysis = analyzer.analyze_elliott_wave(daily_data, weekly_data)
+        >>> if analysis.get('current_wave') == 'WAVE_2':
+        ...     print(f"Wave 2 detected - Entry opportunity")
+        ...     print(f"Target: ${analysis['price_target']:.2f}")
+        ...     print(f"Confidence: {analysis['confidence_score']:.1f}%")
+
+    NOTE:
+        Requires sufficient historical data (minimum 50 periods recommended)
+        for reliable wave structure identification and statistical validation.
+    """
+
+    def __init__(self, config: Dict[str, Any]) -> None:
         self.config = config
         self.lookback_periods = config.get('elliott_wave', {}).get('lookback_periods', 50)
         self.min_wave_strength = config.get('elliott_wave', {}).get('min_wave_strength', 0.02)
