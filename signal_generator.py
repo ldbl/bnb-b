@@ -559,6 +559,14 @@ class SignalGenerator:
                         confidence = 0.2
                         signal_reasons.append(f"SHORT BLOCKED by alignment filter: {alignment_filter_applied['reason']}")
 
+                # Phase 1.8: Market Regime Filter за SHORT сигнали
+                if final_signal == 'SHORT' and daily_df is not None and weekly_df is not None and trend_analysis is not None:
+                    regime_filter_applied = self._check_market_regime_for_short(daily_df, weekly_df, trend_analysis, confidence)
+                    if not regime_filter_applied['allowed']:
+                        final_signal = 'HOLD'
+                        confidence = 0.15
+                        signal_reasons.append(f"SHORT BLOCKED by market regime filter: {regime_filter_applied['reason']}")
+
                 # Проверяваме дали отговаря на изискванията (по-гъвкаво)
                 if self.fib_tail_required:
                     has_fib_or_tail = (
@@ -1163,6 +1171,265 @@ class SignalGenerator:
             return {
                 'aligned': False,  # По подразбиране не alignment при грешка
                 'reason': f'Error in multi-timeframe alignment: {e}',
+                'error': str(e)
+            }
+
+    def _detect_market_regime(self, daily_df: pd.DataFrame, weekly_df: pd.DataFrame,
+                             trend_analysis: Dict) -> Dict[str, Any]:
+        """
+        Phase 1.8: Детектира текущия market regime за SHORT сигнали
+
+        Определя market regime базиран на:
+        - Trend strength и direction
+        - Volatility levels
+        - Volume patterns
+        - Market structure
+
+        Market Regimes:
+        - STRONG_BULL: SHORT_DISABLED (силен възходящ тренд)
+        - WEAK_BULL: SHORT_HIGH_CONFIDENCE (слаб възходящ тренд)
+        - RANGE: SHORT_ENABLED (странично движение)
+        - BEAR: SHORT_ENABLED (низходящ тренд)
+
+        Args:
+            daily_df: DataFrame с дневни OHLCV данни
+            weekly_df: DataFrame с weekly OHLCV данни
+            trend_analysis: Резултат от trend_analyzer.analyze_trend()
+
+        Returns:
+            Dict с информация за текущия market regime
+        """
+        try:
+            if not trend_analysis or 'error' in trend_analysis:
+                return {
+                    'regime': 'UNKNOWN',
+                    'short_policy': 'SHORT_ENABLED',
+                    'reason': 'Няма валиден trend анализ'
+                }
+
+            # Извличаме ключови метрики
+            combined_trend = trend_analysis.get('combined_trend', {})
+            daily_trend = trend_analysis.get('daily_trend', {})
+            weekly_trend = trend_analysis.get('weekly_trend', {})
+            range_analysis = trend_analysis.get('range_analysis', {})
+
+            if not combined_trend or not daily_trend or not weekly_trend:
+                return {
+                    'regime': 'UNKNOWN',
+                    'short_policy': 'SHORT_ENABLED',
+                    'reason': 'Недостатъчно trend данни'
+                }
+
+            # Анализираме тренд силата и посоката
+            daily_direction = daily_trend.get('direction', '')
+            daily_strength = daily_trend.get('strength', '')
+            weekly_direction = weekly_trend.get('direction', '')
+            weekly_strength = weekly_trend.get('strength', '')
+            trend_confidence = combined_trend.get('trend_confidence', 'LOW')
+
+            # Анализираме волатилността
+            if len(daily_df) >= 20:
+                recent_volatility = daily_df['Close'].pct_change().rolling(20).std().iloc[-1] * np.sqrt(252)
+                avg_volatility = daily_df['Close'].pct_change().rolling(60).std().iloc[-1] * np.sqrt(252)
+                volatility_ratio = recent_volatility / avg_volatility if avg_volatility > 0 else 1.0
+            else:
+                volatility_ratio = 1.0
+
+            # Анализираме range характеристиките
+            range_status = range_analysis.get('range_status', 'TRENDING')
+            range_position = range_analysis.get('range_position', 0.5)
+
+            # Определяме market regime базиран на критерии
+            regime_criteria = {
+                'strong_bull': (
+                    (weekly_direction in ['UPTREND', 'BULLISH'] and weekly_strength == 'STRONG') or
+                    (daily_direction in ['UPTREND', 'BULLISH'] and daily_strength == 'STRONG' and
+                     weekly_direction in ['UPTREND', 'BULLISH'])
+                ),
+                'weak_bull': (
+                    (weekly_direction in ['UPTREND', 'BULLISH'] and weekly_strength in ['MODERATE', 'WEAK']) or
+                    (daily_direction in ['UPTREND', 'BULLISH'] and weekly_direction in ['UPTREND', 'BULLISH'])
+                ),
+                'range': (
+                    range_status == 'RANGE' or
+                    (volatility_ratio < 0.8 and abs(range_position - 0.5) < 0.2)
+                ),
+                'bear': (
+                    (weekly_direction in ['DOWNTREND', 'BEARISH']) or
+                    (daily_direction in ['DOWNTREND', 'BEARISH'] and daily_strength in ['STRONG', 'MODERATE'])
+                )
+            }
+
+            # Определяме кой regime е активен (по приоритет)
+            if regime_criteria['strong_bull']:
+                regime = 'STRONG_BULL'
+                short_policy = 'SHORT_DISABLED'
+                reason = f'STRONG_BULL: Weekly {weekly_direction} ({weekly_strength}), Daily {daily_direction} ({daily_strength})'
+            elif regime_criteria['weak_bull']:
+                regime = 'WEAK_BULL'
+                short_policy = 'SHORT_HIGH_CONFIDENCE'
+                reason = f'WEAK_BULL: Weekly {weekly_direction} ({weekly_strength}), Daily {daily_direction} ({daily_strength})'
+            elif regime_criteria['range']:
+                regime = 'RANGE'
+                short_policy = 'SHORT_ENABLED'
+                reason = f'RANGE: Range status {range_status}, volatility ratio {volatility_ratio:.2f}'
+            elif regime_criteria['bear']:
+                regime = 'BEAR'
+                short_policy = 'SHORT_ENABLED'
+                reason = f'BEAR: Weekly {weekly_direction}, Daily {daily_direction} ({daily_strength})'
+            else:
+                regime = 'NEUTRAL'
+                short_policy = 'SHORT_ENABLED'
+                reason = f'NEUTRAL: Mixed signals, trend confidence {trend_confidence}'
+
+            # Изчисляваме regime strength
+            regime_strength = 0.5  # base strength
+
+            if trend_confidence == 'HIGH':
+                regime_strength += 0.3
+            elif trend_confidence == 'MEDIUM':
+                regime_strength += 0.2
+            elif trend_confidence == 'LOW':
+                regime_strength += 0.1
+
+            if volatility_ratio > 1.2:
+                regime_strength += 0.2
+            elif volatility_ratio < 0.8:
+                regime_strength -= 0.1
+
+            regime_strength = min(max(regime_strength, 0.0), 1.0)
+
+            return {
+                'regime': regime,
+                'short_policy': short_policy,
+                'reason': reason,
+                'strength': regime_strength,
+                'daily_trend': {
+                    'direction': daily_direction,
+                    'strength': daily_strength
+                },
+                'weekly_trend': {
+                    'direction': weekly_direction,
+                    'strength': weekly_strength
+                },
+                'trend_confidence': trend_confidence,
+                'volatility_ratio': volatility_ratio,
+                'range_status': range_status
+            }
+
+        except Exception as e:
+            logger.error(f"Грешка при market regime detection: {e}")
+            return {
+                'regime': 'UNKNOWN',
+                'short_policy': 'SHORT_ENABLED',  # По подразбиране разрешаваме при грешка
+                'reason': f'Error in regime detection: {e}',
+                'error': str(e)
+            }
+
+    def _check_market_regime_for_short(self, daily_df: pd.DataFrame, weekly_df: pd.DataFrame,
+                                       trend_analysis: Dict, current_confidence: float) -> Dict[str, any]:
+        """
+        Phase 1.8: Проверява market regime и прилага SHORT политики
+
+        Базирано на market regime прилага различни правила за SHORT сигнали:
+        - STRONG_BULL: SHORT_DISABLED (блокира всички SHORT сигнали)
+        - WEAK_BULL: SHORT_HIGH_CONFIDENCE (само висококонфидентни SHORT)
+        - RANGE: SHORT_ENABLED (разрешава всички SHORT)
+        - BEAR: SHORT_ENABLED (разрешава всички SHORT)
+
+        Args:
+            daily_df: DataFrame с дневни OHLCV данни
+            weekly_df: DataFrame с weekly OHLCV данни
+            trend_analysis: Резултат от trend_analyzer.analyze_trend()
+            current_confidence: Текущата confidence на сигнала
+
+        Returns:
+            Dict с информация дали SHORT е разрешен в текущия regime
+        """
+        try:
+            # Детектираме market regime
+            regime_analysis = self._detect_market_regime(daily_df, weekly_df, trend_analysis)
+
+            if regime_analysis.get('error'):
+                return {
+                    'allowed': True,  # По подразбиране разрешаваме при грешка
+                    'reason': f'Regime detection error: {regime_analysis["reason"]}',
+                    'regime': 'UNKNOWN',
+                    'policy_applied': 'SHORT_ENABLED'
+                }
+
+            regime = regime_analysis.get('regime', 'UNKNOWN')
+            short_policy = regime_analysis.get('short_policy', 'SHORT_ENABLED')
+            regime_strength = regime_analysis.get('strength', 0.5)
+
+            # Конфигурационни параметри
+            config = self.config.get('short_signals', {})
+            high_confidence_threshold = config.get('high_confidence_threshold', 0.8)
+
+            # Прилагаме политиките според regime
+            if short_policy == 'SHORT_DISABLED':
+                # STRONG_BULL: Блокираме всички SHORT сигнали
+                return {
+                    'allowed': False,
+                    'reason': f'SHORT BLOCKED by {regime} regime: {regime_analysis["reason"]}',
+                    'regime': regime,
+                    'policy_applied': short_policy,
+                    'regime_strength': regime_strength,
+                    'regime_analysis': regime_analysis
+                }
+
+            elif short_policy == 'SHORT_HIGH_CONFIDENCE':
+                # WEAK_BULL: Само висококонфидентни SHORT сигнали
+                if current_confidence >= high_confidence_threshold:
+                    return {
+                        'allowed': True,
+                        'reason': f'SHORT ALLOWED in {regime} regime (high confidence {current_confidence:.2f} >= {high_confidence_threshold:.2f}): {regime_analysis["reason"]}',
+                        'regime': regime,
+                        'policy_applied': short_policy,
+                        'regime_strength': regime_strength,
+                        'confidence_threshold': high_confidence_threshold,
+                        'regime_analysis': regime_analysis
+                    }
+                else:
+                    return {
+                        'allowed': False,
+                        'reason': f'SHORT BLOCKED by {regime} regime (low confidence {current_confidence:.2f} < {high_confidence_threshold:.2f}): {regime_analysis["reason"]}',
+                        'regime': regime,
+                        'policy_applied': short_policy,
+                        'regime_strength': regime_strength,
+                        'confidence_threshold': high_confidence_threshold,
+                        'regime_analysis': regime_analysis
+                    }
+
+            elif short_policy == 'SHORT_ENABLED':
+                # RANGE или BEAR: Разрешаваме всички SHORT сигнали
+                return {
+                    'allowed': True,
+                    'reason': f'SHORT ALLOWED in {regime} regime: {regime_analysis["reason"]}',
+                    'regime': regime,
+                    'policy_applied': short_policy,
+                    'regime_strength': regime_strength,
+                    'regime_analysis': regime_analysis
+                }
+
+            else:
+                # Неизвестна политика - по подразбиране разрешаваме
+                return {
+                    'allowed': True,
+                    'reason': f'Unknown policy {short_policy}, SHORT ALLOWED by default',
+                    'regime': regime,
+                    'policy_applied': short_policy,
+                    'regime_strength': regime_strength,
+                    'regime_analysis': regime_analysis
+                }
+
+        except Exception as e:
+            logger.error(f"Грешка при market regime check: {e}")
+            return {
+                'allowed': True,  # По подразбиране разрешаваме при грешка
+                'reason': f'Error in market regime check: {e}',
+                'regime': 'UNKNOWN',
+                'policy_applied': 'SHORT_ENABLED',
                 'error': str(e)
             }
     

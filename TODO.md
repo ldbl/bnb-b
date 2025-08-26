@@ -226,12 +226,15 @@ atr_multiplier = 2.0
 - [x] SHORT само при daily weakness и weekly не силен uptrend
 - [x] Тестване на новата логика
 
-#### **1.8 Market Regime Detection (НАЧАЛНА)**
-- [ ] STRONG_BULL: SHORT изключен
-- [ ] WEAK_BULL: SHORT с confidence threshold 0.8
-- [ ] RANGE: SHORT enabled
-- [ ] BEAR: SHORT enabled
-- [ ] Добави market regime classification
+#### **✅ 1.8 Market Regime Detection (ЗАВЪРШЕНА)**
+- [x] Създай `_detect_market_regime()` метод в signal_generator.py
+- [x] Добави market_regime_filter и high_confidence_threshold в config.toml
+- [x] STRONG_BULL: SHORT изключен (SHORT_DISABLED)
+- [x] WEAK_BULL: SHORT с confidence threshold 0.8 (SHORT_HIGH_CONFIDENCE)
+- [x] RANGE: SHORT enabled (SHORT_ENABLED)
+- [x] BEAR: SHORT enabled (SHORT_ENABLED)
+- [x] Интегрирай regime filter в основната логика за SHORT сигнали
+- [x] Тестване на новата логика
 
 #### **1.9 Signal Quality Scoring за SHORT (НАЧАЛНА)**
 - [ ] Fibonacci alignment: 35 точки

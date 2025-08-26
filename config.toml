@@ -42,6 +42,10 @@ daily_weakness_required = true  # Daily трябва да показва сла�
 weekly_strong_uptrend_block = true  # Блокира SHORT при силен weekly uptrend
 alignment_threshold = 0.6  # Минимален alignment score за SHORT сигнали
 
+# Phase 1.8: Market Regime Detection за SHORT сигнали
+market_regime_filter = true  # Активиране на market regime detection
+high_confidence_threshold = 0.8  # Минимална confidence за SHORT в WEAK_BULL regime
+
 [indicators]
 rsi_period = 14
 rsi_overbought = 80
