@@ -204,11 +204,13 @@ atr_multiplier = 2.0
 - [x] Интегрирай в signal_generator.py
 - [x] Тестване на новата логика
 
-#### **1.5 BNB Burn Filter за SHORT (НАЧАЛНА)**
-- [ ] **НЕ генерирай SHORT при burn** (14 дни преди и 7 дни след)
-- [ ] Добави **burn_event** и **pre_burn_window** колонки в `data_fetcher.py`
-- [ ] Автоматично извличане на burn дати от Binance API или bnbburn.info
-- [ ] SHORT само извън burn периодите
+#### **✅ 1.5 BNB Burn Filter за SHORT (ЗАВЪРШЕНА)**
+- [x] Добави burn_filter = true в short_signals секцията
+- [x] Създай `_fetch_bnb_burn_dates()` метод в data_fetcher.py
+- [x] Добави burn_event и burn_window колонки в DataFrame
+- [x] Създай `_check_bnb_burn_filter_for_short()` метод в signal_generator.py
+- [x] Интегрирай burn filter в основната логика за SHORT сигнали
+- [x] Тестване на новата логика
 
 #### **1.6 Price Action Rejection Patterns (НАЧАЛНА)**
 - [ ] Проверка за rejection от resistance нива

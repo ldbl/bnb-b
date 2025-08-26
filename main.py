@@ -213,11 +213,12 @@ class BNBTradingSystem:
             if not data or 'daily' not in data or 'weekly' not in data:
                 raise ValueError("Неуспешно извличане на данни")
             
-            daily_df = data['daily']
+                        daily_df = data['daily']
             weekly_df = data['weekly']
-            
-    
-            
+
+            # 1.5 Добавяме BNB burn колони към дневните данни
+            daily_df = self.data_fetcher.add_bnb_burn_columns(daily_df, self.config)
+
             # 2. Валидираме качеството на данните
             daily_quality = self.data_fetcher.validate_data_quality(daily_df)
             weekly_quality = self.data_fetcher.validate_data_quality(weekly_df)

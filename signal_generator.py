@@ -535,6 +535,14 @@ class SignalGenerator:
                         confidence = 0.3
                         signal_reasons.append(f"SHORT BLOCKED by volume confirmation: {volume_confirmation_applied['reason']}")
 
+                # Phase 1.5: BNB Burn Filter за SHORT сигнали
+                if final_signal == 'SHORT' and daily_df is not None:
+                    burn_filter_applied = self._check_bnb_burn_filter_for_short(daily_df)
+                    if burn_filter_applied['blocked']:
+                        final_signal = 'HOLD'
+                        confidence = 0.2
+                        signal_reasons.append(f"SHORT BLOCKED by BNB burn filter: {burn_filter_applied['reason']}")
+
                 # Проверяваме дали отговаря на изискванията (по-гъвкаво)
                 if self.fib_tail_required:
                     has_fib_or_tail = (
@@ -851,6 +859,79 @@ class SignalGenerator:
             return {
                 'confirmed': False,  # По подразбиране не потвърждаваме при грешка
                 'reason': f'Error in volume confirmation: {e}',
+                'error': str(e)
+            }
+
+    def _check_bnb_burn_filter_for_short(self, daily_df: pd.DataFrame) -> Dict[str, any]:
+        """
+        Phase 1.5: Проверява BNB burn filter за SHORT сигнали
+
+        SHORT сигнали се блокират ако текущата дата е в burn прозорец:
+        - 14 дни преди burn събитие
+        - 7 дни след burn събитие
+
+        Burn събитията значително покачват цената на BNB, така че SHORT
+        сигнали през тези периоди са много рисковани.
+
+        Args:
+            daily_df: DataFrame с дневни OHLCV данни и burn колони
+
+        Returns:
+            Dict с информация дали има burn събитие в близост
+        """
+        try:
+            if daily_df is None or daily_df.empty:
+                return {
+                    'blocked': False,
+                    'reason': 'Няма данни за burn анализ'
+                }
+
+            # Проверяваме дали има burn колони
+            if 'burn_event' not in daily_df.columns or 'burn_window' not in daily_df.columns:
+                return {
+                    'blocked': False,
+                    'reason': 'Няма burn колони в данните'
+                }
+
+            # Взимаме последната дата (текущата дата за анализ)
+            latest_date = daily_df.index[-1]
+
+            # Проверяваме дали текущата дата е в burn прозорец
+            latest_row = daily_df.loc[latest_date]
+
+            is_burn_event = latest_row.get('burn_event', False)
+            is_in_burn_window = latest_row.get('burn_window', False)
+
+            if is_burn_event:
+                return {
+                    'blocked': True,
+                    'reason': f'SHORT BLOCKED: Текущата дата ({latest_date.strftime("%Y-%m-%d")}) е BNB burn дата',
+                    'burn_event': True,
+                    'burn_window': True,
+                    'current_date': latest_date.strftime('%Y-%m-%d')
+                }
+            elif is_in_burn_window:
+                return {
+                    'blocked': True,
+                    'reason': f'SHORT BLOCKED: Текущата дата ({latest_date.strftime("%Y-%m-%d")}) е в burn прозорец',
+                    'burn_event': False,
+                    'burn_window': True,
+                    'current_date': latest_date.strftime('%Y-%m-%d')
+                }
+            else:
+                return {
+                    'blocked': False,
+                    'reason': f'Burn filter OK: Няма предстоящи burn събития около {latest_date.strftime("%Y-%m-%d")}',
+                    'burn_event': False,
+                    'burn_window': False,
+                    'current_date': latest_date.strftime('%Y-%m-%d')
+                }
+
+        except Exception as e:
+            logger.error(f"Грешка при BNB burn filter check: {e}")
+            return {
+                'blocked': False,  # По подразбиране не блокираме при грешка
+                'reason': f'Error in BNB burn filter: {e}',
                 'error': str(e)
             }
     

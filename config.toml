@@ -27,6 +27,9 @@ volume_confirmation_for_short = true
 volume_lookback_periods = 14  # Периоди за изчисляване на среден обем
 volume_multiplier_threshold = 1.5  # Колко пъти по-голям трябва да е обема
 
+# Phase 1.5: BNB Burn filter за SHORT сигнали
+burn_filter = true  # Активиране на burn filter за SHORT сигнали
+
 [indicators]
 rsi_period = 14
 rsi_overbought = 80
@@ -146,9 +149,26 @@ min_risk_reward = 2.0
 burn_enhancement = false  # Ще се активира в Phase 2
 
 [bnb_burn]
-enabled = false  # Ще се активира след имплементация
-pre_burn_window_days = 14
-post_burn_window_days = 7
+# Burn filter параметри за SHORT сигнали (Phase 1.5)
+burn_filter_enabled = true
+pre_burn_window_days = 14  # Дни преди burn да се блокира SHORT
+post_burn_window_days = 7   # Дни след burn да се блокира SHORT
+
+# Burn dates source (ще се разшири в бъдеще)
+burn_dates_source = "manual"  # manual, api, bnbburn.info
+
+# Ръчно дефинирани burn дати (за тестване)
+burn_dates = [
+    "2024-02-16",  # Примерна burn дата
+    "2024-03-15",  # Примерна burn дата
+    "2024-04-12",  # Примерна burn дата
+    "2024-05-10",  # Примерна burn дата
+    "2024-06-14",  # Примерна burn дата
+    "2024-07-12",  # Примерна burn дата
+    "2024-08-16",  # Примерна burn дата
+]
+
+# Burn confidence и target параметри (за бъдещи фази)
 burn_confidence_bonus = 0.15
 burn_target_pct = 0.05
 
