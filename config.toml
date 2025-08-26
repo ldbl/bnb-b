@@ -36,6 +36,12 @@ rejection_wick_ratio = 2.0  # Минимален ratio между wick и body �
 rejection_lookback_periods = 5  # Периоди за анализ на rejection patterns
 rejection_strength_threshold = 0.7  # Минимална сила на rejection сигнала
 
+# Phase 1.7: Multi-timeframe Alignment за SHORT сигнали
+multi_timeframe_alignment = true  # Активиране на multi-timeframe alignment check
+daily_weakness_required = true  # Daily трябва да показва слабост за SHORT
+weekly_strong_uptrend_block = true  # Блокира SHORT при силен weekly uptrend
+alignment_threshold = 0.6  # Минимален alignment score за SHORT сигнали
+
 [indicators]
 rsi_period = 14
 rsi_overbought = 80

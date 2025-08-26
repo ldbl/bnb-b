@@ -219,11 +219,12 @@ atr_multiplier = 2.0
 - [x] Интегрирай rejection filter в основната логика за SHORT сигнали
 - [x] Тестване на новата логика
 
-#### **1.7 Multi-timeframe Alignment (НАЧАЛНА)**
-- [ ] Daily трябва да показва слабост (DOWNTREND или WEAK)
-- [ ] Weekly не трябва да е в силен UPTREND
-- [ ] SHORT само когато и двата timeframe са aligned
-- [ ] Използвай съществуващите анализатори
+#### **✅ 1.7 Multi-timeframe Alignment (ЗАВЪРШЕНА)**
+- [x] Добави multi_timeframe_alignment параметър в config.toml
+- [x] Създай `_check_multi_timeframe_alignment_for_short()` метод в signal_generator.py
+- [x] Интегрирай alignment filter в основната логика за SHORT сигнали
+- [x] SHORT само при daily weakness и weekly не силен uptrend
+- [x] Тестване на новата логика
 
 #### **1.8 Market Regime Detection (НАЧАЛНА)**
 - [ ] STRONG_BULL: SHORT изключен

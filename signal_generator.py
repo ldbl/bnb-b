@@ -551,6 +551,14 @@ class SignalGenerator:
                         confidence = 0.25
                         signal_reasons.append(f"SHORT BLOCKED by rejection filter: {rejection_filter_applied['reason']}")
 
+                # Phase 1.7: Multi-timeframe Alignment Filter за SHORT сигнали
+                if final_signal == 'SHORT' and trend_analysis is not None:
+                    alignment_filter_applied = self._check_multi_timeframe_alignment_for_short(trend_analysis)
+                    if not alignment_filter_applied['aligned']:
+                        final_signal = 'HOLD'
+                        confidence = 0.2
+                        signal_reasons.append(f"SHORT BLOCKED by alignment filter: {alignment_filter_applied['reason']}")
+
                 # Проверяваме дали отговаря на изискванията (по-гъвкаво)
                 if self.fib_tail_required:
                     has_fib_or_tail = (
@@ -1007,6 +1015,154 @@ class SignalGenerator:
             return {
                 'confirmed': False,  # По подразбиране не потвърждаваме при грешка
                 'reason': f'Error in price action rejection: {e}',
+                'error': str(e)
+            }
+
+    def _check_multi_timeframe_alignment_for_short(self, trend_analysis: Dict) -> Dict[str, any]:
+        """
+        Phase 1.7: Проверява multi-timeframe alignment за SHORT сигнали
+
+        SHORT сигнали се генерират само когато има подходящо alignment:
+        - Daily тренд трябва да показва слабост (DOWNTREND или WEAK)
+        - Weekly тренд не трябва да е в силен UPTREND
+        - И двата timeframe трябва да са aligned за SHORT
+
+        Args:
+            trend_analysis: Резултат от trend_analyzer.analyze_trend()
+
+        Returns:
+            Dict с информация дали има достатъчно alignment за SHORT
+        """
+        try:
+            if not trend_analysis or 'error' in trend_analysis:
+                return {
+                    'aligned': False,
+                    'reason': 'Няма валиден trend анализ'
+                }
+
+            # Конфигурационни параметри
+            config = self.config.get('short_signals', {})
+            alignment_enabled = config.get('multi_timeframe_alignment', True)
+            daily_weakness_required = config.get('daily_weakness_required', True)
+            weekly_strong_uptrend_block = config.get('weekly_strong_uptrend_block', True)
+            alignment_threshold = config.get('alignment_threshold', 0.6)
+
+            if not alignment_enabled:
+                return {
+                    'aligned': True,
+                    'reason': 'Multi-timeframe alignment изключен'
+                }
+
+            combined_trend = trend_analysis.get('combined_trend', {})
+            daily_trend = trend_analysis.get('daily_trend', {})
+            weekly_trend = trend_analysis.get('weekly_trend', {})
+
+            if not combined_trend or not daily_trend or not weekly_trend:
+                return {
+                    'aligned': False,
+                    'reason': 'Недостатъчно trend данни за alignment анализ'
+                }
+
+            # Проверяваме daily тренд слабост
+            daily_direction = daily_trend.get('direction', '')
+            daily_strength = daily_trend.get('strength', '')
+
+            is_daily_weak = False
+            if daily_weakness_required:
+                # Daily трябва да показва слабост (DOWNTREND или WEAK)
+                is_daily_weak = (
+                    daily_direction in ['DOWNTREND', 'BEARISH'] or
+                    daily_strength in ['WEAK', 'MODERATE']
+                )
+            else:
+                # Ако не се изисква daily слабост, считаме че е OK
+                is_daily_weak = True
+
+            # Проверяваме weekly тренд (не силен UPTREND)
+            weekly_direction = weekly_trend.get('direction', '')
+            weekly_strength = weekly_trend.get('strength', '')
+
+            is_weekly_ok = True
+            if weekly_strong_uptrend_block:
+                # Weekly не трябва да е в силен UPTREND
+                is_weekly_ok = not (
+                    weekly_direction in ['UPTREND', 'BULLISH'] and
+                    weekly_strength == 'STRONG'
+                )
+
+            # Изчисляваме alignment score
+            alignment_score = 0.0
+
+            if is_daily_weak:
+                alignment_score += 0.5
+
+            if is_weekly_ok:
+                alignment_score += 0.5
+
+            # Допълнителни фактори за alignment score
+            trend_confidence = combined_trend.get('trend_confidence', 'LOW')
+            if trend_confidence == 'HIGH':
+                alignment_score += 0.2
+            elif trend_confidence == 'MEDIUM':
+                alignment_score += 0.1
+
+            # Проверяваме дали има достатъчно alignment
+            if alignment_score >= alignment_threshold and is_daily_weak and is_weekly_ok:
+                reason_parts = []
+                if is_daily_weak:
+                    reason_parts.append(f'Daily weakness: {daily_direction} ({daily_strength})')
+                if is_weekly_ok:
+                    reason_parts.append(f'Weekly OK: {weekly_direction} ({weekly_strength})')
+                if trend_confidence != 'LOW':
+                    reason_parts.append(f'Trend confidence: {trend_confidence}')
+
+                return {
+                    'aligned': True,
+                    'reason': f'Multi-timeframe aligned for SHORT: {", ".join(reason_parts)}',
+                    'alignment_score': alignment_score,
+                    'daily_weak': is_daily_weak,
+                    'weekly_ok': is_weekly_ok,
+                    'daily_trend': {
+                        'direction': daily_direction,
+                        'strength': daily_strength
+                    },
+                    'weekly_trend': {
+                        'direction': weekly_direction,
+                        'strength': weekly_strength
+                    },
+                    'trend_confidence': trend_confidence
+                }
+            else:
+                reason_parts = []
+                if not is_daily_weak:
+                    reason_parts.append(f'No daily weakness: {daily_direction} ({daily_strength})')
+                if not is_weekly_ok:
+                    reason_parts.append(f'Weekly strong uptrend blocked: {weekly_direction} ({weekly_strength})')
+                if alignment_score < alignment_threshold:
+                    reason_parts.append(f'Low alignment score: {alignment_score:.2f} < {alignment_threshold:.2f}')
+
+                return {
+                    'aligned': False,
+                    'reason': f'Multi-timeframe not aligned for SHORT: {", ".join(reason_parts)}',
+                    'alignment_score': alignment_score,
+                    'daily_weak': is_daily_weak,
+                    'weekly_ok': is_weekly_ok,
+                    'daily_trend': {
+                        'direction': daily_direction,
+                        'strength': daily_strength
+                    },
+                    'weekly_trend': {
+                        'direction': weekly_direction,
+                        'strength': weekly_strength
+                    },
+                    'trend_confidence': trend_confidence
+                }
+
+        except Exception as e:
+            logger.error(f"Грешка при multi-timeframe alignment check: {e}")
+            return {
+                'aligned': False,  # По подразбиране не alignment при грешка
+                'reason': f'Error in multi-timeframe alignment: {e}',
                 'error': str(e)
             }
     
