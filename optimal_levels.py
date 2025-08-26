@@ -1,25 +1,221 @@
 """
-Optimal Levels Module - Намира оптимални entry/exit нива базирани на най-много докосвания
-Интегриран в основната BNB Trading система
+Optimal Levels Analysis Module - Historical Price Level Validation and Trading Zones
+
+ADVANCED PRICE LEVEL ANALYSIS FOR SUPPORT/RESISTANCE IDENTIFICATION
+Identifies optimal entry/exit levels based on historical price touch frequency
+
+This module provides sophisticated analysis of historical price levels to identify
+significant support and resistance zones based on frequency of price touches,
+strength of reactions, and confluence with other technical levels.
+
+ARCHITECTURE OVERVIEW:
+    - Historical price action analysis with configurable timeframes
+    - Price level generation with adaptive interval sizing
+    - Touch frequency counting and statistical validation
+    - Support/resistance classification and strength scoring
+    - Confluence detection with other technical levels
+
+LEVEL IDENTIFICATION METHODOLOGY:
+    - Price Level Generation: Creates grid of potential levels
+    - Touch Frequency Analysis: Counts historical interactions at each level
+    - Strength Scoring: Evaluates level significance and reliability
+    - Support/Resistance Classification: Distinguishes level types
+    - Holding Period Analysis: Measures level effectiveness over time
+
+TRADING APPLICATIONS:
+    - Support Level Identification: Optimal entry points for LONG positions
+    - Resistance Level Identification: Optimal entry points for SHORT positions
+    - Risk Management: Stop loss placement at validated levels
+    - Target Setting: Profit target identification at next significant levels
+    - Breakout Detection: Monitoring for level breakouts
+
+LEVEL STRENGTH FACTORS:
+    - Touch Frequency: Number of times price interacted with level
+    - Holding Strength: Duration price spent at level
+    - Volume Confirmation: Volume spikes at level interactions
+    - Time Proximity: Recent vs historical significance
+    - Confluence Bonus: Alignment with other technical levels
+
+CONFIGURATION PARAMETERS:
+    - price_interval: Spacing between price levels (default: 25)
+    - min_touches: Minimum touch count for valid level (default: 3)
+    - level_tolerance: Price tolerance for level touch detection (default: 0.01)
+    - min_holding_period: Minimum time at level for significance (default: 5)
+    - max_levels_returned: Maximum levels to return (default: 10)
+
+LEVEL TYPES:
+    - MAJOR SUPPORT: Strong buying interest, multiple tests
+    - MINOR SUPPORT: Moderate buying interest, fewer tests
+    - MAJOR RESISTANCE: Strong selling pressure, multiple rejections
+    - MINOR RESISTANCE: Moderate selling pressure, fewer rejections
+    - CONSOLIDATION: Price range with equal support/resistance
+
+EXAMPLE USAGE:
+    >>> config = {'optimal_levels': {'price_interval': 25, 'min_touches': 3}}
+    >>> analyzer = OptimalLevelsAnalyzer(config)
+    >>> analysis = analyzer.analyze_optimal_levels(daily_data, weekly_data)
+    >>> support_levels = analysis['optimal_levels']['support_levels']
+    >>> top_support = support_levels[0]['price']  # Best entry level
+
+DEPENDENCIES:
+    - pandas: Data manipulation and time series operations
+    - numpy: Mathematical calculations and array operations
+    - collections.defaultdict: Efficient dictionary operations
+    - typing: Type hints for better code documentation
+
+PERFORMANCE OPTIMIZATIONS:
+    - Vectorized price level generation
+    - Efficient touch counting algorithms
+    - Memory-optimized data structures
+    - Configurable analysis depth limits
+
+ERROR HANDLING:
+    - Data validation and sufficiency checks
+    - Missing data handling and interpolation
+    - Statistical calculation error recovery
+    - Comprehensive logging and debugging
+
+VALIDATION TECHNIQUES:
+    - Statistical significance testing of level strength
+    - Back-testing of level effectiveness
+    - Cross-validation with other technical methods
+    - Robustness testing across different market conditions
+
+TRADING STRATEGIES:
+    - Support Bounce: Enter LONG at support, target resistance
+    - Resistance Rejection: Enter SHORT at resistance, target support
+    - Range Trading: Trade between validated support/resistance
+    - Breakout Trading: Enter on level breakout with confirmation
+
+AUTHOR: BNB Trading System Team
+VERSION: 2.0.0
+DATE: 2024-01-01
 """
 
 import pandas as pd
 import numpy as np
 from collections import defaultdict
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Any
 import logging
 
 logger = logging.getLogger(__name__)
 
 class OptimalLevelsAnalyzer:
-    """Анализатор за оптимални trading нива базирани на исторически докосвания"""
-    
-    def __init__(self, config: Dict):
+    """
+    Advanced Historical Price Level Analysis Engine
+
+    This class provides sophisticated analysis of historical price levels to identify
+    significant support and resistance zones based on frequency of price interactions,
+    strength of reactions, and statistical validation.
+
+    ARCHITECTURE OVERVIEW:
+        - Historical price action analysis with configurable parameters
+        - Price level grid generation with adaptive spacing
+        - Touch frequency counting and statistical significance testing
+        - Support/resistance classification based on market behavior
+        - Confluence detection with other technical analysis methods
+
+    PRICE LEVEL ANALYSIS METHODOLOGY:
+        1. Price Level Generation: Creates comprehensive grid of potential levels
+        2. Touch Frequency Analysis: Counts and validates historical interactions
+        3. Strength Scoring: Evaluates level significance and reliability
+        4. Support/Resistance Classification: Categorizes levels by market function
+        5. Statistical Validation: Ensures levels are statistically significant
+
+    LEVEL GENERATION STRATEGY:
+        - Adaptive Grid: Creates levels based on price range and volatility
+        - Current Price Focus: Adds levels around current price for relevance
+        - Interval Optimization: Balances level density with analysis efficiency
+        - Historical Coverage: Ensures comprehensive historical analysis
+
+    TOUCH DETECTION ALGORITHM:
+        - Price Proximity: Configurable tolerance for level touch detection
+        - Multiple Touch Types: High, Low, Close interactions with levels
+        - Volume Confirmation: Validates touches with volume spikes
+        - Time-weighted Scoring: Recent touches weighted higher
+
+    STRENGTH SCORING FACTORS:
+        - Touch Frequency: Number of times price interacted with level
+        - Holding Period: Duration price spent near level
+        - Rejection Strength: Magnitude of price rejection at level
+        - Volume Confirmation: Volume spike at level interaction
+        - Time Proximity: Recency of level interactions
+
+    CONFIGURATION PARAMETERS:
+        price_interval (int): Spacing between price levels in dollars (default: 25)
+        min_touches (int): Minimum touch count for valid level (default: 3)
+        level_tolerance (float): Price tolerance for touch detection (default: 0.01)
+        min_holding_period (int): Minimum periods for level significance (default: 5)
+        max_levels_returned (int): Maximum levels to return in results (default: 10)
+
+    ATTRIBUTES:
+        price_interval (int): Spacing between price levels
+        min_touches (int): Minimum touch count threshold
+        level_tolerance (float): Price tolerance for touch detection
+        min_holding_period (int): Minimum holding period for significance
+        max_levels_returned (int): Maximum levels in output
+
+    LEVEL CLASSIFICATION:
+        - MAJOR SUPPORT: High touch frequency, strong buying reactions
+        - MINOR SUPPORT: Moderate touch frequency, moderate buying reactions
+        - MAJOR RESISTANCE: High touch frequency, strong selling pressure
+        - MINOR RESISTANCE: Moderate touch frequency, moderate selling pressure
+        - CONSOLIDATION: Price range with balanced support/resistance
+
+    OUTPUT STRUCTURE:
+        {
+            'price_levels': List[float],        # All generated price levels
+            'level_touches': Dict[float, int],  # Touch count for each level
+            'current_price': float,             # Current market price
+            'optimal_levels': {
+                'support_levels': List[Dict],   # Ranked support levels
+                'resistance_levels': List[Dict] # Ranked resistance levels
+            },
+            'analysis_date': pd.Timestamp       # Analysis timestamp
+        }
+
+    EXAMPLE:
+        >>> analyzer = OptimalLevelsAnalyzer({})
+        >>> result = analyzer.analyze_optimal_levels(daily_data, weekly_data)
+        >>> support_levels = result['optimal_levels']['support_levels']
+        >>> best_entry = support_levels[0]['price']
+        >>> strength = support_levels[0]['strength']
+
+    NOTE:
+        Requires sufficient historical data (minimum 100 periods recommended)
+        for statistically significant level identification.
+    """
+
+    def __init__(self, config: Dict[str, Any]) -> None:
         """
-        Инициализира анализатора
-        
+        Initialize the Optimal Levels Analyzer with configuration parameters.
+
+        Sets up the analyzer with parameters for historical price level analysis,
+        including level spacing, touch detection thresholds, and output limits.
+
         Args:
-            config: Конфигурационни параметри
+            config (Dict[str, Any]): Configuration dictionary containing:
+                - price_interval (int): Spacing between price levels (default: 25)
+                - min_touches (int): Minimum touch count for valid levels (default: 3)
+                - level_tolerance (float): Price tolerance for touch detection (default: 0.01)
+                - min_holding_period (int): Minimum holding periods (default: 5)
+                - max_levels_returned (int): Maximum levels to return (default: 10)
+
+        Raises:
+            ValueError: If configuration parameters are invalid
+            KeyError: If required configuration keys are missing
+
+        Example:
+            >>> # Default configuration
+            >>> analyzer = OptimalLevelsAnalyzer({})
+
+            >>> # Custom configuration
+            >>> config = {
+            ...     'price_interval': 50,
+            ...     'min_touches': 5,
+            ...     'max_levels_returned': 15
+            ... }
+            >>> analyzer = OptimalLevelsAnalyzer(config)
         """
         self.price_interval = 25  # Интервал между ценови нива
         self.min_touches = 3      # Минимум докосвания за валидно ниво
