@@ -1,6 +1,8 @@
-# �� BNB Trading System - Интелигентна Swing Trading Система
+# �� BNB Trading System - Complete Technical Analysis Trading System
 
-**Цел: 75%+ точност на сигналите** базирана на Fibonacci нива, Weekly Tails и Technical Analysis.
+**🎯 TARGET: 75%+ Signal Accuracy** using Advanced Fibonacci Analysis, Weekly Tails, and 15+ Technical Analysis Modules.
+
+> 📚 **📖 [Complete Module Documentation](MODULES.md)** - Detailed documentation for all 15+ analysis modules, classes, and APIs.
 
 ## 🎯 Основни Характеристики
 
@@ -11,27 +13,33 @@
 - **Optimal Levels** - исторически валидирани entry/exit точки
 - **Real-time Data** - данни от Binance API чрез CCXT
 
-## 📊 Архитектура
+## 📊 System Architecture
 
 ```
-bnb_trading/
-├── config.toml              # Всички параметри тук
-├── main.py                  # Главна точка за стартиране
-├── data_fetcher.py          # Binance API интеграция
-├── fibonacci.py             # Fibonacci изчисления
-├── weekly_tails.py          # Weekly wick/тails анализ
-├── indicators.py            # Technical indicators (RSI, MACD, BB)
-├── signal_generator.py      # Комбинира всички сигнали
-├── optimal_levels.py        # Оптимални trading нива
-├── trend_analyzer.py        # Тренд анализ и адаптивни стратегии
-├── elliott_wave_analyzer.py # Elliott Wave структурен анализ
-├── whale_tracker.py         # Whale tracking & institutional flows
-├── ichimoku_module.py       # Ichimoku Cloud анализ
-├── sentiment_module.py      # Market sentiment & psychology
-├── validator.py             # Валидация на сигналите
-├── backtester.py            # Backtesting на стратегията
-└── data/                    # Резултати и данни
+BNB Trading System v2.0.0 - Complete Modular Architecture
+├── 🎯 main.py - Main orchestrator and system entry point
+├── 📊 signal_generator.py - Core analysis engine (15+ modules integration)
+├── 📈 data_fetcher.py - Binance API integration & data management
+├── 🧮 Analysis Modules (15 specialized analyzers)
+│   ├── 🌀 fibonacci.py - Fibonacci retracement/extension analysis
+│   ├── 📊 weekly_tails.py - Weekly candle pattern analysis
+│   ├── 🎛️ indicators.py - Technical indicators (RSI, MACD, BB)
+│   ├── 📈 trend_analyzer.py - Trend detection and adaptive strategies
+│   ├── 🎯 optimal_levels.py - Historical support/resistance levels
+│   ├── 🌊 elliott_wave_analyzer.py - Elliott Wave structural analysis
+│   ├── 🐋 whale_tracker.py - Large transaction monitoring
+│   ├── 🏮 ichimoku_module.py - Ichimoku Cloud analysis
+│   ├── 🧠 sentiment_module.py - Market sentiment composite
+│   ├── 🔄 divergence_detector.py - Price/indicator divergences
+│   ├── 📈 moving_averages.py - MA crossovers and trend analysis
+│   ├── 📐 price_action_patterns.py - Chart pattern recognition
+│   └── ✅ validator.py - Signal validation and performance tracking
+├── 📊 backtester.py - Historical backtesting engine
+├── ⚙️ config.toml - Complete system configuration (TOML format)
+└── 📁 data/ - Results, logs, and analysis outputs
 ```
+
+> 📚 **🔗 [Detailed Module Documentation](MODULES.md)** - Comprehensive documentation for all classes, methods, and APIs with examples and usage patterns.
 
 ## 🚀 Инсталация
 

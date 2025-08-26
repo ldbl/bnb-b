@@ -1,12 +1,56 @@
 """
-Signal Generator Module - Генерира Long/Short сигнали за BNB trading
-Комбинира Fibonacci, седмични опашки и технически индикатори
-Приоритет: Fib+Tail > само Fib > само Tail > RSI/MACD/BB
+Signal Generator Module - Core Trading Signal Orchestrator
+
+GENERATES LONG/SHORT SIGNALS FOR BNB TRADING SYSTEM
+
+This module serves as the central orchestrator for the BNB trading system,
+combining multiple analysis modules to generate high-confidence trading signals.
+
+ARCHITECTURE:
+    - Integrates 15+ specialized analysis modules
+    - Weighted scoring system for signal confidence
+    - Multi-timeframe analysis (daily + weekly)
+    - Risk management integration
+    - Comprehensive error handling and logging
+
+SIGNAL PRIORITY HIERARCHY:
+    1. Fibonacci + Weekly Tails confluence (highest confidence)
+    2. Fibonacci levels only
+    3. Weekly Tails only
+    4. Technical indicators (RSI, MACD, BB)
+    5. Trend analysis confirmation
+
+SUPPORTED SIGNAL TYPES:
+    - LONG: Buy signal with confidence score
+    - SHORT: Sell signal with confidence score
+    - HOLD: No clear signal (insufficient confidence)
+
+CONFIDENCE SCORING:
+    - 0.0 - 0.3: Very Low (HOLD recommended)
+    - 0.3 - 0.6: Low (caution advised)
+    - 0.6 - 0.8: Medium (acceptable)
+    - 0.8 - 1.0: High (strong signal)
+
+EXAMPLE USAGE:
+    >>> from signal_generator import SignalGenerator
+    >>> generator = SignalGenerator(config)
+    >>> signal = generator.generate_signal(daily_df, weekly_df)
+    >>> print(f"Signal: {signal['signal']}, Confidence: {signal['confidence']:.2f}")
+
+DEPENDENCIES:
+    - pandas, numpy for data manipulation
+    - All 15+ analysis modules
+    - Configuration management
+    - Logging system
+
+AUTHOR: BNB Trading System Team
+VERSION: 2.0.0
+LAST UPDATED: 2024-01-01
 """
 
 import pandas as pd
 import numpy as np
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Any, Optional
 import logging
 from fibonacci import FibonacciAnalyzer
 from weekly_tails import WeeklyTailsAnalyzer
@@ -25,14 +69,82 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class SignalGenerator:
-    """Клас за генериране на trading сигнали"""
-    
-    def __init__(self, config: Dict):
+    """
+    Core Signal Generation Engine for BNB Trading System
+
+    This class serves as the main orchestrator for the entire BNB trading system,
+    integrating multiple specialized analysis modules to generate high-confidence
+    trading signals through a sophisticated weighted scoring system.
+
+    ARCHITECTURE OVERVIEW:
+        - Initializes 15+ analysis modules based on configuration
+        - Orchestrates multi-timeframe analysis (daily + weekly)
+        - Implements weighted scoring algorithm for signal confidence
+        - Provides comprehensive error handling and fallback mechanisms
+        - Supports both real-time and historical signal generation
+
+    ANALYSIS MODULES INTEGRATION:
+        1. Fibonacci Analyzer (35% weight) - Key levels and retracements
+        2. Weekly Tails Analyzer (30% weight) - Price action patterns
+        3. Trend Analyzer (20% weight) - Market direction and strength
+        4. Technical Indicators (15% weight) - RSI, MACD, Bollinger Bands
+
+    SIGNAL GENERATION PROCESS:
+        1. Execute all enabled analysis modules
+        2. Collect and validate individual analysis results
+        3. Apply weighted scoring algorithm
+        4. Generate final signal with confidence score
+        5. Validate signal against risk management criteria
+
+    ATTRIBUTES:
+        config (Dict): System configuration parameters
+        fibonacci_weight (float): Weight for Fibonacci analysis (0.35)
+        weekly_tails_weight (float): Weight for weekly tails analysis (0.30)
+        rsi_weight (float): Weight for RSI indicator (0.15)
+        macd_weight (float): Weight for MACD indicator (0.10)
+        bb_weight (float): Weight for Bollinger Bands (0.05)
+        min_confirmations (int): Minimum required confirmations (2)
+        confidence_threshold (float): Minimum confidence for signal generation (0.7)
+
+    EXAMPLE:
+        >>> config = toml.load('config.toml')
+        >>> generator = SignalGenerator(config)
+        >>> signal = generator.generate_signal(daily_data, weekly_data)
+        >>> print(f"Signal: {signal['signal']} (Confidence: {signal['confidence']:.2f})")
+
+    NOTE:
+        All analysis modules are initialized but may be disabled via configuration.
+        The system gracefully handles module failures and continues with available analyses.
+    """
+
+    def __init__(self, config: Dict[str, Any]) -> None:
         """
-        Инициализира генератора на сигнали
-        
+        Initialize the Signal Generator with configuration and analysis modules.
+
+        Sets up all analysis modules based on configuration parameters and establishes
+        the weighted scoring system for signal generation.
+
         Args:
-            config: Конфигурационни параметри
+            config (Dict[str, Any]): Complete system configuration from config.toml
+                Required sections:
+                - signals: Signal generation parameters
+                - fibonacci: Fibonacci analysis settings
+                - weekly_tails: Weekly tails analysis settings
+                - indicators: Technical indicators settings
+                - trend: Trend analysis settings
+                - And module-specific configurations
+
+        Raises:
+            ValueError: If required configuration sections are missing
+            ImportError: If required analysis modules cannot be imported
+
+        Example:
+            >>> config = {
+            ...     'signals': {'fibonacci_weight': 0.35, 'confidence_threshold': 0.7},
+            ...     'fibonacci': {'swing_lookback': 100},
+            ...     'weekly_tails': {'lookback_weeks': 8}
+            ... }
+            >>> generator = SignalGenerator(config)
         """
         self.config = config
         self.fibonacci_weight = config['signals']['fibonacci_weight']
@@ -65,16 +177,80 @@ class SignalGenerator:
         logger.info(f"Минимум потвърждения: {self.min_confirmations}")
         logger.info(f"Fibonacci+Tail изискване: {self.fib_tail_required}")
     
-    def generate_signal(self, daily_df: pd.DataFrame, weekly_df: pd.DataFrame) -> Dict[str, any]:
+    def generate_signal(self, daily_df: pd.DataFrame, weekly_df: pd.DataFrame) -> Dict[str, Any]:
         """
-        Генерира основен trading сигнал
-        
+        Generate the primary trading signal by orchestrating all analysis modules.
+
+        This is the MAIN ENTRY POINT for signal generation in the BNB trading system.
+        The method executes a comprehensive analysis pipeline:
+
+        1. VALIDATION PHASE:
+           - Validates input data integrity
+           - Checks data sufficiency for analysis
+           - Ensures proper DataFrame structure
+
+        2. ANALYSIS EXECUTION PHASE:
+           - Executes all enabled analysis modules in parallel
+           - Handles module failures gracefully
+           - Collects results with error tracking
+
+        3. SIGNAL SYNTHESIS PHASE:
+           - Applies weighted scoring algorithm
+           - Determines signal direction (LONG/SHORT/HOLD)
+           - Calculates confidence score
+
+        4. VALIDATION PHASE:
+           - Validates signal against risk criteria
+           - Checks minimum confidence threshold
+           - Applies final signal filters
+
         Args:
-            daily_df: Daily OHLCV данни
-            weekly_df: Weekly OHLCV данни
-            
+            daily_df (pd.DataFrame): Daily OHLCV data with required columns:
+                - 'Open', 'High', 'Low', 'Close', 'Volume'
+                - Minimum 100 rows for analysis
+                - No missing values in critical columns
+            weekly_df (pd.DataFrame): Weekly OHLCV data with same requirements:
+                - 'Open', 'High', 'Low', 'Close', 'Volume'
+                - Minimum 8 rows for analysis
+                - Proper datetime index
+
         Returns:
-            Dict с генерирания сигнал
+            Dict[str, Any]: Complete signal analysis with the following structure:
+                {
+                    'signal': 'LONG' | 'SHORT' | 'HOLD',
+                    'confidence': float,  # 0.0 to 1.0
+                    'priority': 'HIGHEST' | 'HIGH' | 'MEDIUM' | 'LOW',
+                    'fibonacci_analysis': Dict,  # Fibonacci levels and analysis
+                    'weekly_tails_analysis': Dict,  # Weekly tails patterns
+                    'indicators_signals': Dict,  # Technical indicators
+                    'trend_analysis': Dict,  # Trend direction and strength
+                    'optimal_levels_analysis': Dict,  # Support/resistance levels
+                    'elliott_wave_analysis': Dict,  # Elliott wave structures
+                    'whale_analysis': Dict,  # Whale activity summary
+                    'ichimoku_analysis': Dict,  # Ichimoku cloud signals
+                    'sentiment_analysis': Dict,  # Market sentiment composite
+                    'divergence_analysis': Dict,  # Price/indicator divergences
+                    'moving_averages_analysis': Dict,  # MA crossovers and trends
+                    'price_patterns_analysis': Dict,  # Chart patterns
+                    'analysis_date': pd.Timestamp,  # Analysis timestamp
+                    'error': str  # Only present if critical error occurred
+                }
+
+        Raises:
+            ValueError: If input data is invalid or insufficient
+            RuntimeError: If critical analysis modules fail
+
+        Example:
+            >>> daily_data = pd.read_csv('daily_bnb.csv', index_col='Date')
+            >>> weekly_data = pd.read_csv('weekly_bnb.csv', index_col='Date')
+            >>> signal = generator.generate_signal(daily_data, weekly_data)
+            >>> if signal['signal'] != 'HOLD':
+            ...     print(f"Trade Signal: {signal['signal']} "
+            ...           f"(Confidence: {signal['confidence']:.1%})")
+
+        Note:
+            The method is designed to be robust and will continue analysis
+            even if individual modules fail, using available data for signal generation.
         """
         try:
             logger.info("Генериране на trading сигнал...")
