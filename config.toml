@@ -57,3 +57,28 @@ enabled = true
 lookback_periods = 50
 min_wave_strength = 0.02
 confidence_threshold = 60
+
+[whale_tracker]
+enabled = true
+mega_whale_threshold = 100000
+whale_threshold = 50000
+large_holder_threshold = 10000
+medium_holder_threshold = 1000
+volume_spike_threshold = 2.0
+price_change_threshold = 0.02
+
+[ichimoku]
+enabled = true
+tenkan_period = 9
+kijun_period = 26
+senkou_span_b_period = 52
+chikou_span_offset = 26
+senkou_span_offset = 26
+
+[sentiment]
+enabled = true
+fear_greed_weight = 0.3
+social_weight = 0.25
+news_weight = 0.25
+momentum_weight = 0.2
+confidence_threshold = 60

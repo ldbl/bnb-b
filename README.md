@@ -25,6 +25,9 @@ bnb_trading/
 ├── optimal_levels.py        # Оптимални trading нива
 ├── trend_analyzer.py        # Тренд анализ и адаптивни стратегии
 ├── elliott_wave_analyzer.py # Elliott Wave структурен анализ
+├── whale_tracker.py         # Whale tracking & institutional flows
+├── ichimoku_module.py       # Ichimoku Cloud анализ
+├── sentiment_module.py      # Market sentiment & psychology
 ├── validator.py             # Валидация на сигналите
 ├── backtester.py            # Backtesting на стратегията
 └── data/                    # Резултати и данни
@@ -83,7 +86,28 @@ python3 main.py
 - Генерира wave-based trading сигнали
 - Multi-timeframe анализ (daily + weekly)
 
-### 7. **Signal Generation**
+### 7. **Whale Tracker Analysis**
+- Следва големи BNB транзакции (whale movements)
+- Анализира volume spikes и whale activity
+- Определя whale sentiment (buy/sell bias)
+- Order book анализ за whale walls
+- Exchange flows и institutional money
+
+### 8. **Ichimoku Cloud Analysis**
+- Японски технически анализ (Ichimoku Kinko Hyo)
+- Cloud status (above/below/in cloud)
+- Tenkan/Kijun cross сигнали
+- Support/Resistance нива от cloud
+- Multi-timeframe cloud анализ
+
+### 9. **Market Sentiment Analysis**
+- Fear & Greed Index интеграция
+- Social media sentiment (Twitter, Reddit, Telegram)
+- News sentiment analysis
+- Market momentum indicators
+- Composite sentiment scoring
+
+### 10. **Signal Generation**
 - Комбинира всички анализи
 - Изчислява confidence score
 - Генерира финален сигнал (LONG/SHORT/HOLD)
@@ -137,6 +161,24 @@ enabled = true
 lookback_periods = 50
 min_wave_strength = 0.02
 confidence_threshold = 60
+
+[whale_tracker]
+enabled = true
+whale_thresholds = [10000, 50000, 100000]
+alert_thresholds = [3.0, 50000, 3, 0.03, 8]
+
+[ichimoku]
+enabled = true
+tenkan_period = 9
+kijun_period = 26
+senkou_span_b_period = 52
+
+[sentiment]
+enabled = true
+fear_greed_weight = 0.3
+social_weight = 0.25
+news_weight = 0.25
+momentum_weight = 0.2
 ```
 
 ## 📊 Използване

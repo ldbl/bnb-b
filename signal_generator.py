@@ -14,6 +14,9 @@ from indicators import TechnicalIndicators
 from optimal_levels import OptimalLevelsAnalyzer
 from trend_analyzer import TrendAnalyzer
 from elliott_wave_analyzer import ElliottWaveAnalyzer
+from whale_tracker import WhaleTracker
+from ichimoku_module import IchimokuAnalyzer
+from sentiment_module import SentimentAnalyzer
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -45,6 +48,9 @@ class SignalGenerator:
         self.optimal_levels_analyzer = OptimalLevelsAnalyzer(config)
         self.trend_analyzer = TrendAnalyzer(config)
         self.elliott_wave_analyzer = ElliottWaveAnalyzer(config)
+        self.whale_tracker = WhaleTracker()
+        self.ichimoku_analyzer = IchimokuAnalyzer()
+        self.sentiment_analyzer = SentimentAnalyzer()
         
         logger.info("Signal Generator инициализиран")
         logger.info(f"Приоритет: Fibonacci={self.fibonacci_weight}, Weekly Tails={self.weekly_tails_weight}")
@@ -102,6 +108,35 @@ class SignalGenerator:
                 logger.warning(f"Elliott Wave анализ неуспешен: {elliott_wave_analysis['error']}")
                 elliott_wave_analysis = None
             
+            # 7. Whale Tracker Analysis
+            whale_analysis = self.whale_tracker.get_whale_activity_summary(days_back=1)
+            if 'error' in whale_analysis:
+                logger.warning(f"Whale Tracker анализ неуспешен: {whale_analysis['error']}")
+                whale_analysis = None
+            
+            # 8. Ichimoku Analysis
+            ichimoku_analysis = self.ichimoku_analyzer.analyze_ichimoku_signals(
+                self.ichimoku_analyzer.calculate_all_ichimoku_lines(
+                    self.ichimoku_analyzer.process_klines_data(
+                        self.ichimoku_analyzer.fetch_ichimoku_data("1d", 100)
+                    )
+                )
+            )
+            if 'error' in ichimoku_analysis:
+                logger.warning(f"Ichimoku анализ неуспешен: {ichimoku_analysis['error']}")
+                ichimoku_analysis = None
+            
+            # 9. Sentiment Analysis
+            sentiment_analysis = self.sentiment_analyzer.calculate_composite_sentiment(
+                self.sentiment_analyzer.get_fear_greed_index(),
+                self.sentiment_analyzer.analyze_social_sentiment(),
+                self.sentiment_analyzer.analyze_news_sentiment(),
+                self.sentiment_analyzer.get_market_momentum_indicators()
+            )
+            if 'error' in sentiment_analysis:
+                logger.warning(f"Sentiment анализ неуспешен: {sentiment_analysis['error']}")
+                sentiment_analysis = None
+            
             # 6. Проверяваме за Fibonacci + Tails съвпадения
             confluence_info = None
             if fib_analysis and tails_analysis:
@@ -128,7 +163,10 @@ class SignalGenerator:
                 confluence_info,
                 optimal_levels_analysis,
                 trend_analysis,
-                elliott_wave_analysis
+                elliott_wave_analysis,
+                whale_analysis,
+                ichimoku_analysis,
+                sentiment_analysis
             )
             
             logger.info(f"Сигнал генериран: {final_signal['signal']} (увереност: {final_signal['confidence']:.2f})")
@@ -278,7 +316,9 @@ class SignalGenerator:
     def _create_signal_details(self, final_signal: Dict, fib_analysis: Dict, 
                               tails_analysis: Dict, indicators_signals: Dict, 
                               confluence_info: Dict, optimal_levels_analysis: Dict = None, 
-                              trend_analysis: Dict = None, elliott_wave_analysis: Dict = None) -> Dict[str, any]:
+                              trend_analysis: Dict = None, elliott_wave_analysis: Dict = None,
+                              whale_analysis: Dict = None, ichimoku_analysis: Dict = None,
+                              sentiment_analysis: Dict = None) -> Dict[str, any]:
         """
         Създава детайлна информация за сигнала
         
@@ -308,6 +348,9 @@ class SignalGenerator:
                 'optimal_levels_analysis': optimal_levels_analysis,
                 'trend_analysis': trend_analysis,
                 'elliott_wave_analysis': elliott_wave_analysis,
+                'whale_analysis': whale_analysis,
+                'ichimoku_analysis': ichimoku_analysis,
+                'sentiment_analysis': sentiment_analysis,
                 'next_targets': self._get_next_targets(final_signal, fib_analysis, tails_analysis),
                 'risk_level': self._calculate_risk_level(final_signal, fib_analysis, tails_analysis)
             }

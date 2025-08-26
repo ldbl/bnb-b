@@ -514,11 +514,108 @@ class BNBTradingSystem:
                         print(f"      Причина: {signals.get('reason', '')}")
                         print(f"      Ниво на риска: {signals.get('risk_level', 'UNKNOWN')}")
                     
-                    # Elliott Wave правила
-                    if elliott_analysis.get('elliott_rules_valid'):
-                        print(f"   ✅ ELLIOTT WAVE ПРАВИЛА: Валидни")
-                    else:
-                        print(f"   ⚠️  ELLIOTT WAVE ПРАВИЛА: Нарушени")
+                                # Elliott Wave правила
+            if elliott_analysis.get('elliott_rules_valid'):
+                print(f"   ✅ ELLIOTT WAVE ПРАВИЛА: Валидни")
+            else:
+                print(f"   ⚠️  ELLIOTT WAVE ПРАВИЛА: Нарушени")
+            
+            # Whale Tracker Analysis - ново!
+            if 'whale_analysis' in signal:
+                whale_analysis = signal['whale_analysis']
+                if 'error' not in whale_analysis:
+                    print(f"\n🐋 WHALE TRACKER АНАЛИЗ (институционални движения):")
+                    
+                    # Whale sentiment
+                    if 'sentiment' in whale_analysis:
+                        sentiment = whale_analysis['sentiment']
+                        print(f"   🧠 WHALE SENTIMENT: {sentiment.get('sentiment', 'UNKNOWN')}")
+                        print(f"      Увереност: {sentiment.get('confidence', 0)}%")
+                        print(f"      Buy/Sell Ratio: {sentiment.get('buy_ratio', 0):.1f}%/{sentiment.get('sell_ratio', 0):.1f}%")
+                    
+                    # High volume periods
+                    if 'high_volume_periods' in whale_analysis:
+                        high_vol = whale_analysis['high_volume_periods']
+                        if high_vol:
+                            mega_whale_count = len([p for p in high_vol if "MEGA WHALE" in p.get("whale_signal", "")])
+                            whale_count = len([p for p in high_vol if "🐳 WHALE" in p.get("whale_signal", "")])
+                            print(f"   📊 WHALE АКТИВНОСТ: {len(high_vol)} сигнала")
+                            print(f"      Mega Whale: {mega_whale_count} | Whale: {whale_count}")
+                            
+                            # Biggest signal
+                            if high_vol:
+                                biggest = max(high_vol, key=lambda x: x.get("volume_ratio", 0))
+                                print(f"      Най-голям сигнал: {biggest.get('whale_signal', 'UNKNOWN')}")
+                                print(f"         Volume: {biggest.get('volume', 0):,.0f} BNB ({biggest.get('volume_ratio', 0):.1f}x)")
+            
+            # Ichimoku Cloud Analysis - ново!
+            if 'ichimoku_analysis' in signal:
+                ichimoku_analysis = signal['ichimoku_analysis']
+                if 'error' not in ichimoku_analysis:
+                    print(f"\n☁️ ICHIMOKU CLOUD АНАЛИЗ (японски технически анализ):")
+                    
+                    # Cloud status
+                    cloud_status = ichimoku_analysis.get('cloud_status', 'UNKNOWN')
+                    print(f"   ☁️ CLOUD СТАТУС: {cloud_status}")
+                    
+                    # Overall trend
+                    overall_trend = ichimoku_analysis.get('overall_trend', 'UNKNOWN')
+                    print(f"   📈 ОБЩ ТРЕНД: {overall_trend}")
+                    
+                    # Action
+                    action = ichimoku_analysis.get('action', 'UNKNOWN')
+                    print(f"   🎯 ДЕЙСТВИЕ: {action}")
+                    
+                    # Key levels
+                    if ichimoku_analysis.get('support_levels'):
+                        print(f"   🛡️ SUPPORT НИВА:")
+                        for level in ichimoku_analysis['support_levels'][:2]:
+                            print(f"      • {level}")
+                    
+                    if ichimoku_analysis.get('resistance_levels'):
+                        print(f"   ⚡ RESISTANCE НИВА:")
+                        for level in ichimoku_analysis['resistance_levels'][:2]:
+                            print(f"      • {level}")
+                    
+                    # Cloud analysis
+                    current_price = ichimoku_analysis.get('current_price', 0)
+                    if current_price > 0:
+                        cloud_top = ichimoku_analysis.get('senkou_span_a', 0) or ichimoku_analysis.get('senkou_span_b', 0)
+                        if cloud_top > 0:
+                            cloud_position = "ABOVE" if current_price > cloud_top else "BELOW" if current_price < cloud_top else "IN"
+                            cloud_distance = abs(current_price - cloud_top)
+                            cloud_distance_pct = (cloud_distance / current_price) * 100
+                            print(f"   ☁️ CLOUD АНАЛИЗ:")
+                            print(f"      Позиция: {cloud_position} облака")
+                            print(f"      Разстояние: ${cloud_distance:.2f} ({cloud_distance_pct:.1f}%)")
+                            print(f"      Cloud Top: ${cloud_top:.2f}")
+            
+            # Market Sentiment Analysis - ново!
+            if 'sentiment_analysis' in signal:
+                sentiment_analysis = signal['sentiment_analysis']
+                if 'error' not in sentiment_analysis:
+                    print(f"\n🎭 MARKET SENTIMENT АНАЛИЗ (психология на пазара):")
+                    
+                    # Overall sentiment
+                    overall_sentiment = sentiment_analysis.get('overall_sentiment', 'UNKNOWN')
+                    print(f"   🎯 ОБЩ SENTIMENT: {overall_sentiment}")
+                    
+                    # Composite score
+                    composite_score = sentiment_analysis.get('composite_score', 0)
+                    print(f"   📊 COMPOSITE SCORE: {composite_score}/100")
+                    
+                    # Action
+                    action = sentiment_analysis.get('action', 'UNKNOWN')
+                    print(f"   💡 SENTIMENT ACTION: {action}")
+                    
+                    # Individual scores
+                    if 'individual_scores' in sentiment_analysis:
+                        scores = sentiment_analysis['individual_scores']
+                        print(f"   📈 КОМПОНЕНТИ:")
+                        print(f"      Fear & Greed: {scores.get('fear_greed', 0)}/100")
+                        print(f"      Social Media: {scores.get('social_media', 0)}/100")
+                        print(f"      News: {scores.get('news', 0)}/100")
+                        print(f"      Momentum: {scores.get('momentum', 0)}/100")
             
             # Trend Analysis - ново!
             if 'trend_analysis' in signal:
