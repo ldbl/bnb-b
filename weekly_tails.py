@@ -455,7 +455,7 @@ class WeeklyTailsAnalyzer:
             # Групираме опашките по сигнал
             long_tails = [t for t in tails_analysis if t['signal'] == 'LONG']
             short_tails = [t for t in tails_analysis if t['signal'] == 'SHORT']
-            
+
             # Изчисляваме средната сила за всеки тип
             long_strength = np.mean([t['signal_strength'] for t in long_tails]) if long_tails else 0
             short_strength = np.mean([t['signal_strength'] for t in short_tails]) if short_tails else 0
@@ -512,6 +512,57 @@ class WeeklyTailsAnalyzer:
         except Exception as e:
             logger.error(f"Грешка при генериране на weekly tails сигнал: {e}")
             return {'signal': 'HOLD', 'reason': f'Грешка: {e}'}
+
+    def _check_tail_above_fibonacci_resistance(self, tail_price: float, fib_levels: Dict[float, float],
+                                             proximity_threshold: float = 0.02) -> bool:
+        """
+        Phase 1.3: Проверява дали опашката е над Fibonacci resistance ниво
+
+        За SHORT сигнали искаме опашката да е близо до или над resistance ниво,
+        което показва че има rejection от това ниво.
+
+        Args:
+            tail_price: Цена на опашката (high за upper tail, low за lower tail)
+            fib_levels: Fibonacci нива от fibonacci модула
+            proximity_threshold: Колко близо трябва да е опашката до resistance
+
+        Returns:
+            bool: True ако опашката е над resistance ниво, False ако не е
+        """
+        try:
+            if not fib_levels:
+                logger.warning("Няма Fibonacci нива за проверка")
+                return False
+
+            # Resistance нива са тези над текущата цена
+            resistance_levels = [price for level, price in fib_levels.items()
+                               if price > tail_price]
+
+            if not resistance_levels:
+                logger.info(f"Няма resistance нива над опашката (tail_price: {tail_price:.2f})")
+                return False
+
+            # Проверяваме дали опашката е близо до някое resistance ниво
+            for resistance_price in resistance_levels:
+                price_distance_pct = abs(tail_price - resistance_price) / resistance_price
+
+                if price_distance_pct <= proximity_threshold:
+                    logger.info(f"Опашка е близо до resistance ниво: {resistance_price:.2f} "
+                               f"(разстояние: {price_distance_pct:.2f}%)")
+                    return True
+
+            # Ако няма близко resistance ниво, проверяваме дали опашката е над някое ниво
+            min_resistance = min(resistance_levels)
+            if tail_price > min_resistance:
+                logger.info(f"Опашка е над resistance ниво: {min_resistance:.2f}")
+                return True
+
+            logger.info(f"Опашка не е близо до resistance нива (най-близко: {min(resistance_levels):.2f})")
+            return False
+
+        except Exception as e:
+            logger.error(f"Грешка при проверка на tail above fibonacci resistance: {e}")
+            return False
     
     def analyze_weekly_tails_trend(self, weekly_df: pd.DataFrame) -> Dict[str, any]:
         """

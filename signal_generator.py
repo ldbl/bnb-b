@@ -519,6 +519,14 @@ class SignalGenerator:
                         confidence = 0.5
                         signal_reasons.append(f"SHORT BLOCKED by trend filter: {trend_filter_applied['reason']}")
 
+                # Phase 1.3: Fibonacci Resistance Filter за SHORT сигнали от Weekly Tails
+                if final_signal == 'SHORT' and tails_analysis and fib_analysis:
+                    fib_resistance_filter_applied = self._apply_fibonacci_resistance_filter_for_short(tails_analysis, fib_analysis)
+                    if fib_resistance_filter_applied['blocked']:
+                        final_signal = 'HOLD'
+                        confidence = 0.4
+                        signal_reasons.append(f"SHORT BLOCKED by Fibonacci resistance filter: {fib_resistance_filter_applied['reason']}")
+
                 # Проверяваме дали отговаря на изискванията (по-гъвкаво)
                 if self.fib_tail_required:
                     has_fib_or_tail = (
@@ -632,6 +640,112 @@ class SignalGenerator:
             return {
                 'blocked': False,  # По подразбиране не блокираме при грешка
                 'reason': f'Error in trend filter: {e}',
+                'error': str(e)
+            }
+
+    def _apply_fibonacci_resistance_filter_for_short(self, tails_analysis: Dict, fib_analysis: Dict) -> Dict[str, any]:
+        """
+        Phase 1.3: Филтрира SHORT сигнали от weekly tails според Fibonacci resistance
+
+        SHORT сигнали се генерират само когато опашката е близо до или над
+        Fibonacci resistance ниво, което показва rejection от това ниво.
+
+        Args:
+            tails_analysis: Резултат от weekly_tails.analyze_weekly_tails_trend()
+            fib_analysis: Резултат от fibonacci.analyze_fibonacci_trend()
+
+        Returns:
+            Dict с информация дали SHORT е блокиран и причината
+        """
+        try:
+            if not tails_analysis or not fib_analysis:
+                return {
+                    'blocked': False,
+                    'reason': 'Недостатъчно данни за анализ'
+                }
+
+            tails_signal = tails_analysis.get('tails_signal', {})
+            if tails_signal.get('signal') != 'SHORT':
+                return {
+                    'blocked': False,
+                    'reason': 'Не е SHORT сигнал'
+                }
+
+            # Взимаме Fibonacci нива
+            fib_levels = fib_analysis.get('fibonacci_levels', {})
+            if not fib_levels:
+                return {
+                    'blocked': False,
+                    'reason': 'Няма Fibonacci нива'
+                }
+
+            # Конфигурационни параметри
+            config = self.config.get('weekly_tails', {})
+            fibonacci_resistance_check = config.get('fibonacci_resistance_check', True)
+            proximity_threshold = config.get('fibonacci_proximity_threshold', 0.02)
+
+            if not fibonacci_resistance_check:
+                return {
+                    'blocked': False,
+                    'reason': 'Fibonacci resistance check изключен'
+                }
+
+            # Анализираме последните SHORT опашки
+            tails_analysis_data = tails_analysis.get('tails_analysis', [])
+            short_tails = [tail for tail in tails_analysis_data if tail.get('signal') == 'SHORT']
+
+            if not short_tails:
+                return {
+                    'blocked': False,
+                    'reason': 'Няма SHORT опашки'
+                }
+
+            # Проверяваме дали последната SHORT опашка е близо до Fibonacci resistance
+            latest_short_tail = short_tails[-1]  # Най-новата SHORT опашка
+            tail_high = latest_short_tail.get('high', latest_short_tail.get('price', 0))
+
+            # Намираме resistance нива над опашката
+            resistance_levels = [price for level, price in fib_levels.items() if price > tail_high]
+
+            if not resistance_levels:
+                return {
+                    'blocked': True,
+                    'reason': f'SHORT blocked: Опашка ({tail_high:.2f}) няма resistance нива над себе си'
+                }
+
+            # Проверяваме дали опашката е близо до някое resistance ниво
+            for resistance_price in resistance_levels:
+                price_distance_pct = abs(tail_high - resistance_price) / resistance_price
+
+                if price_distance_pct <= proximity_threshold:
+                    logger.info(f"SHORT allowed: Опашка близо до resistance {resistance_price:.2f} "
+                               f"(разстояние: {price_distance_pct:.2f}%)")
+                    return {
+                        'blocked': False,
+                        'reason': f'SHORT allowed: Опашка близо до Fib resistance {resistance_price:.2f}'
+                    }
+
+            # Ако няма близко resistance ниво, проверяваме дали опашката е над някое ниво
+            min_resistance = min(resistance_levels)
+            if tail_high > min_resistance:
+                logger.info(f"SHORT allowed: Опашка над resistance {min_resistance:.2f}")
+                return {
+                    'blocked': False,
+                    'reason': f'SHORT allowed: Опашка над Fib resistance {min_resistance:.2f}'
+                }
+
+            # Блокираме SHORT ако опашката не е близо до resistance
+            return {
+                'blocked': True,
+                'reason': f'SHORT blocked: Опашка ({tail_high:.2f}) далеч от resistance нива '
+                         f'(най-близко: {min_resistance:.2f})'
+            }
+
+        except Exception as e:
+            logger.error(f"Грешка при Fibonacci resistance filter: {e}")
+            return {
+                'blocked': False,  # По подразбиране не блокираме при грешка
+                'reason': f'Error in Fibonacci resistance filter: {e}',
                 'error': str(e)
             }
     

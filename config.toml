@@ -18,6 +18,9 @@ confluence_bonus = 1.5
 min_wick_ratio = 3.0
 volume_confirmation = true
 volume_multiplier = 1.5
+# Phase 1.3: Fibonacci resistance check за SHORT сигнали
+fibonacci_resistance_check = true
+fibonacci_proximity_threshold = 0.02  # Колко близо трябва да е опашката до Fib resistance
 
 [indicators]
 rsi_period = 14
