@@ -256,8 +256,13 @@ class Backtester:
             Dict с резултатите от backtest-а
         """
         try:
-            # Изчисляваме дни за lookback
-            lookback_days = months * 30
+                # Изчисляваме дни за lookback - ако е None, взимаме всички налични данни
+            if months is None:
+                lookback_days = 1000  # Голям брой за да вземем всички налични данни
+                print(f"🔄 Пускаме backtest за ЦЕЛИЯ наличен период...")
+            else:
+                lookback_days = months * 30
+                print(f"🔄 Пускаме backtest за {months} месеца ({lookback_days} дни)...")
 
             # Извличаме данни
             data = self.data_fetcher.fetch_bnb_data(lookback_days)
@@ -640,9 +645,10 @@ class Backtester:
                 for signal_data in results['signals']:
                     signal = signal_data['signal']
                     result = signal_data['result']
-                    
-                    f.write(f"Дата: {signal_data['date'].strftime('%Y-%m-%d')}\n")
-                    f.write(f"Сигнал: {signal['signal']} (увереност: {signal['confidence']:.2f})\n")
+                    confidence = signal['confidence']
+                    confidence_level = "❌ НИСКА" if confidence < 3.0 else "⚠️ СРЕДНА" if confidence < 4.0 else "✅ ВИСОКА" if confidence < 4.5 else "🚀 МНОГО ВИСОКА"
+                    f.write(f"Дата: {signal_data['date'].strftime('%Y-%m-%d')}\\n")
+                    f.write(f"Сигнал: {signal['signal']} (увереност: {confidence:.2f}) [{confidence_level}]\n")
                     f.write(f"Приоритет: {signal['priority']}\n")
                     current_price = signal.get('fibonacci_analysis', {}).get('current_price', 0)
                     f.write(f"Цена: ${current_price:,.2f}\n")
@@ -718,93 +724,29 @@ class Backtester:
                         tails_reason = tails_signal.get('reason', '')
                         f.write(f"Weekly Tails: {tails_strength:.2f} - {tails_reason}\n")
                     
-                    # Divergence информация (НОВО от ideas файла)
+                    # Divergence информация (кратко)
                     if 'divergence_analysis' in signal and signal['divergence_analysis']:
                         div_analysis = signal['divergence_analysis']
                         if 'error' not in div_analysis:
-                            f.write("🔄 DIVERGENCE АНАЛИЗ:\n")
-                            rsi_div = div_analysis.get('rsi_divergence', {})
-                            if rsi_div and rsi_div.get('type') != 'NONE':
-                                f.write(f"   📊 RSI Divergence: {rsi_div['type']} (увереност: {rsi_div['confidence']:.1f}%)\n")
-                                f.write(f"      Причина: {rsi_div['reason']}\n")
-
-                            macd_div = div_analysis.get('macd_divergence', {})
-                            if macd_div and macd_div.get('type') != 'NONE':
-                                f.write(f"   📊 MACD Divergence: {macd_div['type']} (увереност: {macd_div['confidence']:.1f}%)\n")
-                                f.write(f"      Причина: {macd_div['reason']}\n")
-
-                            pv_div = div_analysis.get('price_volume_divergence', {})
-                            if pv_div and pv_div.get('type') != 'NONE':
-                                f.write(f"   📊 Price-Volume Divergence: {pv_div['type']} (увереност: {pv_div['confidence']:.1f}%)\n")
-                                f.write(f"      Причина: {pv_div['reason']}\n")
                             overall_div = div_analysis.get('overall_divergence', 'NONE')
-                            f.write(f"   🎯 Общ Divergence: {overall_div}\n")
+                            if overall_div != 'NONE':
+                                f.write(f"🔄 Divergence: {overall_div}\n")
                     
-                    # Moving Averages информация (НОВО от ideas файла)
+                    # Moving Averages информация (кратко)
                     if 'moving_averages_analysis' in signal and signal['moving_averages_analysis']:
                         ma_analysis = signal['moving_averages_analysis']
                         if 'error' not in ma_analysis:
-                            f.write("📊 MOVING AVERAGES АНАЛИЗ:\n")
                             crossover = ma_analysis.get('crossover_signal', {})
                             if crossover.get('signal') != 'NONE':
-                                f.write(f"   🎯 Crossover: {crossover['signal']}\n")
-                                f.write(f"      Причина: {crossover['reason']}\n")
-                                f.write(f"      Увереност: {crossover['confidence']:.1f}%\n")
-                                if 'crossover_strength' in crossover:
-                                    f.write(f"      Сила: {crossover['crossover_strength']:.2%}\n")
-                            
-                            ema_values = ma_analysis.get('ema_values', {})
-                            if ema_values:
-                                f.write(f"   📈 EMA стойности:\n")
-                                f.write(f"      Fast EMA ({ma_analysis.get('fast_period', 10)}): ${ema_values.get('fast_ema', 0):,.2f}\n")
-                                f.write(f"      Slow EMA ({ma_analysis.get('slow_period', 50)}): ${ema_values.get('slow_ema', 0):,.2f}\n")
-                            
-                            if ma_analysis.get('volume_confirmation', False):
-                                f.write(f"   ✅ Volume Confirmation: Да\n")
+                                f.write(f"📊 MA: {crossover['signal']} ({crossover['confidence']:.0f}%)\n")
                     
-                    # Price Action Patterns информация (НОВО от ideas файла)
+                    # Price Action Patterns информация (кратко)
                     if 'price_patterns_analysis' in signal and signal['price_patterns_analysis']:
                         patterns = signal['price_patterns_analysis']
                         if 'error' not in patterns:
-                            f.write("📐 PRICE ACTION PATTERNS:\n")
                             overall_pattern = patterns.get('overall_pattern', 'NONE')
-                            f.write(f"   🎯 Общ Pattern: {overall_pattern}\n")
-                            
-                            if patterns.get('double_top', {}).get('detected'):
-                                dt = patterns['double_top']
-                                f.write(f"   🔴 Double Top: {dt['reason']}\n")
-                                f.write(f"      Увереност: {dt['confidence']:.1f}% | Сила: {dt['pattern_strength']}\n")
-                                f.write(f"      Пикове: ${dt['peak1_price']:.2f}, ${dt['peak2_price']:.2f}\n")
-                            
-                            if patterns.get('double_bottom', {}).get('detected'):
-                                db = patterns['double_bottom']
-                                f.write(f"   🟢 Double Bottom: {db['reason']}\n")
-                                f.write(f"      Увереност: {db['confidence']:.1f}% | Сила: {db['pattern_strength']}\n")
-                                f.write(f"      Дъна: ${db['trough1_price']:.2f}, ${db['trough2_price']:.2f}\n")
-                            
-                            if patterns.get('head_shoulders', {}).get('detected'):
-                                hs = patterns['head_shoulders']
-                                f.write(f"   🔴 Head & Shoulders: {hs['reason']}\n")
-                                f.write(f"      Увереност: {hs['confidence']:.1f}% | Сила: {hs['pattern_strength']}\n")
-                                f.write(f"      Пикове: ${hs['left_shoulder_price']:.2f}, ${hs['head_price']:.2f}, ${hs['right_shoulder_price']:.2f}\n")
-                            
-                            if patterns.get('inverse_head_shoulders', {}).get('detected'):
-                                ihs = patterns['inverse_head_shoulders']
-                                f.write(f"   🟢 Inverse H&S: {ihs['reason']}\n")
-                                f.write(f"      Увереност: {ihs['confidence']:.1f}% | Сила: {ihs['pattern_strength']}\n")
-                                f.write(f"      Дъна: ${ihs['left_shoulder_price']:.2f}, ${ihs['head_price']:.2f}, ${ihs['right_shoulder_price']:.2f}\n")
-                            
-                            if patterns.get('triangle', {}).get('detected'):
-                                tri = patterns['triangle']
-                                f.write(f"   🔺 Triangle: {tri['reason']}\n")
-                                f.write(f"      Увереност: {tri['confidence']:.1f}% | Сила: {tri['pattern_strength']}\n")
-                                f.write(f"      Тип: {tri['triangle_type']}\n")
-                            
-                            if patterns.get('wedge', {}).get('detected'):
-                                wedge = patterns['wedge']
-                                f.write(f"   🔶 Wedge: {wedge['reason']}\n")
-                                f.write(f"      Увереност: {wedge['confidence']:.1f}% | Сила: {wedge['pattern_strength']}\n")
-                                f.write(f"      Тип: {wedge['wedge_type']}\n")
+                            if overall_pattern != 'NONE':
+                                f.write(f"📐 Pattern: {overall_pattern}\n")
                     
                     f.write(f"Резултат: {'УСПЕХ' if result['success'] else 'НЕУСПЕХ'} ({result['profit_loss_pct']:+.2f}%)\n")
                     f.write(f"Валидация: {result['validation_date'].strftime('%Y-%m-%d')} (${result['validation_price']:,.2f})\n")
@@ -850,8 +792,8 @@ def main():
         # Създаваме backtester-а
         backtester = Backtester()
         
-        # Изпълняваме backtest
-        results = backtester.run_backtest(18)
+        # Изпълняваме backtest за целия наличен период
+        results = backtester.run_backtest(None)  # None = целия период
         
         if 'error' in results:
             print(f"❌ Грешка: {results['error']}")
@@ -859,13 +801,20 @@ def main():
         
         # Показваме резултатите
         analysis = results['analysis']
-        print(f"\n📊 BACKTEST РЕЗУЛТАТИ (18 месеца):")
-        print(f"   Общо сигнали: {analysis['total_signals']}")
-        print(f"   Успешни сигнали: {analysis['successful_signals']}")
-        print(f"   Обща точност: {analysis['overall_accuracy']:.1f}%")
-        print(f"   LONG сигнали: {analysis['long_signals']['total']} (успешни: {analysis['long_signals']['success']}) - точност: {analysis['long_signals']['accuracy']:.1f}%")
-        print(f"   SHORT сигнали: {analysis['short_signals']['total']} (успешни: {analysis['short_signals']['success']}) - точност: {analysis['short_signals']['accuracy']:.1f}%")
-        print(f"   Среден P&L: {analysis['avg_profit_loss_pct']:+.2f}%")
+        period = results['period']
+
+        print(f"\n🎯 BACKTEST РЕЗУЛТАТИ:")
+        print(f"📅 Период: {period['start_date'].strftime('%Y-%m-%d')} до {period['end_date'].strftime('%Y-%m-%d')} ({period['total_days']} дни)")
+        print(f"📊 Общо сигнали: {analysis['total_signals']}")
+        print(f"✅ Успешни сигнали: {analysis['successful_signals']}")
+        print(f"🎯 Обща точност: {analysis['overall_accuracy']:.1f}%")
+        print()
+        print(f"📈 LONG сигнали: {analysis['long_signals']['total']} | Успешни: {analysis['long_signals']['success']} | Точност: {analysis['long_signals']['accuracy']:.1f}%")
+        print(f"📉 SHORT сигнали: {analysis['short_signals']['total']} | Успешни: {analysis['short_signals']['success']} | Точност: {analysis['short_signals']['accuracy']:.1f}%")
+        print()
+        print(f"💰 Среден P&L: {analysis['avg_profit_loss_pct']:+.2f}%")
+        print(f"🔥 Най-добър сигнал: {analysis['best_signals'][0]['result']['profit_loss_pct']:+.1f}%" if analysis['best_signals'] else "Няма сигнали")
+        print(f"📉 Най-лош сигнал: {analysis['worst_signals'][0]['result']['profit_loss_pct']:+.1f}%" if analysis['worst_signals'] else "Няма сигнали")
         
         # Експортираме резултатите
         backtester.export_backtest_results(results, 'data/backtest_results.txt')

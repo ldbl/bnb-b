@@ -329,7 +329,7 @@ class DivergenceDetector:
                     'confidence': bearish_div['confidence'],
                     'reason': 'Цена прави нов връх, но MACD не (bearish divergence)',
                     'price_peak': bearish_div['price_peak'],
-                    'macd_peak': bearish_div['indicator_peak']
+                    'macd_peak': bearish_div['macd_peak']
                 }
             elif bullish_div['detected']:
                 return {

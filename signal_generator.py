@@ -380,7 +380,16 @@ class SignalGenerator:
                 tails_analysis,
                 indicators_signals,
                 confluence_info,
-                trend_analysis
+                trend_analysis,
+                daily_df,
+                weekly_df,
+                divergence_analysis,
+                ichimoku_analysis,
+                sentiment_analysis,
+                whale_analysis,
+                None,  # price_patterns_analysis - ще се изчислява вътре в метода
+                elliott_wave_analysis,
+                optimal_levels_analysis
             )
             
             # 8. Добавяме детайлна информация
@@ -416,7 +425,11 @@ class SignalGenerator:
     
     def _combine_signals(self, fib_analysis: Dict, tails_analysis: Dict,
                          indicators_signals: Dict, confluence_info: Dict,
-                         trend_analysis: Dict = None) -> Dict[str, any]:
+                         trend_analysis: Dict = None, daily_df: pd.DataFrame = None,
+                         weekly_df: pd.DataFrame = None, divergence_analysis: Dict = None,
+                         ichimoku_analysis: Dict = None, sentiment_analysis: Dict = None,
+                         whale_analysis: Dict = None, price_patterns_analysis: Dict = None,
+                         elliott_wave_analysis: Dict = None, optimal_levels_analysis: Dict = None) -> Dict[str, any]:
         """
         Комбинира сигналите от различните източници
         
@@ -560,8 +573,8 @@ class SignalGenerator:
                         signal_reasons.append(f"SHORT BLOCKED by alignment filter: {alignment_filter_applied['reason']}")
 
                 # Phase 1.8: Market Regime Filter за SHORT сигнали
-                if final_signal == 'SHORT' and daily_df is not None and weekly_df is not None and trend_analysis is not None:
-                    regime_filter_applied = self._check_market_regime_for_short(daily_df, weekly_df, trend_analysis, confidence)
+                if final_signal == 'SHORT' and 'daily_df' in locals() and 'weekly_df' in locals() and trend_analysis is not None:
+                    regime_filter_applied = self._check_market_regime_for_short(locals()['daily_df'], locals()['weekly_df'], trend_analysis, confidence)
                     if not regime_filter_applied['allowed']:
                         final_signal = 'HOLD'
                         confidence = 0.15
@@ -571,8 +584,8 @@ class SignalGenerator:
                 if final_signal == 'SHORT':
                     # Определяме дали има volume confirmation
                     volume_confirmed = False
-                    if daily_df is not None:
-                        volume_confirmation_result = self._check_volume_confirmation_for_short(daily_df)
+                    if 'daily_df' in locals():
+                        volume_confirmation_result = self._check_volume_confirmation_for_short(locals()['daily_df'])
                         volume_confirmed = volume_confirmation_result.get('confirmed', False)
 
                     # Изчисляваме signal quality score
@@ -603,7 +616,99 @@ class SignalGenerator:
                         reason = " | ".join(signal_reasons)
                 else:
                     reason = " | ".join(signal_reasons)
-            
+
+            # Phase 2: LONG Signal Enhancements
+            if final_signal == 'LONG' and daily_df is not None and weekly_df is not None:
+                long_enhancements_bonus = 0.0
+                long_enhancements_reasons = []
+
+                # Извличаме current_price от fib_analysis
+                current_price = fib_analysis.get('current_price', 0.0)
+
+                # Phase 2.1: Volume Confirmation за LONG сигнали
+                volume_long_result = self._check_volume_confirmation_for_long(daily_df)
+                if volume_long_result['bonus'] != 0.0:
+                    long_enhancements_bonus += volume_long_result['bonus']
+                    long_enhancements_reasons.append(f"Volume LONG: {volume_long_result['reason']}")
+
+                # Phase 2.2: Divergence Confirmation за LONG сигнали
+                if divergence_analysis:
+                    divergence_long_result = self._check_divergence_confirmation_for_long(divergence_analysis)
+                    if divergence_long_result['bonus'] != 0.0:
+                        long_enhancements_bonus += divergence_long_result['bonus']
+                        long_enhancements_reasons.append(f"Divergence LONG: {divergence_long_result['reason']}")
+
+                # Phase 2.3: Market Regime Awareness за LONG сигнали
+                market_regime_long_result = self._check_market_regime_for_long(daily_df, weekly_df)
+                if market_regime_long_result['bonus'] != 0.0:
+                    long_enhancements_bonus += market_regime_long_result['bonus']
+                    long_enhancements_reasons.append(f"Market Regime LONG: {market_regime_long_result['reason']}")
+
+                # Phase 3: Advanced LONG Signal Confirmations
+                # Phase 3.1: Ichimoku Cloud Confirmation
+                if ichimoku_analysis and self.config.get('long_signals', {}).get('ichimoku_confirmation_enabled', False):
+                    ichimoku_long_result = self._check_ichimoku_confirmation_for_long(ichimoku_analysis, current_price)
+                    if ichimoku_long_result['bonus'] != 0.0:
+                        long_enhancements_bonus += ichimoku_long_result['bonus']
+                        long_enhancements_reasons.append(f"Ichimoku LONG: {ichimoku_long_result['reason']}")
+
+                # Phase 3.2: Sentiment Confirmation
+                if sentiment_analysis and self.config.get('long_signals', {}).get('sentiment_confirmation_enabled', False):
+                    sentiment_long_result = self._check_sentiment_confirmation_for_long(sentiment_analysis)
+                    if sentiment_long_result['bonus'] != 0.0:
+                        long_enhancements_bonus += sentiment_long_result['bonus']
+                        long_enhancements_reasons.append(f"Sentiment LONG: {sentiment_long_result['reason']}")
+
+                # Phase 3.3: Whale Activity Confirmation
+                if whale_analysis and self.config.get('long_signals', {}).get('whale_confirmation_enabled', False):
+                    whale_long_result = self._check_whale_confirmation_for_long(whale_analysis)
+                    if whale_long_result['bonus'] != 0.0:
+                        long_enhancements_bonus += whale_long_result['bonus']
+                        long_enhancements_reasons.append(f"Whale LONG: {whale_long_result['reason']}")
+
+                # Phase 3.4: Price Action Patterns Confirmation
+                if self.config.get('long_signals', {}).get('price_patterns_confirmation_enabled', False):
+                    patterns_long_result = self._check_price_patterns_confirmation_for_long(daily_df, current_price)
+                    if patterns_long_result['bonus'] != 0.0:
+                        long_enhancements_bonus += patterns_long_result['bonus']
+                        long_enhancements_reasons.append(f"Patterns LONG: {patterns_long_result['reason']}")
+
+                # Phase 3.5: Elliott Wave Confirmation
+                if elliott_wave_analysis and self.config.get('long_signals', {}).get('elliott_wave_confirmation_enabled', False):
+                    elliott_long_result = self._check_elliott_wave_confirmation_for_long(elliott_wave_analysis)
+                    if elliott_long_result['bonus'] != 0.0:
+                        long_enhancements_bonus += elliott_long_result['bonus']
+                        long_enhancements_reasons.append(f"Elliott LONG: {elliott_long_result['reason']}")
+
+                # Phase 3.6: Optimal Levels Confirmation
+                if optimal_levels_analysis and self.config.get('long_signals', {}).get('optimal_levels_confirmation_enabled', False):
+                    levels_long_result = self._check_optimal_levels_confirmation_for_long(optimal_levels_analysis, current_price)
+                    if levels_long_result['bonus'] != 0.0:
+                        long_enhancements_bonus += levels_long_result['bonus']
+                        long_enhancements_reasons.append(f"Optimal Levels LONG: {levels_long_result['reason']}")
+
+                # Прилагаме бонуса към confidence
+                if long_enhancements_bonus != 0.0:
+                    old_confidence = confidence
+                    confidence = min(confidence + long_enhancements_bonus, 5.0)  # Максимум 5.0
+
+                    # Ако имаме достатъчно силни LONG сигнали, може да се промени сигнала
+                    config = self.config.get('long_signals', {})
+                    high_threshold = config.get('confidence_threshold_high', 4.0)
+                    medium_threshold = config.get('confidence_threshold_medium', 3.0)
+
+                    if confidence >= high_threshold and final_signal == 'LONG':
+                        # Много силен LONG сигнал
+                        reason += f" | Phase 2 ENHANCED: {'; '.join(long_enhancements_reasons)} (confidence: {old_confidence:.2f} → {confidence:.2f})"
+                    elif confidence >= medium_threshold and final_signal == 'LONG':
+                        # Добър LONG сигнал
+                        reason += f" | Phase 2 BONUS: {'; '.join(long_enhancements_reasons)} (confidence: {old_confidence:.2f} → {confidence:.2f})"
+                    else:
+                        # Обикновен бонус
+                        reason += f" | Phase 2: {'; '.join(long_enhancements_reasons)} (+{long_enhancements_bonus:.2f})"
+
+                    logger.info(f"LONG Enhancement: {long_enhancements_reasons}, bonus: {long_enhancements_bonus:.2f}, confidence: {old_confidence:.2f} → {confidence:.2f}")
+
             return {
                 'signal': final_signal,
                 'confidence': confidence,
@@ -1453,6 +1558,303 @@ class SignalGenerator:
                 'error': str(e)
             }
 
+    def _check_volume_confirmation_for_long(self, daily_df: pd.DataFrame) -> Dict[str, any]:
+        """
+        Phase 2: Проверява volume confirmation за LONG сигнали
+
+        LONG сигнали получават бонус когато има достатъчно volume,
+        което показва силен интерес от страна на купувачите.
+
+        Args:
+            daily_df: DataFrame с дневни OHLCV данни
+
+        Returns:
+            Dict с информация за volume confirmation и евентуален бонус
+        """
+        try:
+            if daily_df is None or daily_df.empty:
+                return {
+                    'bonus': 0.0,
+                    'reason': 'Няма данни за volume анализ',
+                    'confirmed': False
+                }
+
+            # Конфигурационни параметри за LONG сигнали
+            config = self.config.get('long_signals', {})
+            volume_enabled = config.get('volume_confirmation_enabled', True)
+            lookback_periods = config.get('volume_lookback_periods_long', 10)
+            multiplier_threshold = config.get('volume_multiplier_threshold_long', 1.3)
+
+            if not volume_enabled:
+                return {
+                    'bonus': 0.0,
+                    'reason': 'Volume confirmation за LONG изключен',
+                    'confirmed': True
+                }
+
+            # Проверяваме дали има Volume колона
+            if 'Volume' not in daily_df.columns and 'volume' not in daily_df.columns:
+                return {
+                    'bonus': 0.0,
+                    'reason': 'Няма Volume данни',
+                    'confirmed': False
+                }
+
+            # Взимаме последните данни
+            volume_col = 'Volume' if 'Volume' in daily_df.columns else 'volume'
+            recent_data = daily_df.tail(lookback_periods + 1)
+
+            if len(recent_data) < lookback_periods + 1:
+                return {
+                    'bonus': 0.0,
+                    'reason': f'Недостатъчно данни: нужни {lookback_periods + 1}, има {len(recent_data)}',
+                    'confirmed': False
+                }
+
+            # Текущият обем
+            current_volume = recent_data[volume_col].iloc[-1]
+            avg_volume = recent_data[volume_col].iloc[:-1].mean()
+
+            if avg_volume <= 0:
+                return {
+                    'bonus': 0.0,
+                    'reason': 'Средният обем е нула или отрицателен',
+                    'confirmed': False
+                }
+
+            volume_multiplier = current_volume / avg_volume
+
+            if volume_multiplier >= multiplier_threshold:
+                # Volume confirmation успешен - даваме бонус към LONG сигнала
+                bonus = min(volume_multiplier * 0.5, 2.0)  # Максимален бонус 2.0 точки
+                return {
+                    'bonus': bonus,
+                    'reason': '.2f',
+                    'confirmed': True,
+                    'current_volume': current_volume,
+                    'avg_volume': avg_volume,
+                    'volume_multiplier': volume_multiplier
+                }
+            else:
+                # Недостатъчен volume - лек penalty или неутрален
+                return {
+                    'bonus': -0.2,  # Малък penalty за липса на volume
+                    'reason': '.2f',
+                    'confirmed': False,
+                    'current_volume': current_volume,
+                    'avg_volume': avg_volume,
+                    'volume_multiplier': volume_multiplier
+                }
+
+        except Exception as e:
+            logger.error(f"Грешка при volume confirmation за LONG: {e}")
+            return {
+                'bonus': 0.0,
+                'reason': f'Error in LONG volume confirmation: {e}',
+                'confirmed': False,
+                'error': str(e)
+            }
+
+    def _check_divergence_confirmation_for_long(self, divergence_analysis: Dict) -> Dict[str, any]:
+        """
+        Phase 2: Проверява divergence confirmation за LONG сигнали
+
+        LONG сигнали получават бонус при наличие на bullish divergence,
+        което показва потенциална reversal или continuation нагоре.
+
+        Args:
+            divergence_analysis: Резултати от divergence анализ
+
+        Returns:
+            Dict с информация за divergence confirmation и евентуален бонус
+        """
+        try:
+            if not divergence_analysis:
+                return {
+                    'bonus': 0.0,
+                    'reason': 'Няма divergence анализ',
+                    'confirmed': False
+                }
+
+            config = self.config.get('long_signals', {})
+            divergence_enabled = config.get('divergence_confirmation_enabled', True)
+            require_bullish = config.get('require_bullish_divergence', True)
+
+            if not divergence_enabled:
+                return {
+                    'bonus': 0.0,
+                    'reason': 'Divergence confirmation за LONG изключен',
+                    'confirmed': True
+                }
+
+            # Проверяваме за bullish divergence
+            rsi_div = divergence_analysis.get('rsi_divergence', {})
+            macd_div = divergence_analysis.get('macd_divergence', {})
+
+            bullish_signals = 0
+            total_strength = 0.0
+            reasons = []
+
+            # RSI Bullish Divergence
+            if rsi_div.get('type') == 'BULLISH':
+                bullish_signals += 1
+                strength = rsi_div.get('confidence', 0.5)
+                total_strength += strength
+                reasons.append(".1f")
+
+            # MACD Bullish Divergence
+            if macd_div.get('type') == 'BULLISH':
+                bullish_signals += 1
+                strength = macd_div.get('confidence', 0.5)
+                total_strength += strength
+                reasons.append(".1f")
+
+            if bullish_signals > 0:
+                # Има bullish divergence - даваме бонус
+                avg_strength = total_strength / bullish_signals
+                bonus = min(avg_strength * 1.5, 3.0)  # Максимален бонус 3.0 точки
+
+                return {
+                    'bonus': bonus,
+                    'reason': f"Bullish divergence ({bullish_signals} сигнала): {'; '.join(reasons)}",
+                    'confirmed': True,
+                    'signals_count': bullish_signals,
+                    'avg_strength': avg_strength
+                }
+            elif require_bullish:
+                # Изисква се bullish divergence но няма - лек penalty
+                return {
+                    'bonus': -0.5,
+                    'reason': 'Липсва bullish divergence (изисква се)',
+                    'confirmed': False
+                }
+            else:
+                # Не се изисква divergence - неутрален
+                return {
+                    'bonus': 0.0,
+                    'reason': 'Divergence не се изисква',
+                    'confirmed': True
+                }
+
+        except Exception as e:
+            logger.error(f"Грешка при divergence confirmation за LONG: {e}")
+            return {
+                'bonus': 0.0,
+                'reason': f'Error in LONG divergence confirmation: {e}',
+                'confirmed': False,
+                'error': str(e)
+            }
+
+    def _check_market_regime_for_long(self, daily_df: pd.DataFrame, weekly_df: pd.DataFrame) -> Dict[str, any]:
+        """
+        Phase 2: Проверява market regime за LONG сигнали
+
+        LONG сигнали получават бонус в подходящи market conditions.
+
+        Args:
+            daily_df: DataFrame с дневни данни
+            weekly_df: DataFrame със седмични данни
+
+        Returns:
+            Dict с информация за market regime и евентуален бонус
+        """
+        try:
+            if daily_df is None or weekly_df is None or daily_df.empty or weekly_df.empty:
+                return {
+                    'bonus': 0.0,
+                    'reason': 'Няма достатъчно данни за market regime анализ',
+                    'regime': 'UNKNOWN'
+                }
+
+            config = self.config.get('long_signals', {})
+            regime_filter_enabled = config.get('market_regime_filter_long', True)
+            prefer_long_in_bull = config.get('prefer_long_in_bull_regime', True)
+            avoid_long_in_bear = config.get('avoid_long_in_bear_regime', False)
+
+            if not regime_filter_enabled:
+                return {
+                    'bonus': 0.0,
+                    'reason': 'Market regime filter за LONG изключен',
+                    'regime': 'UNKNOWN'
+                }
+
+            # Анализираме тренда от последните 20 дни и 8 седмици
+            recent_daily = daily_df.tail(20)
+            recent_weekly = weekly_df.tail(8)
+
+            # Daily тренд
+            daily_returns = recent_daily['Close'].pct_change().dropna()
+            daily_trend = daily_returns.mean()
+
+            # Weekly тренд
+            weekly_returns = recent_weekly['Close'].pct_change().dropna()
+            weekly_trend = weekly_returns.mean()
+
+            # Волатилност
+            daily_volatility = daily_returns.std()
+            weekly_volatility = weekly_returns.std()
+
+            # Определяме regime
+            if weekly_trend > 0.005 and daily_trend > 0.002:  # Силен възходящ тренд
+                regime = 'STRONG_BULL'
+                if prefer_long_in_bull:
+                    bonus = 1.5
+                    reason = 'Strong bull market - идеално за LONG'
+                else:
+                    bonus = 0.5
+                    reason = 'Strong bull market'
+            elif weekly_trend > 0.002 and daily_trend > 0.001:  # Умерен възходящ тренд
+                regime = 'MODERATE_BULL'
+                if prefer_long_in_bull:
+                    bonus = 1.0
+                    reason = 'Moderate bull market - добро за LONG'
+                else:
+                    bonus = 0.3
+                    reason = 'Moderate bull market'
+            elif abs(weekly_trend) < 0.002 and abs(daily_trend) < 0.001:  # Рангинг пазар
+                regime = 'RANGE'
+                bonus = 0.0
+                reason = 'Range market - неутрално за LONG'
+            elif weekly_trend < -0.005 and daily_trend < -0.002:  # Силен низходящ тренд
+                regime = 'STRONG_BEAR'
+                if avoid_long_in_bear:
+                    bonus = -2.0  # Голям penalty за LONG в силен bear market
+                    reason = 'Strong bear market - противопоказно за LONG'
+                else:
+                    bonus = -0.5
+                    reason = 'Strong bear market - рисковано за LONG'
+            elif weekly_trend < -0.002 and daily_trend < -0.001:  # Умерен низходящ тренд
+                regime = 'MODERATE_BEAR'
+                if avoid_long_in_bear:
+                    bonus = -1.0
+                    reason = 'Moderate bear market - избягвай LONG'
+                else:
+                    bonus = -0.3
+                    reason = 'Moderate bear market - внимателно с LONG'
+            else:
+                regime = 'NEUTRAL'
+                bonus = 0.0
+                reason = 'Neutral market conditions'
+
+            return {
+                'bonus': bonus,
+                'reason': reason,
+                'regime': regime,
+                'daily_trend': daily_trend,
+                'weekly_trend': weekly_trend,
+                'daily_volatility': daily_volatility,
+                'weekly_volatility': weekly_volatility
+            }
+
+        except Exception as e:
+            logger.error(f"Грешка при market regime анализ за LONG: {e}")
+            return {
+                'bonus': 0.0,
+                'reason': f'Error in LONG market regime analysis: {e}',
+                'regime': 'UNKNOWN',
+                'error': str(e)
+            }
+
     def _calculate_signal_quality_score(self, fib_analysis: Dict, tails_analysis: Dict,
                                        trend_analysis: Dict, volume_confirmation: bool = False,
                                        divergence_analysis: Dict = None) -> Dict[str, Any]:
@@ -1824,6 +2226,245 @@ class SignalGenerator:
         except Exception as e:
             logger.error(f"Грешка при изчисляване на нивото на риска: {e}")
             return 'UNKNOWN'
+
+    # Phase 3: Advanced LONG Signal Confirmations
+    def _check_ichimoku_confirmation_for_long(self, ichimoku_analysis: Dict, current_price: float) -> Dict[str, any]:
+        """
+        Phase 3.1: Ichimoku Cloud Confirmation за LONG сигнали
+
+        LONG сигнал получава бонус когато цената е над Ichimoku облака,
+        което показва силен bullish тренд.
+        """
+        try:
+            config = self.config.get('long_signals', {})
+            bonus = 0.0
+            reason = ""
+
+            if 'error' not in ichimoku_analysis:
+                cloud_status = ichimoku_analysis.get('cloud_status', 'UNKNOWN')
+                cloud_position = ichimoku_analysis.get('cloud_position', {})
+
+                if cloud_status == 'ABOVE_CLOUD':
+                    bonus = config.get('ichimoku_above_cloud_bonus', 0.3)
+                    distance = cloud_position.get('distance', 0)
+                    reason = f"Price above cloud by {distance:.2f}% (+{bonus:.2f} confidence)"
+                elif cloud_status == 'IN_CLOUD':
+                    # Малък бонус когато е в облака
+                    bonus = config.get('ichimoku_above_cloud_bonus', 0.3) * 0.5
+                    reason = f"Price in cloud (+{bonus:.2f} confidence)"
+                # Няма бонус когато е под облака
+
+            return {
+                'bonus': bonus,
+                'reason': reason
+            }
+
+        except Exception as e:
+            logger.error(f"Грешка при Ichimoku LONG confirmation: {e}")
+            return {
+                'bonus': 0.0,
+                'reason': f'Error in Ichimoku check: {e}'
+            }
+
+    def _check_sentiment_confirmation_for_long(self, sentiment_analysis: Dict) -> Dict[str, any]:
+        """
+        Phase 3.2: Sentiment Confirmation за LONG сигнали
+
+        LONG сигнал получава бонус когато market sentiment е позитивен,
+        което показва оптимизъм сред трейдърите.
+        """
+        try:
+            config = self.config.get('long_signals', {})
+            bonus = 0.0
+            reason = ""
+
+            if 'error' not in sentiment_analysis:
+                composite_score = sentiment_analysis.get('composite_score', 50)
+                sentiment_action = sentiment_analysis.get('sentiment_action', 'NEUTRAL')
+                threshold = config.get('sentiment_positive_threshold', 55)
+
+                if composite_score >= threshold:
+                    bonus = config.get('sentiment_bonus_long', 0.2)
+                    reason = f"Positive sentiment ({composite_score:.1f}) (+{bonus:.2f} confidence)"
+                elif sentiment_action == 'WEAK_BUY':
+                    bonus = config.get('sentiment_bonus_long', 0.2) * 0.7
+                    reason = f"Positive sentiment ({composite_score:.1f}) (+{bonus:.2f} confidence)"
+                # Няма бонус при негативен sentiment
+
+            return {
+                'bonus': bonus,
+                'reason': reason
+            }
+
+        except Exception as e:
+            logger.error(f"Грешка при Sentiment LONG confirmation: {e}")
+            return {
+                'bonus': 0.0,
+                'reason': f'Error in Sentiment check: {e}'
+            }
+
+    def _check_whale_confirmation_for_long(self, whale_analysis: Dict) -> Dict[str, any]:
+        """
+        Phase 3.3: Whale Activity Confirmation за LONG сигнали
+
+        LONG сигнал получава бонус когато има силна whale активност,
+        което показва интерес от институционални инвеститори.
+        """
+        try:
+            config = self.config.get('long_signals', {})
+            bonus = 0.0
+            reason = ""
+
+            if 'error' not in whale_analysis:
+                total_signals = whale_analysis.get('total_signals', 0)
+                min_signals = config.get('whale_min_signals', 3)
+
+                if total_signals >= min_signals:
+                    bonus = config.get('whale_bonus_long', 0.4)
+                    reason = f"Positive sentiment ({composite_score:.1f}) (+{bonus:.2f} confidence)"
+                elif total_signals >= min_signals // 2:
+                    # Намален бонус за по-малко сигнали
+                    bonus = config.get('whale_bonus_long', 0.4) * 0.6
+                    reason = f"Positive sentiment ({composite_score:.1f}) (+{bonus:.2f} confidence)"
+                # Няма бонус при липса на whale активност
+
+            return {
+                'bonus': bonus,
+                'reason': reason
+            }
+
+        except Exception as e:
+            logger.error(f"Грешка при Whale LONG confirmation: {e}")
+            return {
+                'bonus': 0.0,
+                'reason': f'Error in Whale check: {e}'
+            }
+
+    def _check_price_patterns_confirmation_for_long(self, daily_df: pd.DataFrame, current_price: float) -> Dict[str, any]:
+        """
+        Phase 3.4: Price Action Patterns Confirmation за LONG сигнали
+
+        LONG сигнал получава бонус когато има bullish price patterns,
+        което показва силно bullish momentum.
+        """
+        try:
+            config = self.config.get('long_signals', {})
+            bonus = 0.0
+            reason = ""
+
+            if daily_df is not None and len(daily_df) >= 10:
+                # Проверяваме за bullish patterns в последните 10 свещи
+                recent_data = daily_df.tail(10).copy()
+
+                # Bullish Engulfing pattern
+                if len(recent_data) >= 2:
+                    last_candle = recent_data.iloc[-1]
+                    prev_candle = recent_data.iloc[-2]
+
+                    # Bullish engulfing: последната свещ е зелена и покрива предишната червена
+                    if (last_candle['Close'] > last_candle['Open'] and
+                        prev_candle['Close'] < prev_candle['Open'] and
+                        last_candle['Close'] >= prev_candle['Open'] and
+                        last_candle['Open'] <= prev_candle['Close']):
+                        bonus = config.get('patterns_bonus_long', 0.25)
+                        reason = f"Bullish engulfing pattern (+{bonus:.2f} confidence)"
+
+                # Hammer pattern (bullish reversal)
+                if bonus == 0.0 and len(recent_data) >= 1:
+                    last_candle = recent_data.iloc[-1]
+                    body_size = abs(last_candle['Close'] - last_candle['Open'])
+                    lower_shadow = min(last_candle['Open'], last_candle['Close']) - last_candle['Low']
+                    upper_shadow = last_candle['High'] - max(last_candle['Open'], last_candle['Close'])
+                    total_range = last_candle['High'] - last_candle['Low']
+
+                    if (total_range > 0 and
+                        lower_shadow > body_size * 2 and
+                        upper_shadow < body_size * 0.5):
+                        bonus = config.get('patterns_bonus_long', 0.25) * 0.8
+                        reason = f"Bullish engulfing pattern (+{bonus:.2f} confidence)"
+
+            return {
+                'bonus': bonus,
+                'reason': reason
+            }
+
+        except Exception as e:
+            logger.error(f"Грешка при Price Patterns LONG confirmation: {e}")
+            return {
+                'bonus': 0.0,
+                'reason': f'Error in Patterns check: {e}'
+            }
+
+    def _check_elliott_wave_confirmation_for_long(self, elliott_wave_analysis: Dict) -> Dict[str, any]:
+        """
+        Phase 3.5: Elliott Wave Confirmation за LONG сигнали
+
+        LONG сигнал получава бонус когато има bullish Elliott wave structures,
+        което показва силен тренд в правилна посока.
+        """
+        try:
+            config = self.config.get('long_signals', {})
+            bonus = 0.0
+            reason = ""
+
+            if 'error' not in elliott_wave_analysis:
+                daily_trend = elliott_wave_analysis.get('daily_trend', 'UNKNOWN')
+                overall_trend = elliott_wave_analysis.get('overall_trend', 'UNKNOWN')
+
+                if daily_trend == 'UPTREND' and overall_trend == 'UPTREND':
+                    bonus = config.get('elliott_bullish_bonus', 0.35)
+                    reason = f"Bullish Elliott wave (+{bonus:.2f} confidence)"
+                elif daily_trend == 'UPTREND':
+                    bonus = config.get('elliott_bullish_bonus', 0.35) * 0.7
+                    reason = f"Moderate bullish Elliott wave (+{bonus:.2f} confidence)"
+                # Няма бонус при downtrend
+
+            return {
+                'bonus': bonus,
+                'reason': reason
+            }
+
+        except Exception as e:
+            logger.error(f"Грешка при Elliott Wave LONG confirmation: {e}")
+            return {
+                'bonus': 0.0,
+                'reason': f'Error in Elliott Wave check: {e}'
+            }
+
+    def _check_optimal_levels_confirmation_for_long(self, optimal_levels_analysis: Dict, current_price: float) -> Dict[str, any]:
+        """
+        Phase 3.6: Optimal Levels Confirmation за LONG сигнали
+
+        LONG сигнал получава бонус когато цената е над важни support нива,
+        което показва силна подкрепа отдолу.
+        """
+        try:
+            config = self.config.get('long_signals', {})
+            bonus = 0.0
+            reason = ""
+
+            if 'error' not in optimal_levels_analysis:
+                support_levels = optimal_levels_analysis.get('top_support_levels', [])
+
+                # Проверяваме дали цената е над някое от топ support нивата
+                for level_info in support_levels[:3]:  # Първите 3 support нива
+                    level_price = level_info.get('price', 0)
+                    if current_price > level_price:
+                        bonus = config.get('levels_above_support_bonus', 0.2)
+                        reason = f"Bullish engulfing pattern (+{bonus:.2f} confidence)"
+                        break
+
+            return {
+                'bonus': bonus,
+                'reason': reason
+            }
+
+        except Exception as e:
+            logger.error(f"Грешка при Optimal Levels LONG confirmation: {e}")
+            return {
+                'bonus': 0.0,
+                'reason': f'Error in Optimal Levels check: {e}'
+            }
 
 if __name__ == "__main__":
     # Тест на Signal Generator модула

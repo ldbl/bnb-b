@@ -387,7 +387,9 @@ class BNBTradingSystem:
             current_signal = results['current_signal']
             print(f"\n🎯 ТЕКУЩ СИГНАЛ ЗА ДНЕС:")
             print(f"   Сигнал: {current_signal['signal']}")
-            print(f"   Увереност: {current_signal['confidence']}")
+            confidence = current_signal['confidence']
+            confidence_level = "❌ НИСКА" if confidence < 3.0 else "⚠️ СРЕДНА" if confidence < 4.0 else "✅ ВИСОКА" if confidence < 4.5 else "🚀 МНОГО ВИСОКА"
+            print(f"   Увереност: {confidence} ({confidence_level})")
             print(f"   Приоритет: {current_signal['priority']}")
             print(f"   Ниво на риска: {current_signal['risk_level']}")
             print(f"   Причина: {current_signal['reason']}")
@@ -549,7 +551,9 @@ class BNBTradingSystem:
             print("🎯" * 20)
             
             # Основна информация за сигнала
-            print(f"\n🚀 СИГНАЛ: {signal['signal']} | Увереност: {signal.get('confidence', 0):.1f} | Приоритет: {signal['priority']}")
+            confidence = signal.get('confidence', 0)
+            confidence_level = "❌ НИСКА" if confidence < 3.0 else "⚠️ СРЕДНА" if confidence < 4.0 else "✅ ВИСОКА" if confidence < 4.5 else "🚀 МНОГО ВИСОКА"
+            print(f"\n🚀 СИГНАЛ: {signal['signal']} | Увереност: {confidence:.1f} ({confidence_level}) | Приоритет: {signal['priority']}")
             print(f"💡 Причина: {signal['reason'][:100]}...")
             
             # Fibonacci анализ - само най-важното

@@ -164,6 +164,7 @@ class FibonacciAnalyzer:
             ... }
             >>> analyzer = FibonacciAnalyzer(config)
         """
+        self.config = config  # Запази референция към config
         self.swing_lookback = config['fibonacci']['swing_lookback']
         self.key_levels = config['fibonacci']['key_levels']
         self.proximity_threshold = config['fibonacci']['proximity_threshold']

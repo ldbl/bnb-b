@@ -196,20 +196,25 @@ class BNBDataFetcher:
             
             logger.info(f"Извличане на {lookback_days} дни BNB данни...")
             
-            # Извличаме daily данни
+            # Извличаме daily данни (Binance limit е max 1000)
+            daily_limit = min(lookback_days, 1000)
             daily_data = self.exchange.fetch_ohlcv(
                 symbol=self.symbol,
                 timeframe='1d',
                 since=start_time,
-                limit=lookback_days
+                limit=daily_limit
             )
-            
-            # Извличаме weekly данни
+
+            # Извличаме weekly данни (Binance limit е max 1000)
+            weekly_limit = min(lookback_days // 7, 1000)
+            if weekly_limit < 1:
+                weekly_limit = 1
+
             weekly_data = self.exchange.fetch_ohlcv(
                 symbol=self.symbol,
                 timeframe='1w',
                 since=start_time,
-                limit=lookback_days // 7
+                limit=weekly_limit
             )
             
             # Конвертираме в DataFrames
