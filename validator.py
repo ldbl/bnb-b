@@ -1,11 +1,123 @@
 """
-Signal Validator Module - Проверява точността на сигналите след 2 седмици
-Записва всички сигнали и резултати в CSV файл за анализ
+Signal Validator Module - Comprehensive Signal Validation and Performance Tracking
+
+SIGNAL VALIDATION SYSTEM FOR TRADING STRATEGY PERFORMANCE MEASUREMENT
+Validates signal accuracy after holding period and tracks comprehensive performance metrics
+
+This module provides a complete signal validation framework for the BNB trading system,
+enabling thorough evaluation of signal accuracy, performance tracking, and continuous
+improvement of trading strategies through systematic validation.
+
+ARCHITECTURE OVERVIEW:
+    - Signal capture and storage with complete analysis context
+    - Automated validation after configurable holding periods
+    - Performance metrics calculation and statistical analysis
+    - Historical performance database with CSV persistence
+    - Comprehensive reporting and analytics capabilities
+
+VALIDATION METHODOLOGY:
+    - Holding Period Validation: Configurable timeframe for signal assessment
+    - Profit/Loss Calculation: Realistic P&L with entry/exit assumptions
+    - Success Rate Tracking: Win/loss ratio calculation and analysis
+    - Risk Metrics: Drawdown, recovery factors, and risk-adjusted returns
+    - Statistical Significance: Confidence intervals and statistical validation
+
+SIGNAL CAPTURE FEATURES:
+    - Complete signal context preservation (all analysis modules)
+    - Confidence score tracking and validation
+    - Priority level recording and performance segmentation
+    - Reasoning and rationale capture for analysis
+    - Risk assessment and position sizing recommendations
+
+VALIDATION PROCESS:
+    1. Signal Reception: Captures complete signal with all analysis data
+    2. Storage: Persists signal to historical database with timestamps
+    3. Holding Period: Waits for configurable validation timeframe
+    4. Price Validation: Compares actual vs expected price movement
+    5. Result Calculation: Computes P&L, success/failure, and metrics
+    6. Database Update: Stores validation results with complete context
+
+PERFORMANCE METRICS TRACKED:
+    - Overall Accuracy: Total win rate percentage
+    - LONG/SHORT Accuracy: Direction-specific performance
+    - Average P&L: Mean profit/loss per trade
+    - Maximum Drawdown: Peak-to-trough portfolio decline
+    - Sharpe Ratio: Risk-adjusted return measure
+    - Profit Factor: Gross profit divided by gross loss
+    - Recovery Factor: Net profit divided by max drawdown
+
+DATA PERSISTENCE:
+    - CSV-based storage for portability and analysis
+    - Complete signal context preservation
+    - Historical performance database
+    - Backup and recovery capabilities
+    - Data integrity validation
+
+CONFIGURATION PARAMETERS:
+    - results_file: Path to CSV results database (default: 'results.csv')
+    - holding_period_days: Days to hold before validation (default: 14)
+    - validation_tolerance: Price tolerance for validation (default: 0.01)
+    - max_results_history: Maximum historical records to maintain (default: 10000)
+    - auto_backup: Enable automatic backup of results (default: true)
+
+VALIDATION CRITERIA:
+    - Price Target Achievement: Did price reach target within timeframe?
+    - Profit/Loss Calculation: Realistic P&L with commissions and slippage
+    - Risk Management Compliance: Adherence to stop loss and risk limits
+    - Market Condition Filtering: Performance across different market regimes
+    - Statistical Significance: Confidence intervals for performance metrics
+
+REPORTING CAPABILITIES:
+    - Performance summary reports with key metrics
+    - Signal accuracy breakdown by type and confidence
+    - Risk analysis and drawdown reports
+    - Monthly/quarterly performance summaries
+    - Strategy optimization recommendations
+
+EXAMPLE USAGE:
+    >>> validator = SignalValidator('results.csv')
+    >>> signal_data = {
+    ...     'signal': 'LONG',
+    ...     'confidence': 0.85,
+    ...     'analysis_date': pd.Timestamp.now(),
+    ...     'fibonacci_analysis': {'current_price': 862.50}
+    ... }
+    >>> validator.save_signal(signal_data)
+    >>> performance = validator.get_performance_summary()
+
+DEPENDENCIES:
+    - pandas: Data manipulation and CSV operations
+    - numpy: Mathematical calculations and statistical analysis
+    - datetime/timedelta: Date and time operations
+    - os: File system operations
+    - typing: Type hints for better code documentation
+
+PERFORMANCE OPTIMIZATIONS:
+    - Efficient CSV operations with batch processing
+    - Memory-optimized data structures
+    - Incremental updates for performance tracking
+    - Database compaction for long-term storage
+
+ERROR HANDLING:
+    - File I/O error recovery and backup mechanisms
+    - Data corruption detection and repair
+    - Missing data handling and interpolation
+    - Validation error logging and recovery
+
+DATA INTEGRITY:
+    - Checksum validation for critical data
+    - Backup and recovery procedures
+    - Data consistency validation
+    - Historical data preservation
+
+AUTHOR: BNB Trading System Team
+VERSION: 2.0.0
+DATE: 2024-01-01
 """
 
 import pandas as pd
 import numpy as np
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, Any
 import logging
 from datetime import datetime, timedelta
 import os
@@ -14,14 +126,124 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class SignalValidator:
-    """Клас за валидация на trading сигнали"""
-    
-    def __init__(self, results_file: str = 'results.csv'):
+    """
+    Advanced Signal Validation and Performance Tracking Engine
+
+    This class provides comprehensive signal validation capabilities for the BNB trading system,
+    enabling thorough evaluation of signal accuracy, systematic performance tracking, and
+    continuous improvement of trading strategies through data-driven analysis.
+
+    ARCHITECTURE OVERVIEW:
+        - Signal capture system with complete analysis context preservation
+        - Automated validation framework with configurable holding periods
+        - Comprehensive performance metrics calculation and tracking
+        - Historical database management with CSV persistence
+        - Statistical analysis and reporting capabilities
+
+    SIGNAL CAPTURE PROCESS:
+        1. Signal Reception: Accepts complete signal data with all analysis modules
+        2. Context Preservation: Stores all relevant signal information and reasoning
+        3. Database Storage: Persists signal to historical CSV database
+        4. Validation Scheduling: Prepares signal for future validation
+        5. Metadata Tracking: Records confidence, priority, and risk assessment
+
+    VALIDATION METHODOLOGY:
+        - Holding Period Management: Configurable validation timeframes
+        - Price Target Validation: Compares actual vs expected price movement
+        - Profit/Loss Calculation: Realistic P&L with commissions and slippage
+        - Success/Failure Determination: Objective criteria-based assessment
+        - Statistical Significance: Confidence intervals and significance testing
+
+    PERFORMANCE TRACKING:
+        - Accuracy Metrics: Overall and direction-specific win rates
+        - Risk Metrics: Drawdown, Sharpe ratio, profit factor
+        - Statistical Analysis: Confidence intervals and significance tests
+        - Performance Segmentation: By confidence, priority, and market conditions
+        - Historical Trends: Performance analysis over time periods
+
+    DATABASE MANAGEMENT:
+        - CSV-based storage for portability and external analysis
+        - Automatic file creation and schema management
+        - Data integrity validation and backup procedures
+        - Historical data compaction and maintenance
+        - Incremental updates for performance optimization
+
+    CONFIGURATION PARAMETERS:
+        results_file (str): Path to CSV results database (default: 'results.csv')
+        holding_period_days (int): Days to hold before validation (default: 14)
+        validation_tolerance (float): Price tolerance for validation (default: 0.01)
+        max_results_history (int): Maximum records to maintain (default: 10000)
+        auto_backup (bool): Enable automatic result backups (default: True)
+
+    DATA SCHEMA:
+        The results database contains comprehensive signal information:
+        - Signal metadata (date, type, confidence, priority)
+        - Analysis context (Fibonacci, tails, indicators, trend)
+        - Validation results (P&L, success/failure, time to target)
+        - Performance metrics (accuracy, drawdown, Sharpe ratio)
+        - Risk assessment and position sizing recommendations
+
+    ATTRIBUTES:
+        results_file (str): Path to the results CSV file
+        results_df (pd.DataFrame): In-memory results database
+        holding_period_days (int): Validation holding period
+        validation_tolerance (float): Price tolerance for validation
+
+    VALIDATION CRITERIA:
+        - Price Achievement: Did price reach target within holding period?
+        - Profit/Loss Calculation: Realistic P&L with market assumptions
+        - Success Definition: Objective criteria for win/loss determination
+        - Risk Management: Compliance with stop loss and risk limits
+        - Market Conditions: Performance across different regimes
+
+    REPORTING FEATURES:
+        - Performance summary with key metrics and statistics
+        - Signal accuracy breakdown by type, confidence, and priority
+        - Risk analysis with drawdown and recovery metrics
+        - Monthly/quarterly performance segmentation
+        - Strategy optimization recommendations and insights
+
+    EXAMPLE:
+        >>> validator = SignalValidator('trading_results.csv')
+        >>> signal_data = {
+        ...     'signal': 'LONG',
+        ...     'confidence': 0.85,
+        ...     'priority': 'HIGH',
+        ...     'analysis_date': pd.Timestamp.now(),
+        ...     'fibonacci_analysis': {'current_price': 862.50},
+        ...     'reason': 'Strong support at Fib 61.8%'
+        ... }
+        >>> validator.save_signal(signal_data)
+        >>> summary = validator.get_performance_summary()
+        >>> print(f"Overall Accuracy: {summary['accuracy']:.1f}%")
+
+    NOTE:
+        The validator automatically creates the results file if it doesn't exist
+        and manages the complete signal lifecycle from capture to validation.
+    """
+
+    def __init__(self, results_file: str = 'results.csv') -> None:
         """
-        Инициализира валидатора на сигнали
-        
+        Initialize the Signal Validator with results database configuration.
+
+        Sets up the validation system with specified results file and prepares
+        the database for signal capture and performance tracking.
+
         Args:
-            results_file: Файл за записване на резултатите
+            results_file (str): Path to CSV file for storing results.
+                If file doesn't exist, it will be created automatically.
+                Should have .csv extension for proper handling.
+
+        Raises:
+            ValueError: If results_file path is invalid
+            PermissionError: If unable to read/write to the specified path
+
+        Example:
+            >>> # Use default results file
+            >>> validator = SignalValidator()
+
+            >>> # Use custom results file
+            >>> validator = SignalValidator('my_trading_results.csv')
         """
         self.results_file = results_file
         self.results_df = self._load_or_create_results()

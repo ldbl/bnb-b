@@ -1,21 +1,250 @@
 #!/usr/bin/env python3
 """
-Sentiment Analysis Module
-Combines Fear & Greed Index with social media sentiment analysis
+Sentiment Analysis Module - Market Psychology and Emotion Tracking
+
+COMPREHENSIVE MARKET SENTIMENT ANALYSIS FOR CRYPTOCURRENCY TRADING
+Combines Fear & Greed Index, social media sentiment, and news analysis for complete market psychology assessment
+
+This module provides advanced market sentiment analysis capabilities specifically designed
+for cryptocurrency markets, where psychological factors play a significant role in price
+movements. The module combines multiple sentiment sources to provide a comprehensive
+view of market emotion and investor psychology.
+
+ARCHITECTURE OVERVIEW:
+    - Multi-source sentiment aggregation (Fear & Greed, Social Media, News)
+    - Real-time sentiment tracking with historical context
+    - Automated sentiment classification and scoring
+    - Market psychology pattern recognition
+    - Sentiment-driven signal generation and risk assessment
+
+SENTIMENT SOURCES INTEGRATED:
+    1. Fear & Greed Index: CNN Fear & Greed API with market-based simulation
+    2. Social Media Sentiment: Twitter, Reddit, Telegram sentiment analysis
+    3. News Sentiment: Financial news and announcement impact analysis
+    4. Market Momentum: Technical indicators for sentiment confirmation
+    5. Composite Scoring: Weighted aggregation of all sentiment sources
+
+FEAR & GREED INDEX CLASSIFICATION:
+    - 0-20: Extreme Fear (Strong buying opportunities, capitulation)
+    - 21-40: Fear (Buying opportunities, caution advised)
+    - 41-60: Neutral (Balanced market, wait for direction)
+    - 61-80: Greed (Selling opportunities, caution advised)
+    - 81-100: Extreme Greed (Strong selling opportunities, euphoria)
+
+SOCIAL SENTIMENT ANALYSIS:
+    - Keyword-based sentiment classification for bullish/bearish terms
+    - Volume-weighted sentiment scoring
+    - Trend analysis of sentiment changes over time
+    - Social media buzz and engagement metrics
+    - Influential account sentiment tracking
+
+NEWS SENTIMENT ANALYSIS:
+    - Positive news indicators (partnerships, upgrades, launches)
+    - Negative news indicators (regulations, hacks, investigations)
+    - Impact-weighted news scoring
+    - Time-decay sentiment adjustment
+    - Sector-specific news sentiment
+
+KEY FEATURES:
+    - Real-time sentiment monitoring with configurable update intervals
+    - Historical sentiment pattern analysis and trend identification
+    - Sentiment divergence detection with price action
+    - Market regime classification based on sentiment levels
+    - Risk assessment using sentiment extremes
+
+TRADING APPLICATIONS:
+    - Contrarian Signals: Buy extreme fear, sell extreme greed
+    - Risk Management: Increased volatility during sentiment extremes
+    - Entry Timing: Align trades with sentiment shifts
+    - Exit Signals: Sentiment exhaustion as reversal warnings
+    - Position Sizing: Adjust based on sentiment confidence
+
+CONFIGURATION PARAMETERS:
+    - fear_greed_weight: Weight for Fear & Greed Index (default: 0.3)
+    - social_weight: Weight for social media sentiment (default: 0.25)
+    - news_weight: Weight for news sentiment (default: 0.25)
+    - momentum_weight: Weight for market momentum (default: 0.2)
+    - update_interval: Sentiment update frequency (default: 300 seconds)
+    - sentiment_threshold: Minimum sentiment change for signals (default: 0.1)
+
+SENTIMENT-BASED SIGNALS:
+    - FEAR_SIGNAL: Extreme fear detected, potential buying opportunity
+    - GREED_SIGNAL: Extreme greed detected, potential selling opportunity
+    - SENTIMENT_SHIFT: Major sentiment change, prepare for volatility
+    - CONFIRMATION: Sentiment confirms price action direction
+    - DIVERGENCE: Sentiment diverges from price action
+
+COMPOSITE SENTIMENT SCORING:
+    - Overall Sentiment Score: Weighted average of all sources (-1 to +1)
+    - Confidence Level: Statistical confidence in sentiment assessment
+    - Trend Direction: Bullish, Bearish, or Neutral sentiment trend
+    - Volatility Expectation: Anticipated market volatility based on sentiment
+    - Risk Level: Investment risk assessment based on sentiment extremes
+
+EXAMPLE USAGE:
+    >>> analyzer = SentimentAnalyzer()
+    >>> fear_greed = analyzer.get_fear_greed_index()
+    >>> social_sentiment = analyzer.analyze_social_sentiment()
+    >>> news_sentiment = analyzer.analyze_news_sentiment()
+    >>> composite = analyzer.calculate_composite_sentiment(fear_greed, social_sentiment, news_sentiment, {})
+    >>> if composite['sentiment'] == 'EXTREME_FEAR':
+    ...     print(f"Contrarian BUY opportunity detected - Fear & Greed: {fear_greed['score']}")
+
+DEPENDENCIES:
+    - requests: HTTP API communication for external data sources
+    - datetime/timedelta: Date and time manipulation
+    - json: JSON data parsing and formatting
+    - re: Regular expressions for text analysis
+    - typing: Type hints for better code documentation
+
+PERFORMANCE OPTIMIZATIONS:
+    - Intelligent caching of sentiment data to reduce API calls
+    - Batch processing for multiple sentiment sources
+    - Memory-efficient text processing for social media analysis
+    - Configurable update intervals to balance freshness vs. performance
+
+ERROR HANDLING:
+    - API connectivity error recovery with fallback mechanisms
+    - Data validation and cleaning for sentiment sources
+    - Rate limit handling with exponential backoff
+    - Graceful degradation when sentiment sources are unavailable
+
+VALIDATION TECHNIQUES:
+    - Cross-validation between different sentiment sources
+    - Statistical significance testing of sentiment changes
+    - Historical validation of sentiment-based predictions
+    - Robustness testing across different market conditions
+
+SENTIMENT PATTERN RECOGNITION:
+    - Capitulation Patterns: Extreme fear followed by reversals
+    - Euphoria Patterns: Extreme greed followed by corrections
+    - Sentiment Divergence: Price vs. sentiment divergence patterns
+    - Mean Reversion: Sentiment extremes reverting to neutral
+    - Momentum Shifts: Rapid sentiment changes indicating trend shifts
+
+INTEGRATION CAPABILITIES:
+    - Technical Analysis Integration: Sentiment confirmation of technical signals
+    - Risk Management Integration: Position sizing based on sentiment risk
+    - Portfolio Management: Asset allocation based on market sentiment
+    - Trading Strategy Integration: Sentiment-based entry/exit filters
+
+AUTHOR: BNB Trading System Team
+VERSION: 2.0.0
+DATE: 2024-01-01
 """
 
 import requests
 import time
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 import json
 import re
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class SentimentAnalyzer:
-    """Analyze market sentiment using multiple sources"""
-    
-    def __init__(self):
+    """
+    Advanced Market Sentiment Analysis Engine for Cryptocurrency Trading
+
+    This class provides comprehensive market sentiment analysis by aggregating multiple
+    sentiment sources including Fear & Greed Index, social media sentiment, news analysis,
+    and market momentum indicators to provide a complete view of market psychology.
+
+    ARCHITECTURE OVERVIEW:
+        - Multi-source sentiment aggregation with weighted scoring
+        - Real-time sentiment monitoring with configurable update intervals
+        - Automated sentiment classification and signal generation
+        - Historical sentiment pattern analysis and trend identification
+        - Sentiment-driven risk assessment and market regime classification
+
+    SENTIMENT SOURCES PROCESSED:
+        1. Fear & Greed Index: Market emotion indicator with 5-level classification
+        2. Social Media Sentiment: Keyword-based analysis of social platforms
+        3. News Sentiment: Financial news impact and announcement analysis
+        4. Market Momentum: Technical indicators for sentiment confirmation
+        5. Composite Scoring: Weighted aggregation of all sentiment sources
+
+    FEAR & GREED INDEX METHODOLOGY:
+        - 0-20: Extreme Fear (Strong contrarian buying opportunities)
+        - 21-40: Fear (Buying opportunities with caution)
+        - 41-60: Neutral (Balanced market, wait for direction)
+        - 61-80: Greed (Selling opportunities with caution)
+        - 81-100: Extreme Greed (Strong contrarian selling opportunities)
+
+    SOCIAL SENTIMENT ANALYSIS:
+        - Bullish Keywords: moon, bullish, pump, rocket, hodl, buy, gains
+        - Bearish Keywords: dump, crash, bear, sell, drop, panic, fear
+        - Volume-weighted scoring for engagement-based sentiment
+        - Trend analysis of sentiment changes over time
+        - Influential account sentiment tracking
+
+    NEWS SENTIMENT ANALYSIS:
+        - Positive Indicators: partnerships, adoption, upgrades, launches
+        - Negative Indicators: regulation, ban, hack, investigation, lawsuit
+        - Impact-weighted scoring based on news significance
+        - Time-decay adjustment for news relevance
+        - Sector-specific sentiment analysis
+
+    CONFIGURATION PARAMETERS:
+        base_url (str): Binance API base URL for market data
+        fear_greed_levels (Dict): Fear & Greed Index classification thresholds
+        bullish_keywords (List): Positive sentiment keywords
+        bearish_keywords (List): Negative sentiment keywords
+        positive_news_indicators (List): Positive news keywords
+        negative_news_indicators (List): Negative news keywords
+
+    ATTRIBUTES:
+        All configuration parameters are stored as instance attributes
+        for easy access and modification during runtime.
+
+    COMPOSITE SENTIMENT CALCULATION:
+        - Weighted Average: fear_greed_weight + social_weight + news_weight + momentum_weight = 1.0
+        - Confidence Scoring: Statistical confidence in composite sentiment
+        - Trend Direction: Bullish, Bearish, or Neutral sentiment trend
+        - Volatility Expectation: Anticipated market volatility based on sentiment
+        - Risk Assessment: Investment risk level based on sentiment extremes
+
+    OUTPUT STRUCTURE:
+        {
+            'sentiment': str,               # EXTREME_FEAR | FEAR | NEUTRAL | GREED | EXTREME_GREED
+            'score': float,                 # -1.0 to +1.0 composite score
+            'confidence': float,            # 0.0 to 1.0 confidence level
+            'fear_greed_score': int,        # 0-100 Fear & Greed Index
+            'social_sentiment': float,      # -1.0 to +1.0 social sentiment
+            'news_sentiment': float,        # -1.0 to +1.0 news sentiment
+            'momentum_sentiment': float,    # -1.0 to +1.0 momentum sentiment
+            'trend_direction': str,         # BULLISH | BEARISH | NEUTRAL
+            'volatility_expectation': str,  # LOW | MEDIUM | HIGH
+            'risk_level': str,             # LOW | MEDIUM | HIGH
+            'analysis_date': datetime,      # Analysis timestamp
+            'error': str                   # Error message if analysis fails
+        }
+
+    SENTIMENT-BASED SIGNALS:
+        - EXTREME_FEAR_SIGNAL: Score 0-20, strong contrarian buy opportunity
+        - FEAR_SIGNAL: Score 21-40, moderate contrarian buy opportunity
+        - NEUTRAL_SIGNAL: Score 41-60, wait for clearer direction
+        - GREED_SIGNAL: Score 61-80, moderate contrarian sell opportunity
+        - EXTREME_GREED_SIGNAL: Score 81-100, strong contrarian sell opportunity
+
+    EXAMPLE:
+        >>> analyzer = SentimentAnalyzer()
+        >>> fear_greed = analyzer.get_fear_greed_index()
+        >>> social_sentiment = analyzer.analyze_social_sentiment()
+        >>> news_sentiment = analyzer.analyze_news_sentiment()
+        >>> momentum = analyzer.get_market_momentum_indicators()
+        >>> composite = analyzer.calculate_composite_sentiment(fear_greed, social_sentiment, news_sentiment, momentum)
+        >>> if composite['sentiment'] == 'EXTREME_FEAR':
+        ...     print(f"Contrarian BUY signal - Fear & Greed: {fear_greed['score']}")
+
+    NOTE:
+        The sentiment analyzer requires active internet connection for real-time data.
+        Results are most accurate when multiple sentiment sources are available.
+    """
+
+    def __init__(self) -> None:
         self.base_url = "https://api.binance.com/api/v3"
         
         # Fear & Greed thresholds

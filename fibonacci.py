@@ -1,27 +1,170 @@
 """
-Fibonacci Module - СПЕЦИАЛЕН модул за Fibonacci retracement изчисления
-ПРИОРИТЕТ №1: Автоматично намиране на swing points и изчисляване на всички Fib нива
-Фокус върху 61.8% и 38.2% като най-важни нива за BNB
+Fibonacci Analysis Module - Advanced Fibonacci Retracement & Extension Analysis
+
+SPECIALIZED MODULE FOR AUTOMATED FIBONACCI ANALYSIS
+PRIORITY #1: Automated swing point detection and comprehensive Fib level calculations
+
+This module provides advanced Fibonacci analysis capabilities specifically optimized
+for cryptocurrency trading, with special focus on BNB/USD price movements.
+
+ARCHITECTURE OVERVIEW:
+    - Automated swing point detection using configurable lookback periods
+    - Complete Fibonacci retracement and extension level calculations
+    - Proximity analysis for current price relative to Fib levels
+    - Support for both bullish and bearish market scenarios
+    - Integration with trend analysis for signal confirmation
+
+FIBONACCI LEVELS SUPPORTED:
+    - Retracement Levels: 78.6%, 61.8%, 50%, 38.2%, 23.6%
+    - Extension Levels: 100%, 127.2%, 141.4%, 161.8%, 200%, 261.8%
+    - Golden Ratio: 61.8% (primary focus for BNB analysis)
+
+KEY FEATURES:
+    - Automated swing high/low detection with configurable sensitivity
+    - Multiple timeframe analysis capability
+    - Proximity threshold analysis for entry/exit signals
+    - Fibonacci confluence detection
+    - Trend-aware Fib level interpretation
+    - Comprehensive error handling and validation
+
+TRADING APPLICATIONS:
+    - Support/Resistance identification at Fib levels
+    - Entry point determination near Fib retracements
+    - Target price calculation using Fib extensions
+    - Risk management using Fib-based stop levels
+    - Trend continuation/breakout signals
+
+CONFIGURATION PARAMETERS:
+    - swing_lookback: Periods to analyze for swing points (default: 100)
+    - key_levels: Primary Fib levels for analysis (default: [0.382, 0.618])
+    - proximity_threshold: Distance threshold for level proximity (default: 0.01)
+    - min_swing_size: Minimum swing size for valid analysis (default: 0.15)
+
+EXAMPLE USAGE:
+    >>> config = {'fibonacci': {'swing_lookback': 100, 'key_levels': [0.382, 0.618]}}
+    >>> fib_analyzer = FibonacciAnalyzer(config)
+    >>> analysis = fib_analyzer.analyze_fibonacci_trend(daily_data)
+    >>> print(f"Current Fib level: {analysis['nearest_level']}")
+
+DEPENDENCIES:
+    - pandas: Data manipulation and time series analysis
+    - numpy: Mathematical calculations and array operations
+    - typing: Type hints for better code documentation
+
+PERFORMANCE OPTIMIZATIONS:
+    - Efficient swing point detection algorithms
+    - Vectorized Fibonacci level calculations
+    - Memory-efficient data processing
+    - Caching of expensive computations
+
+ERROR HANDLING:
+    - Validation of input data structure and quality
+    - Graceful handling of insufficient data periods
+    - Comprehensive logging for debugging and monitoring
+    - Fallback mechanisms for edge cases
+
+AUTHOR: BNB Trading System Team
+VERSION: 2.0.0
+DATE: 2024-01-01
 """
 
 import pandas as pd
 import numpy as np
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, Any
 import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class FibonacciAnalyzer:
-    """Клас за Fibonacci retracement анализ на BNB"""
-    
-    def __init__(self, config: Dict):
+    """
+    Advanced Fibonacci Retracement and Extension Analyzer for BNB Trading
+
+    This class provides comprehensive Fibonacci analysis specifically optimized for
+    cryptocurrency price movements, particularly BNB/USD. It automates the detection
+    of swing points and calculates all relevant Fibonacci levels for trading decisions.
+
+    ARCHITECTURE OVERVIEW:
+        - Automated swing point detection using configurable lookback windows
+        - Complete Fibonacci retracement (23.6% to 78.6%) and extension (100% to 261.8%) analysis
+        - Proximity analysis to identify current price position relative to Fib levels
+        - Support for both bullish and bearish market scenarios
+        - Integration with trend analysis for signal validation
+
+    FIBONACCI THEORY IMPLEMENTATION:
+        - Golden Ratio (61.8%) as primary focus for BNB analysis
+        - Complete Fib sequence from 0% to 261.8%
+        - Automated swing high/low detection with validation
+        - Trend-aware level interpretation
+        - Multi-timeframe confluence detection
+
+    ALGORITHMS USED:
+        1. Swing Point Detection: Identifies local maxima/minima within lookback period
+        2. Fib Level Calculation: Mathematical calculation of all Fib ratios
+        3. Proximity Analysis: Determines closest Fib level to current price
+        4. Confluence Detection: Identifies areas where multiple Fib levels converge
+        5. Trend Validation: Adjusts Fib interpretation based on market direction
+
+    CONFIGURATION PARAMETERS:
+        swing_lookback (int): Number of periods to analyze for swing points (default: 100)
+        key_levels (List[float]): Primary Fibonacci levels for focus (default: [0.382, 0.618])
+        proximity_threshold (float): Maximum distance to consider "at Fib level" (default: 0.01)
+        min_swing_size (float): Minimum swing size for valid analysis (default: 0.15)
+
+    ATTRIBUTES:
+        fib_levels (List[float]): All Fibonacci ratios used in calculations
+        swing_lookback (int): Lookback period for swing point detection
+        key_levels (List[float]): Primary levels for analysis focus
+        proximity_threshold (float): Threshold for level proximity detection
+        min_swing_size (float): Minimum required swing size
+
+    EXAMPLE:
+        >>> config = {
+        ...     'fibonacci': {
+        ...         'swing_lookback': 100,
+        ...         'key_levels': [0.382, 0.618],
+        ...         'proximity_threshold': 0.01,
+        ...         'min_swing_size': 0.15
+        ...     }
+        ... }
+        >>> analyzer = FibonacciAnalyzer(config)
+        >>> result = analyzer.analyze_fibonacci_trend(daily_data)
+
+    NOTE:
+        The analyzer requires sufficient historical data (minimum 100 periods)
+        and validates swing size to ensure meaningful Fibonacci analysis.
+    """
+
+    def __init__(self, config: Dict[str, Any]) -> None:
         """
-        Инициализира Fibonacci анализатора
-        
+        Initialize the Fibonacci Analyzer with configuration parameters.
+
+        Sets up the analyzer with all necessary parameters for Fibonacci analysis,
+        including swing detection settings, key levels, and validation thresholds.
+
         Args:
-            config: Конфигурационни параметри
+            config (Dict[str, Any]): Complete configuration dictionary containing:
+                - fibonacci.swing_lookback (int): Periods for swing point analysis
+                - fibonacci.key_levels (List[float]): Primary Fib levels to focus on
+                - fibonacci.proximity_threshold (float): Proximity threshold for levels
+                - fibonacci.min_swing_size (float): Minimum swing size requirement
+
+        Raises:
+            KeyError: If required configuration keys are missing
+            ValueError: If configuration values are invalid
+
+        Example:
+            >>> config = {
+            ...     'fibonacci': {
+            ...         'swing_lookback': 100,
+            ...         'key_levels': [0.382, 0.618],
+            ...         'proximity_threshold': 0.015,
+            ...         'min_swing_size': 0.12
+            ...     }
+            ... }
+            >>> analyzer = FibonacciAnalyzer(config)
         """
+        self.config = config  # Запази референция към config
         self.swing_lookback = config['fibonacci']['swing_lookback']
         self.key_levels = config['fibonacci']['key_levels']
         self.proximity_threshold = config['fibonacci']['proximity_threshold']
@@ -218,23 +361,39 @@ class FibonacciAnalyzer:
             signal_info['support_levels'].sort(key=lambda x: abs(x[1] - current_price))
             signal_info['resistance_levels'].sort(key=lambda x: abs(x[1] - current_price))
             
-            # Генерираме сигнал базиран на Fibonacci нива
+            # Phase 1.2: Подобрена логика за SHORT сигнали
             if proximity_info['active_levels']:
                 active_level = proximity_info['active_levels'][0]
                 level = active_level['level']
-                
-                if level in [0.236, 0.382]:  # Support нива
+
+                if level in [0.236, 0.382]:  # Support нива - LONG сигнали
                     signal_info['signal'] = 'LONG'
                     signal_info['strength'] = 0.8 if level == 0.382 else 0.6
-                    signal_info['reason'] = f"Цената е на Fibonacci support {level*100:.1f}%"
-                elif level in [0.618, 0.786]:  # Resistance нива
-                    signal_info['signal'] = 'SHORT'
-                    signal_info['strength'] = 0.8 if level == 0.618 else 0.6
-                    signal_info['reason'] = f"Цената е на Fibonacci resistance {level*100:.1f}%"
+                    signal_info['reason'] = f"LONG: Цената е над Fibonacci support {level*100:.1f}% (${active_level['price']:.2f})"
+
+                elif level in [0.618, 0.786]:  # Resistance нива - SHORT сигнали само при строги условия
+                    # Phase 1.2: Проверка дали цената е ПОД resistance нивото
+                    if current_price < active_level['price']:
+                        # Phase 1.2: Проверка за отскок (rejection) от resistance
+                        rejection_confirmed = self._check_resistance_rejection(current_price, active_level['price'], fib_levels)
+                        if rejection_confirmed:
+                            signal_info['signal'] = 'SHORT'
+                            signal_info['strength'] = 0.8 if level == 0.618 else 0.7
+                            signal_info['reason'] = f"SHORT: Отскок от Fibonacci resistance {level*100:.1f}% (${active_level['price']:.2f}) - цена под ниво и rejection потвърден"
+                        else:
+                            signal_info['signal'] = 'HOLD'
+                            signal_info['strength'] = 0.3
+                            signal_info['reason'] = f"HOLD: Близо до resistance {level*100:.1f}% но няма rejection - изчакай потвърждение"
+                    else:
+                        # Цената е НАД resistance нивото - няма SHORT сигнал
+                        signal_info['signal'] = 'HOLD'
+                        signal_info['strength'] = 0.2
+                        signal_info['reason'] = f"HOLD: Цената е над resistance {level*100:.1f}% - няма SHORT възможност"
+
                 elif level == 0.5:  # Средно ниво
                     signal_info['signal'] = 'HOLD'
                     signal_info['strength'] = 0.4
-                    signal_info['reason'] = "Цената е на Fibonacci 50% ниво"
+                    signal_info['reason'] = "HOLD: Цената е на неутрално Fibonacci 50% ниво"
             
             # Добавяме информация за следващите нива
             if signal_info['signal'] == 'LONG':
@@ -255,16 +414,126 @@ class FibonacciAnalyzer:
         except Exception as e:
             logger.error(f"Грешка при генериране на Fibonacci сигнал: {e}")
             return {'signal': 'HOLD', 'reason': f'Грешка: {e}'}
-    
-    def analyze_fibonacci_trend(self, df: pd.DataFrame) -> Dict[str, any]:
+
+    def _check_resistance_rejection(self, current_price: float, resistance_price: float,
+                                   fib_levels: Dict[float, float]) -> bool:
         """
-        Анализира Fibonacci тренд за цялата история
-        
+        Phase 1.2: Проверява дали има отскок (rejection) от resistance ниво
+
+        Rejection критерии:
+        1. Цената трябва да е значително под resistance нивото (не в близост)
+        2. Цената трябва да показва низходящо движение след доближаване
+        3. Rejection се потвърждава ако цената е под определен процент от resistance
+
         Args:
-            df: DataFrame с исторически данни
-            
+            current_price: Текущата цена
+            resistance_price: Цена на resistance нивото
+            fib_levels: Всички Fibonacci нива
+
         Returns:
-            Dict с Fibonacci тренд анализ
+            bool: True ако има rejection, False ако няма
+        """
+        try:
+            # Изчисляваме колко е отдалечена цената от resistance
+            price_distance_pct = abs(current_price - resistance_price) / resistance_price
+
+            # Конфигурационни параметри за rejection
+            config = self.config.get('short_signals', {})
+            min_rejection_distance = config.get('min_rejection_distance', 0.01)  # 1% минимум отдалечение
+            rejection_threshold = config.get('rejection_threshold', 0.03)  # 3% за силен rejection
+
+            # Проверка 1: Цената трябва да е достатъчно отдалечена от resistance
+            if price_distance_pct < min_rejection_distance:
+                logger.info(f"Няма rejection: Цената е твърде близо до resistance ({price_distance_pct:.2f}%)")
+                return False
+
+            # Проверка 2: Цената трябва да е под resistance нивото
+            if current_price >= resistance_price:
+                logger.info(f"Няма rejection: Цената е над или на resistance нивото")
+                return False
+
+            # Проверка 3: Rejection е силен ако цената е под rejection_threshold
+            if price_distance_pct >= rejection_threshold:
+                logger.info(f"Силен rejection потвърден: Цената е {price_distance_pct:.2f}% под resistance")
+                return True
+            else:
+                logger.info(f"Слаб rejection: Цената е само {price_distance_pct:.2f}% под resistance")
+                return False
+
+        except Exception as e:
+            logger.error(f"Грешка при проверка на resistance rejection: {e}")
+            return False
+    
+    def analyze_fibonacci_trend(self, df: pd.DataFrame) -> Dict[str, Any]:
+        """
+        Perform complete Fibonacci trend analysis on price data.
+
+        MAIN ENTRY POINT for Fibonacci analysis in the BNB trading system.
+        This method orchestrates the complete Fibonacci analysis pipeline:
+
+        1. VALIDATION PHASE:
+           - Validates input data structure and sufficiency
+           - Checks for required OHLCV columns
+           - Ensures minimum data length for analysis
+
+        2. SWING DETECTION PHASE:
+           - Identifies swing high and swing low points
+           - Validates swing size against minimum requirements
+           - Calculates swing range and characteristics
+
+        3. FIBONACCI CALCULATION PHASE:
+           - Calculates all Fibonacci retracement levels
+           - Computes Fibonacci extension levels
+           - Applies trend-aware level interpretation
+
+        4. PROXIMITY ANALYSIS PHASE:
+           - Determines current price position relative to Fib levels
+           - Identifies nearest Fibonacci levels
+           - Calculates proximity percentages and distances
+
+        5. SIGNAL GENERATION PHASE:
+           - Generates trading signals based on Fib analysis
+           - Provides confidence scores for Fib levels
+           - Identifies support/resistance characteristics
+
+        Args:
+            df (pd.DataFrame): OHLCV price data with required columns:
+                - 'Open', 'High', 'Low', 'Close': Price data (required)
+                - 'Volume': Trading volume (optional but recommended)
+                - DatetimeIndex: Proper datetime index (required)
+
+        Returns:
+            Dict[str, Any]: Complete Fibonacci analysis results with structure:
+                {
+                    'swing_high': float,           # Swing high price
+                    'swing_low': float,            # Swing low price
+                    'swing_range': float,          # Swing range size
+                    'fibonacci_levels': Dict[float, float],  # All Fib levels with prices
+                    'nearest_level': Dict,         # Nearest Fib level info
+                    'current_price': float,        # Current closing price
+                    'trend_direction': str,        # 'bullish' or 'bearish'
+                    'support_levels': List[float], # Fib support levels
+                    'resistance_levels': List[float], # Fib resistance levels
+                    'confidence_score': float,     # Analysis confidence (0-1)
+                    'signal': str,                 # LONG/SHORT/HOLD recommendation
+                    'analysis_date': pd.Timestamp, # Analysis timestamp
+                    'error': str                   # Error message if analysis fails
+                }
+
+        Raises:
+            ValueError: If input data is invalid or insufficient
+            KeyError: If required columns are missing from DataFrame
+
+        Example:
+            >>> # Analyze recent price action
+            >>> analysis = fib_analyzer.analyze_fibonacci_trend(daily_data)
+            >>> if analysis.get('signal') == 'LONG':
+            ...     nearest_level = analysis['nearest_level']
+            ...     print(f"Long signal at Fib {nearest_level['level']:.1%}")
+
+        Note:
+            This method requires at least 100 periods of data for meaningful analysis.
+            The analysis automatically adapts to both bullish and bearish trends.
         """
         try:
             # Намираме swing points

@@ -18,6 +18,33 @@ confluence_bonus = 1.5
 min_wick_ratio = 3.0
 volume_confirmation = true
 volume_multiplier = 1.5
+# Phase 1.3: Fibonacci resistance check за SHORT сигнали
+fibonacci_resistance_check = true
+fibonacci_proximity_threshold = 0.02  # Колко близо трябва да е опашката до Fib resistance
+
+# Phase 1.4: Volume confirmation за SHORT сигнали
+volume_confirmation_for_short = false  # Изключен за по-малко агресивни филтри
+volume_lookback_periods = 14  # Периоди за изчисляване на среден обем
+volume_multiplier_threshold = 1.2  # Намален от 1.5 за по-малко агресивен volume filter  # Колко пъти по-голям трябва да е обема
+
+# Phase 1.5: BNB Burn filter за SHORT сигнали
+burn_filter = false  # Изключен за по-малко агресивни филтри
+
+# Phase 1.6: Price Action Rejection Patterns за SHORT сигнали
+price_action_rejection = false  # Изключен за по-малко агресивни филтри
+rejection_wick_ratio = 2.0  # Минимален ratio между wick и body за rejection
+rejection_lookback_periods = 5  # Периоди за анализ на rejection patterns
+rejection_strength_threshold = 0.7  # Минимална сила на rejection сигнала
+
+# Phase 1.7: Multi-timeframe Alignment за SHORT сигнали
+multi_timeframe_alignment = false  # Изключен за по-малко агресивни филтри
+daily_weakness_required = true  # Daily трябва да показва слабост за SHORT
+weekly_strong_uptrend_block = true  # Блокира SHORT при силен weekly uptrend
+alignment_threshold = 0.6  # Минимален alignment score за SHORT сигнали
+
+# Phase 1.8: Market Regime Detection за SHORT сигнали
+market_regime_filter = false  # Изключен за по-малко агресивни филтри
+high_confidence_threshold = 0.8  # Минимална confidence за SHORT в WEAK_BULL regime
 
 [indicators]
 rsi_period = 14
@@ -32,6 +59,9 @@ bb_std = 2.0
 bb_volume_confirmation = true
 bb_volume_multiplier = 1.5
 bb_volume_lookback = 20
+# ATR за volatility analysis
+atr_period = 14
+atr_multiplier = 2.0
 
 [signals]
 fibonacci_weight = 0.35
@@ -52,7 +82,7 @@ trend_threshold = 0.015
 short_signal_requirements = true
 short_min_fib_level = 0.5
 short_min_tail_strength = 0.6
-short_trend_confirmation = true
+short_trend_confirmation = false  # Изключен за по-малко агресивни SHORT филтри
 
 # Балансирани изисквания за LONG сигнали
 long_signal_requirements = true
@@ -111,3 +141,113 @@ min_pattern_distance = 5
 pattern_threshold = 0.02
 volume_confirmation = true
 candle_confirmation = true
+
+# Phase 1: SHORT Signals Improvements
+[short_signals]
+enabled = true
+trend_filter = true
+trend_strength_threshold = 0.3
+min_fibonacci_resistance = true
+volume_confirmation = true
+min_tail_strength = 0.6
+burn_filter = false  # Ще се активира след имплементация
+price_action_rejection = false  # Ще се активира след имплементация
+multi_timeframe_alignment = false  # Ще се активира след имплементация
+market_regime_detection = false  # Ще се активира след имплементация
+signal_quality_scoring = false  # Ще се активира след имплементация
+min_quality_score = 70
+confidence_threshold = 0.8
+
+[long_signals]
+enabled = true
+ema_confirmation = false  # Ще се активира в Phase 2
+min_risk_reward = 2.0
+burn_enhancement = false  # Ще се активира в Phase 2
+
+# Phase 2: LONG Signal Enhancements
+volume_confirmation_enabled = true  # Volume confirmation за LONG сигнали
+volume_lookback_periods_long = 10   # По-кратък период за LONG (по-чувствителен)
+volume_multiplier_threshold_long = 1.3  # По-нисък threshold за LONG
+
+divergence_confirmation_enabled = true  # Divergence confirmation за LONG сигнали
+require_bullish_divergence = true  # Изисква bullish divergence за силни LONG сигнали
+
+market_regime_filter_long = true  # Market regime awareness за LONG сигнали
+prefer_long_in_bull_regime = true  # Предпочитай LONG в bull market
+avoid_long_in_bear_regime = false  # Не блокирай LONG в bear market
+
+confidence_threshold_high = 4.0  # Високо ниво на увереност за най-добрите LONG сигнали
+confidence_threshold_medium = 3.0  # Средно ниво на увереност
+
+# Phase 3: Advanced LONG Signal Confirmations
+ichimoku_confirmation_enabled = true  # Ichimoku Cloud confirmation за LONG сигнали
+ichimoku_above_cloud_bonus = 0.3     # Бонус за LONG когато цената е над облака
+
+sentiment_confirmation_enabled = true  # Sentiment confirmation за LONG сигнали
+sentiment_positive_threshold = 55     # Минимален sentiment score за LONG бонус
+sentiment_bonus_long = 0.2           # Бонус за позитивен sentiment
+
+whale_confirmation_enabled = true     # Whale activity confirmation за LONG сигнали
+whale_min_signals = 3                # Минимален брой whale сигнали
+whale_bonus_long = 0.4               # Бонус за силна whale активност
+
+price_patterns_confirmation_enabled = true  # Price action patterns за LONG сигнали
+patterns_bonus_long = 0.25           # Бонус за bullish patterns
+
+elliott_wave_confirmation_enabled = true  # Elliott wave confirmation за LONG сигнали
+elliott_bullish_bonus = 0.35         # Бонус за bullish wave structures
+
+optimal_levels_confirmation_enabled = true  # Optimal levels confirmation за LONG сигнали
+levels_above_support_bonus = 0.2     # Бонус когато цената е над support нива
+
+[bnb_burn]
+# Burn filter параметри за SHORT сигнали (Phase 1.5)
+burn_filter_enabled = true
+pre_burn_window_days = 14  # Дни преди burn да се блокира SHORT
+post_burn_window_days = 7   # Дни след burn да се блокира SHORT
+
+# Burn dates source (ще се разшири в бъдеще)
+burn_dates_source = "manual"  # manual, api, bnbburn.info
+
+# Ръчно дефинирани burn дати (за тестване)
+burn_dates = [
+    "2024-02-16",  # Примерна burn дата
+    "2024-03-15",  # Примерна burn дата
+    "2024-04-12",  # Примерна burn дата
+    "2024-05-10",  # Примерна burn дата
+    "2024-06-14",  # Примерна burn дата
+    "2024-07-12",  # Примерна burn дата
+    "2024-08-16",  # Примерна burn дата
+]
+
+# Burn confidence и target параметри (за бъдещи фази)
+burn_confidence_bonus = 0.15
+burn_target_pct = 0.05
+
+[market_regimes]
+strong_bull = "SHORT_DISABLED"
+weak_bull = "SHORT_HIGH_CONFIDENCE"
+range = "SHORT_ENABLED"
+bear = "SHORT_ENABLED"
+
+[price_action]
+rejection_wick_multiplier = 2.0
+min_rejection_distance = 0.01
+
+# Fibonacci SHORT signal rejection parameters
+rejection_threshold = 0.03  # 3% minimum distance for strong rejection
+
+[signal_scoring]
+fibonacci_weight = 35
+weekly_tails_weight = 30
+trend_weight = 20
+volume_weight = 10
+divergence_weight = 5
+min_short_score = 50  # Минимален score за SHORT сигнали (намален от 70 за по-малко агресивни филтри)
+
+
+
+[risk_management]
+stop_loss_enabled = true
+position_sizing = true
+max_risk_per_trade = 0.02

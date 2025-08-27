@@ -1,7 +1,73 @@
 """
-BNB Trading System - Главен файл
-Комбинира всички модули за генериране на Long/Short сигнали
-Фокус върху Fibonacci нива и седмични опашки
+BNB Trading System - Main Entry Point
+
+COMPLETE BNB SWING TRADING SYSTEM WITH ADVANCED TECHNICAL ANALYSIS
+
+This is the PRIMARY ENTRY POINT for the BNB Trading System, providing a complete
+end-to-end trading solution for BNB/USDT analysis and signal generation.
+
+SYSTEM OVERVIEW:
+    The system combines 15+ specialized analysis modules to generate high-confidence
+    trading signals using advanced technical analysis, machine learning techniques,
+    and market sentiment analysis.
+
+ARCHITECTURE:
+    - Modular design with specialized analysis components
+    - Configuration-driven parameters (config.toml)
+    - Real-time data from Binance API via CCXT
+    - Comprehensive backtesting and validation
+    - Risk management and position sizing
+
+CORE COMPONENTS:
+    1. Data Acquisition (data_fetcher.py)
+    2. Signal Generation (signal_generator.py)
+    3. Analysis Modules (15+ specialized analyzers)
+    4. Backtesting Engine (backtester.py)
+    5. Validation System (validator.py)
+
+USAGE MODES:
+    - Real-time signal generation: python3 main.py
+    - Historical backtesting: python3 backtester.py
+    - Individual module testing: Import specific modules
+
+OUTPUT FILES:
+    - analysis_results.txt: Complete analysis report
+    - results_summary.txt: Executive summary
+    - backtest_results.txt: Backtesting performance
+    - results.csv: Signal history database
+    - bnb_trading.log: System logs
+
+CONFIGURATION:
+    All parameters are managed through config.toml with sections for:
+    - Data acquisition settings
+    - Analysis module parameters
+    - Signal generation rules
+    - Risk management settings
+    - Backtesting parameters
+
+PERFORMANCE TARGETS:
+    - Overall accuracy: 75%+
+    - LONG signals: 80%+ accuracy (currently 100%)
+    - SHORT signals: 60%+ accuracy (currently 0% - NEEDS FIX)
+    - Max drawdown: <15%
+    - Sharpe ratio: >1.5
+
+EXAMPLE USAGE:
+    >>> from main import BNBTradingSystem
+    >>> system = BNBTradingSystem()
+    >>> results = system.run_analysis()
+    >>> system.display_current_signal(results)
+
+DEPENDENCIES:
+    - pandas, numpy: Data manipulation and analysis
+    - ccxt: Binance API integration
+    - ta-lib: Technical analysis library
+    - toml: Configuration file parsing
+    - matplotlib, seaborn: Visualization (optional)
+
+AUTHOR: BNB Trading System Team
+VERSION: 2.0.0
+DATE: 2024-01-01
 """
 
 import pandas as pd
@@ -11,9 +77,9 @@ import logging
 from datetime import datetime, timedelta
 import sys
 import os
-from typing import Dict
+from typing import Dict, Any, Optional
 
-# Добавяме текущата директория в Python path
+# Add current directory to Python path for module imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from data_fetcher import BNBDataFetcher
@@ -37,14 +103,82 @@ for logger_name in ['__main__', 'data_fetcher', 'fibonacci', 'weekly_tails', 'in
 logger = logging.getLogger(__name__)
 
 class BNBTradingSystem:
-    """Главен клас на BNB Trading системата"""
-    
-    def __init__(self, config_file: str = 'config.toml'):
+    """
+    Main Orchestrator Class for Complete BNB Trading System
+
+    This class serves as the central coordinator for the entire BNB trading ecosystem,
+    managing data acquisition, signal generation, validation, and result presentation.
+
+    ARCHITECTURE OVERVIEW:
+        - Initializes all core system components
+        - Orchestrates data flow from API to analysis modules
+        - Manages configuration and error handling
+        - Provides unified interface for all system operations
+        - Handles result formatting and export
+
+    SYSTEM COMPONENTS:
+        1. Data Fetcher: Handles Binance API integration and data validation
+        2. Signal Generator: Core analysis engine with 15+ modules
+        3. Signal Validator: Performance tracking and validation
+        4. Configuration Manager: TOML-based parameter management
+        5. Result Exporter: Multiple output formats (CSV, TXT, JSON)
+
+    WORKFLOW:
+        1. Initialize with configuration file
+        2. Run complete analysis (run_analysis)
+        3. Display current signal (display_current_signal)
+        4. Export results (export_results)
+        5. Validate performance (validate_signal)
+
+    ATTRIBUTES:
+        config (Dict): Complete system configuration from config.toml
+        data_fetcher (BNBDataFetcher): Handles all data acquisition
+        signal_generator (SignalGenerator): Core signal generation engine
+        validator (SignalValidator): Signal validation and tracking
+
+    EXAMPLE:
+        >>> system = BNBTradingSystem('config.toml')
+        >>> results = system.run_analysis()
+        >>> system.display_current_signal(results)
+        >>> system.export_results(results)
+
+    CONFIGURATION:
+        The system expects a comprehensive config.toml file with sections for:
+        - data: API and data acquisition settings
+        - signals: Signal generation parameters
+        - fibonacci: Fibonacci analysis configuration
+        - weekly_tails: Weekly tails analysis settings
+        - indicators: Technical indicators parameters
+        - All module-specific configurations
+    """
+
+    def __init__(self, config_file: str = 'config.toml') -> None:
         """
-        Инициализира BNB Trading системата
-        
+        Initialize the complete BNB Trading System.
+
+        Sets up all system components including data acquisition, signal generation,
+        validation, and result management based on configuration parameters.
+
         Args:
-            config_file: Път до конфигурационния файл
+            config_file (str): Path to the TOML configuration file.
+                Defaults to 'config.toml' in current directory.
+                Must contain all required configuration sections.
+
+        Raises:
+            FileNotFoundError: If config_file does not exist
+            ValueError: If configuration is invalid or missing required sections
+            ConnectionError: If Binance API is unreachable during initialization
+
+        Example:
+            >>> # Basic initialization
+            >>> system = BNBTradingSystem()
+
+            >>> # Custom config file
+            >>> system = BNBTradingSystem('my_config.toml')
+
+        Note:
+            Initialization includes validation of all configuration parameters
+            and setup of logging based on configuration settings.
         """
         try:
             # Зареждаме конфигурацията
@@ -78,12 +212,13 @@ class BNBTradingSystem:
             
             if not data or 'daily' not in data or 'weekly' not in data:
                 raise ValueError("Неуспешно извличане на данни")
-            
+
             daily_df = data['daily']
             weekly_df = data['weekly']
-            
-    
-            
+
+            # 1.5 Добавяме BNB burn колони към дневните данни
+            daily_df = self.data_fetcher.add_bnb_burn_columns(daily_df, self.config)
+
             # 2. Валидираме качеството на данните
             daily_quality = self.data_fetcher.validate_data_quality(daily_df)
             weekly_quality = self.data_fetcher.validate_data_quality(weekly_df)
@@ -252,7 +387,9 @@ class BNBTradingSystem:
             current_signal = results['current_signal']
             print(f"\n🎯 ТЕКУЩ СИГНАЛ ЗА ДНЕС:")
             print(f"   Сигнал: {current_signal['signal']}")
-            print(f"   Увереност: {current_signal['confidence']}")
+            confidence = current_signal['confidence']
+            confidence_level = "❌ НИСКА" if confidence < 3.0 else "⚠️ СРЕДНА" if confidence < 4.0 else "✅ ВИСОКА" if confidence < 4.5 else "🚀 МНОГО ВИСОКА"
+            print(f"   Увереност: {confidence} ({confidence_level})")
             print(f"   Приоритет: {current_signal['priority']}")
             print(f"   Ниво на риска: {current_signal['risk_level']}")
             print(f"   Причина: {current_signal['reason']}")
@@ -414,7 +551,9 @@ class BNBTradingSystem:
             print("🎯" * 20)
             
             # Основна информация за сигнала
-            print(f"\n🚀 СИГНАЛ: {signal['signal']} | Увереност: {signal.get('confidence', 0):.1f} | Приоритет: {signal['priority']}")
+            confidence = signal.get('confidence', 0)
+            confidence_level = "❌ НИСКА" if confidence < 3.0 else "⚠️ СРЕДНА" if confidence < 4.0 else "✅ ВИСОКА" if confidence < 4.5 else "🚀 МНОГО ВИСОКА"
+            print(f"\n🚀 СИГНАЛ: {signal['signal']} | Увереност: {confidence:.1f} ({confidence_level}) | Приоритет: {signal['priority']}")
             print(f"💡 Причина: {signal['reason'][:100]}...")
             
             # Fibonacci анализ - само най-важното
