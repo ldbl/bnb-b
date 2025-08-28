@@ -148,17 +148,17 @@ candle_confirmation = true
 [short_signals]
 enabled = true
 trend_filter = true
-trend_strength_threshold = 0.3  # НАМАЛЕНО - по-слаб тренд за SHORT (позволява повече сигнали)
+trend_strength_threshold = 0.1  # ОЩЕ ПО-НАМАЛЕНО - за да позволи SHORT в силен bull market
 min_fibonacci_resistance = false  # ИЗКЛЮЧЕНО - SHORT на всякакви нива
 volume_confirmation = false  # ИЗКЛЮЧЕНО - SHORT без volume изискване
-min_tail_strength = 0.3  # НАМАЛЕНО - по-слаби опашки за SHORT
+min_tail_strength = 0.1  # ОЩЕ ПО-НАМАЛЕНО - за да позволи SHORT при по-слаби опашки
 burn_filter = false  # Изключен (проблеми с датите)
 price_action_rejection = false  # ИЗКЛЮЧЕНО - SHORT без rejection изискване
 multi_timeframe_alignment = false  # ИЗКЛЮЧЕНО - SHORT без alignment изискване
 market_regime_detection = false  # ИЗКЛЮЧЕНО - SHORT без regime филтри
 signal_quality_scoring = true  # ВКЛЮЧЕНО - SHORT само при висок score
-min_quality_score = 30  # НАМАЛЕНО - по-ниски изисквания за SHORT
-confidence_threshold = 0.5  # НАМАЛЕНО - по-ниска увереност за SHORT
+min_quality_score = 10  # ОЩЕ ПО-НАМАЛЕНО - много по-ниски изисквания за SHORT
+confidence_threshold = 0.2  # ОЩЕ ПО-НАМАЛЕНО - много по-ниска увереност за SHORT
 
 [long_signals]
 enabled = true

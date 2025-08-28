@@ -320,8 +320,8 @@ class Backtester:
                     current_date = backtest_weekly.index[i]
 
                     # Взимаме данните до текущата дата
-                    current_daily = backtest_daily[:current_date]
-                    current_weekly = backtest_weekly[:i+1]
+                    current_daily = backtest_daily.loc[:current_date]
+                    current_weekly = backtest_weekly.iloc[:i+1]
 
                     if len(current_daily) < 50 or len(current_weekly) < 4:
                         pbar.update(1)
