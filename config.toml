@@ -148,17 +148,17 @@ candle_confirmation = true
 [short_signals]
 enabled = true
 trend_filter = true
-trend_strength_threshold = 0.7  # УВЕЛИЧЕНО - по-силен тренд за SHORT
-min_fibonacci_resistance = true  # ВКЛЮЧЕНО - SHORT само на resistance нива
-volume_confirmation = true  # ВКЛЮЧЕНО - SHORT само при висок volume
-min_tail_strength = 0.6  # УВЕЛИЧЕНО - по-силни опашки за SHORT
+trend_strength_threshold = 0.3  # НАМАЛЕНО - по-слаб тренд за SHORT (позволява повече сигнали)
+min_fibonacci_resistance = false  # ИЗКЛЮЧЕНО - SHORT на всякакви нива
+volume_confirmation = false  # ИЗКЛЮЧЕНО - SHORT без volume изискване
+min_tail_strength = 0.3  # НАМАЛЕНО - по-слаби опашки за SHORT
 burn_filter = false  # Изключен (проблеми с датите)
-price_action_rejection = true  # ВКЛЮЧЕНО - SHORT само при силен rejection
-multi_timeframe_alignment = true  # ВКЛЮЧЕНО - SHORT само при alignment
-market_regime_detection = true  # ВКЛЮЧЕНО - SHORT политики според regime
+price_action_rejection = false  # ИЗКЛЮЧЕНО - SHORT без rejection изискване
+multi_timeframe_alignment = false  # ИЗКЛЮЧЕНО - SHORT без alignment изискване
+market_regime_detection = false  # ИЗКЛЮЧЕНО - SHORT без regime филтри
 signal_quality_scoring = true  # ВКЛЮЧЕНО - SHORT само при висок score
-min_quality_score = 70  # УВЕЛИЧЕНО - много по-високи изисквания
-confidence_threshold = 0.8  # УВЕЛИЧЕНО - по-висока увереност
+min_quality_score = 30  # НАМАЛЕНО - по-ниски изисквания за SHORT
+confidence_threshold = 0.5  # НАМАЛЕНО - по-ниска увереност за SHORT
 
 [long_signals]
 enabled = true
@@ -183,24 +183,24 @@ confidence_threshold_medium = 3.0  # Средно ниво на уверенос
 
 # Phase 3: Advanced LONG Signal Confirmations
 ichimoku_confirmation_enabled = true  # Ichimoku Cloud confirmation за LONG сигнали
-ichimoku_above_cloud_bonus = 0.3     # Бонус за LONG когато цената е над облака
+ichimoku_above_cloud_bonus = 0.05    # Намален за да позволи SHORT сигнали
 
 sentiment_confirmation_enabled = true  # Sentiment confirmation за LONG сигнали
 sentiment_positive_threshold = 55     # Минимален sentiment score за LONG бонус
-sentiment_bonus_long = 0.2           # Бонус за позитивен sentiment
+sentiment_bonus_long = 0.02          # Намален за да позволи SHORT сигнали
 
 whale_confirmation_enabled = true     # Whale activity confirmation за LONG сигнали
 whale_min_signals = 3                # Минимален брой whale сигнали
-whale_bonus_long = 0.4               # Бонус за силна whale активност
+whale_bonus_long = 0.05              # Намален за да позволи SHORT сигнали
 
 price_patterns_confirmation_enabled = true  # Price action patterns за LONG сигнали
-patterns_bonus_long = 0.25           # Бонус за bullish patterns
+patterns_bonus_long = 0.03           # Намален за да позволи SHORT сигнали
 
 elliott_wave_confirmation_enabled = true  # Elliott wave confirmation за LONG сигнали
-elliott_bullish_bonus = 0.35         # Бонус за bullish wave structures
+elliott_bullish_bonus = 0.05         # Намален за да позволи SHORT сигнали
 
 optimal_levels_confirmation_enabled = true  # Optimal levels confirmation за LONG сигнали
-levels_above_support_bonus = 0.2     # Бонус когато цената е над support нива
+levels_above_support_bonus = 0.02    # Намален за да позволи SHORT сигнали
 
 [bnb_burn]
 # Burn filter параметри за SHORT сигнали (Phase 1.5)

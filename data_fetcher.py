@@ -249,26 +249,27 @@ class BNBDataFetcher:
             # Копираме DataFrame за да не променяме оригинала
             df = df.copy()
 
-            # Намираме ATH до момента за всяка дата
-            df['ATH'] = df['High'].expanding().max()
+            # 🔥 НОВА ЛОГИКА: Rolling ATH от последните 30 дни вместо All-Time ATH
+            # Това позволява SHORT сигнали в текущия пазарен контекст
+            df['ATH'] = df['High'].rolling(window=30, min_periods=1).max()
 
             # Изчисляваме разстоянието до ATH в проценти
             df['ATH_Distance_Pct'] = ((df['ATH'] - df['Close']) / df['ATH']) * 100
 
-            # Определяме дали цената е близо до ATH (< 5%)
-            df['Near_ATH'] = df['ATH_Distance_Pct'] < 5.0
+            # Определяме дали цената е близо до ATH (< 10% - по-релакс за SHORT)
+            df['Near_ATH'] = df['ATH_Distance_Pct'] < 10.0
 
             # ATH Proximity Score (по-висок = по-близо до ATH)
             df['ATH_Proximity_Score'] = np.where(
-                df['ATH_Distance_Pct'] < 5.0,
-                1.0 - (df['ATH_Distance_Pct'] / 5.0),  # 0.0 до 1.0
+                df['ATH_Distance_Pct'] < 10.0,
+                1.0 - (df['ATH_Distance_Pct'] / 10.0),  # 0.0 до 1.0
                 0.0
             )
 
             # ATH Trend - дали сме в ATH режим
             df['ATH_Trend'] = df['ATH'] == df['High']
 
-            logger.info(f"ATH анализ добавен. Текуща ATH: ${df['ATH'].iloc[-1]:.2f}")
+            logger.info(f"ROLLING ATH анализ добавен (180 дни). Текуща ATH: ${df['ATH'].iloc[-1]:.2f}")
             logger.info(f"Разстояние до ATH: {df['ATH_Distance_Pct'].iloc[-1]:.2f}%")
             logger.info(f"Близо до ATH: {df['Near_ATH'].iloc[-1]}")
 

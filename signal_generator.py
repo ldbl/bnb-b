@@ -574,11 +574,11 @@ class SignalGenerator:
                     ath_proximity_score = float(daily_df.iloc[current_idx]['ATH_Proximity_Score'])
                     ath_distance_pct = float(daily_df.iloc[current_idx]['ATH_Distance_Pct'])
 
-                    # СТРОГ ATH FILТЪР: SHORT само ако сме близо до ATH (> 5% под ATH)
-                    if ath_distance_pct > 5.0:  # Далеч от ATH - блокираме SHORT
+                    # РЕЛАКС ATH FILТЪР: SHORT само ако сме близо до ROLLING ATH (> 10% под ATH)
+                    if ath_distance_pct > 10.0:  # Далеч от rolling ATH - блокираме SHORT
                         signal_scores['SHORT'] = 0.0  # Изцяло блокираме SHORT сигнала
-                        signal_reasons.append(f"SHORT BLOCKED by ATH proximity: {ath_distance_pct:.1f}% под ATH (твърде далеч)")
-                        logger.info(f"SHORT blocked by ATH proximity: {ath_distance_pct:.1f}% distance from ATH")
+                        signal_reasons.append(f"SHORT BLOCKED by rolling ATH proximity: {ath_distance_pct:.1f}% под ATH (твърде далеч)")
+                        logger.info(f"SHORT blocked by rolling ATH proximity: {ath_distance_pct:.1f}% distance from ATH")
                     elif ath_proximity_score > 0:  # Близо до ATH - даваме бонус
                         ath_bonus = ath_proximity_score * 0.15  # 15% бонус базиран на proximity
                         signal_scores['SHORT'] += ath_bonus
@@ -593,24 +593,32 @@ class SignalGenerator:
                 # 5.1 Trend Strength филтър - SHORT само при силни downtrends
                 if trend_analysis and 'combined_trend' in trend_analysis:
                     combined_trend = trend_analysis['combined_trend']
-                    trend_direction = combined_trend.get('direction', 'UNKNOWN')
-                    trend_strength = combined_trend.get('strength', 'UNKNOWN')
+                    trend_direction = combined_trend.get('primary_trend', 'UNKNOWN')
+                    trend_strength = self._score_to_strength(combined_trend.get('combined_strength', 0))
 
-                    # Блокираме SHORT ако трендът е силно възходящ
-                    if trend_direction in ['UPTREND', 'STRONG_UPTREND'] and trend_strength == 'STRONG':
-                        signal_scores['SHORT'] *= 0.3  # Намаляваме SHORT сигнала с 70%
-                        signal_reasons.append(f"SHORT weakened by strong uptrend: {trend_direction} ({trend_strength})")
-                        logger.info(f"SHORT weakened by strong uptrend: {trend_direction} ({trend_strength})")
+                    # Блокираме SHORT само ако трендът е ЕКСТРЕМНО силно възходящ
+                    if trend_direction in ['STRONG_UPTREND'] and trend_strength == 'VERY_STRONG':
+                        signal_scores['SHORT'] *= 0.5  # Намаляваме SHORT сигнала с 50% (по-леко)
+                        signal_reasons.append(f"SHORT weakened by very strong uptrend: {trend_direction} ({trend_strength})")
+                        logger.info(f"SHORT weakened by very strong uptrend: {trend_direction} ({trend_strength})")
+                    elif trend_direction in ['UPTREND'] and trend_strength == 'STRONG':
+                        signal_scores['SHORT'] *= 0.7  # Намаляваме SHORT сигнала с 30% (много по-леко)
+                        signal_reasons.append(f"SHORT mildly weakened by strong uptrend: {trend_direction} ({trend_strength})")
+                        logger.info(f"SHORT mildly weakened by strong uptrend: {trend_direction} ({trend_strength})")
 
                 # 5.2 Market Regime филтър - SHORT само в подходящи market conditions
                 if 'ATH_Distance_Pct' in daily_df.columns:
                     ath_distance = float(daily_df.iloc[-1]['ATH_Distance_Pct'])
 
-                    # Ако сме твърде далеч от ATH и трендът е силен uptrend - блокираме SHORT
-                    if ath_distance > 10.0 and trend_direction in ['UPTREND', 'STRONG_UPTREND']:
-                        signal_scores['SHORT'] *= 0.1  # Намаляваме SHORT сигнала с 90%
-                        signal_reasons.append(f"SHORT heavily weakened: {ath_distance:.1f}% from ATH + strong uptrend")
-                        logger.info(f"SHORT heavily weakened: {ath_distance:.1f}% from ATH + strong uptrend")
+                    # Ако сме твърде далеч от ATH и трендът е силен uptrend - намаляваме SHORT
+                    if ath_distance > 15.0 and trend_direction in ['STRONG_UPTREND']:
+                        signal_scores['SHORT'] *= 0.6  # Намаляваме SHORT сигнала с 40% (много по-леко)
+                        signal_reasons.append(f"SHORT moderately weakened: {ath_distance:.1f}% from ATH + strong uptrend")
+                        logger.info(f"SHORT moderately weakened: {ath_distance:.1f}% from ATH + strong uptrend")
+                    elif ath_distance > 10.0 and trend_direction in ['UPTREND']:
+                        signal_scores['SHORT'] *= 0.8  # Намаляваме SHORT сигнала с 20% (леко)
+                        signal_reasons.append(f"SHORT mildly weakened: {ath_distance:.1f}% from ATH + uptrend")
+                        logger.info(f"SHORT mildly weakened: {ath_distance:.1f}% from ATH + uptrend")
 
             # 6. Определяме финалния сигнал
             if total_weight == 0:
@@ -627,7 +635,7 @@ class SignalGenerator:
                 confidence = signal_scores[final_signal]
 
                 # Ако SHORT сигнала е твърде слаб след филтрите - конвертираме в HOLD
-                if final_signal == 'SHORT' and confidence < 0.3:
+                if final_signal == 'SHORT' and confidence < 0.15:
                     final_signal = 'HOLD'
                     confidence = 0.0
                     reason = "SHORT сигнал твърде слаб след филтрите"
@@ -779,6 +787,19 @@ class SignalGenerator:
                 'total_weight': 0.0
             }
 
+    def _score_to_strength(self, score: float) -> str:
+        """Конвертира числов score в текстова сила"""
+        if score >= 0.8:
+            return 'VERY_STRONG'
+        elif score >= 0.6:
+            return 'STRONG'
+        elif score >= 0.4:
+            return 'MODERATE'
+        elif score >= 0.2:
+            return 'WEAK'
+        else:
+            return 'VERY_WEAK'
+
     def _apply_trend_filter_for_short(self, trend_analysis: Dict) -> Dict[str, any]:
         """
         Phase 1: Прилага trend filter за SHORT сигнали
@@ -810,7 +831,7 @@ class SignalGenerator:
                 }
 
             # Извличаме посоката и силата на тренда
-            trend_direction = combined_trend.get('direction', 'UNKNOWN')
+            trend_direction = combined_trend.get('primary_trend', 'UNKNOWN')
             daily_direction = daily_trend.get('direction', 'UNKNOWN')
             daily_strength = daily_trend.get('strength', 'UNKNOWN')
 
@@ -1685,8 +1706,8 @@ class SignalGenerator:
             volume_multiplier = current_volume / avg_volume
 
             if volume_multiplier >= multiplier_threshold:
-                # Volume confirmation успешен - даваме бонус към LONG сигнала
-                bonus = min(volume_multiplier * 0.5, 2.0)  # Максимален бонус 2.0 точки
+                # Volume confirmation успешен - даваме минимален бонус към LONG сигнала
+                bonus = min(volume_multiplier * 0.005, 0.01)  # Намален максимален бонус 0.01 точки
                 return {
                     'bonus': bonus,
                     'reason': '.2f',
@@ -1858,18 +1879,18 @@ class SignalGenerator:
             if weekly_trend > 0.005 and daily_trend > 0.002:  # Силен възходящ тренд
                 regime = 'STRONG_BULL'
                 if prefer_long_in_bull:
-                    bonus = 1.5
-                    reason = 'Strong bull market - идеално за LONG'
+                    bonus = 0.01  # Намален драстично за да позволи SHORT
+                    reason = 'Strong bull market - минимално благоприятно за LONG'
                 else:
-                    bonus = 0.5
+                    bonus = 0.005  # Намален драстично за да позволи SHORT
                     reason = 'Strong bull market'
             elif weekly_trend > 0.002 and daily_trend > 0.001:  # Умерен възходящ тренд
                 regime = 'MODERATE_BULL'
                 if prefer_long_in_bull:
-                    bonus = 1.0
-                    reason = 'Moderate bull market - добро за LONG'
+                    bonus = 0.005  # Намален драстично за да позволи SHORT
+                    reason = 'Moderate bull market - минимално благоприятно за LONG'
                 else:
-                    bonus = 0.3
+                    bonus = 0.002  # Намален драстично за да позволи SHORT
                     reason = 'Moderate bull market'
             elif abs(weekly_trend) < 0.002 and abs(daily_trend) < 0.001:  # Рангинг пазар
                 regime = 'RANGE'
