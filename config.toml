@@ -65,10 +65,10 @@ atr_multiplier = 2.0
 
 [signals]
 fibonacci_weight = 0.25
-weekly_tails_weight = 0.30  # Повишено за SHORT приоритет
-ma_weight = 0.20  # Ново - Moving Averages тегло
+weekly_tails_weight = 0.20  # Намалено за да се балансира с MACD
+ma_weight = 0.20  # Moving Averages тегло
 rsi_weight = 0.15
-macd_weight = 0.10
+macd_weight = 0.20  # Увеличено за по-добро тренд потвърждение
 bb_weight = 0.05
 ath_weight = 0.15  # Нов ATH proximity бонус за SHORT сигнали
 min_confirmations = 1  # Намален за тестване

@@ -478,11 +478,29 @@ class SignalGenerator:
             if tails_analysis and 'tails_signal' in tails_analysis:
                 tails_signal = tails_analysis['tails_signal']
                 if tails_signal['signal'] != 'HOLD':
-                    weight = self.weekly_tails_weight
-                    score = tails_signal['strength'] * weight
+                    # Проверяваме за конфликт с MACD
+                    macd_conflict = False
+                    if indicators_signals and 'macd' in indicators_signals:
+                        macd_signal = indicators_signals['macd']
+                        if macd_signal['signal'] != 'HOLD':
+                            # Ако Weekly Tails е SHORT но MACD е LONG - има конфликт
+                            if tails_signal['signal'] == 'SHORT' and macd_signal['signal'] == 'LONG':
+                                macd_conflict = True
+                            # Ако Weekly Tails е LONG но MACD е SHORT - има конфликт
+                            elif tails_signal['signal'] == 'LONG' and macd_signal['signal'] == 'SHORT':
+                                macd_conflict = True
+
+                    # Ако има конфликт с MACD, намаляваме тежестта на Weekly Tails
+                    if macd_conflict:
+                        adjusted_weight = self.weekly_tails_weight * 0.7  # Намаляваме с 30%
+                        signal_reasons.append(f"Weekly Tails: {tails_signal['reason']} (сила: {tails_signal['strength']:.2f}) - тегло намалено поради MACD конфликт")
+                    else:
+                        adjusted_weight = self.weekly_tails_weight
+                        signal_reasons.append(f"Weekly Tails: {tails_signal['reason']} (сила: {tails_signal['strength']:.2f})")
+
+                    score = tails_signal['strength'] * adjusted_weight
                     signal_scores[tails_signal['signal']] += score
-                    total_weight += weight
-                    signal_reasons.append(f"Weekly Tails: {tails_signal['reason']} (сила: {tails_signal['strength']:.2f})")
+                    total_weight += adjusted_weight
                     weekly_tails_signal = tails_signal
 
             # 2.5. Moving Averages сигнал (трети приоритет)
