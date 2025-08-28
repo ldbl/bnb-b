@@ -220,19 +220,29 @@ class MarketRegimeDetector:
         else:
             return 'NEUTRAL'
 
-    def _are_short_signals_allowed(self, regime: str, ath_distance: float) -> bool:
+    def _are_short_signals_allowed(self, regime: str, ath_distance: float, short_thresholds: Dict = None) -> bool:
         """Определя дали SHORT сигнали са позволени базирано на конфигурацията"""
+        # Use provided thresholds or fallback to conservative defaults
+        if short_thresholds is None:
+            short_thresholds = {
+                'max_ath_distance_pct': 25.0,
+                'bull_market_block': True,
+                'moderate_bull_allowed': False,
+                'neutral_allowed': True,
+                'bear_allowed': True
+            }
+
         # Check ATH proximity first
-        if ath_distance > self.short_thresholds['max_ath_distance_pct']:
+        if ath_distance > short_thresholds['max_ath_distance_pct']:
             return False
 
         # Check market regime rules
         regime_rules = {
-            'STRONG_BULL': not self.short_thresholds['bull_market_block'],
-            'MODERATE_BULL': self.short_thresholds['moderate_bull_allowed'],
-            'NEUTRAL': self.short_thresholds['neutral_allowed'],
-            'MODERATE_BEAR': self.short_thresholds['bear_allowed'],
-            'STRONG_BEAR': self.short_thresholds['bear_allowed']
+            'STRONG_BULL': not short_thresholds['bull_market_block'],
+            'MODERATE_BULL': short_thresholds['moderate_bull_allowed'],
+            'NEUTRAL': short_thresholds['neutral_allowed'],
+            'MODERATE_BEAR': short_thresholds['bear_allowed'],
+            'STRONG_BEAR': short_thresholds['bear_allowed']
         }
 
         return regime_rules.get(regime, False)
@@ -304,7 +314,7 @@ class SmartShortSignalGenerator:
 
             # Update regime with SHORT-specific logic
             market_regime['short_signals_allowed'] = self._are_short_signals_allowed(
-                market_regime['regime'], market_regime['ath_distance_pct']
+                market_regime['regime'], market_regime['ath_distance_pct'], self.short_thresholds
             )
 
             if not market_regime['short_signals_allowed']:
