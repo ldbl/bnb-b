@@ -25,7 +25,7 @@ fibonacci_proximity_threshold = 0.02  # Колко близо трябва да 
 # Phase 1.4: Volume confirmation за SHORT сигнали
 volume_confirmation_for_short = false  # Изключен за по-малко агресивни филтри
 volume_lookback_periods = 14  # Периоди за изчисляване на среден обем
-volume_multiplier_threshold = 1.2  # Намален от 1.5 за по-малко агресивен volume filter  # Колко пъти по-голям трябва да е обема
+volume_multiplier_threshold = 1.0  # Намален от 1.2 за още по-малко агресивен volume filter
 
 # Phase 1.5: BNB Burn filter за SHORT сигнали
 burn_filter = false  # Изключен за по-малко агресивни филтри
@@ -63,25 +63,37 @@ bb_volume_lookback = 20
 atr_period = 14
 atr_multiplier = 2.0
 
+# Phase 3: Multi-timeframe Confirmation
+[multi_timeframe]
+enabled = true
+daily_weekly_trend_alignment = true  # Проверка за тренд alignment
+fibonacci_alignment_bonus = 0.15     # Бонус за Fibonacci alignment
+macd_alignment_bonus = 0.10         # Бонус за MACD alignment
+volume_alignment_bonus = 0.05       # Бонус за volume alignment
+weekly_tails_confirmation = true    # Weekly tails потвърждение за daily сигнали
+trend_consistency_threshold = 0.7   # Минимална консистентност за бонус
+
 [signals]
-fibonacci_weight = 0.35
-weekly_tails_weight = 0.35
+fibonacci_weight = 0.25
+weekly_tails_weight = 0.20  # Намалено за да се балансира с MACD
+ma_weight = 0.20  # Moving Averages тегло
 rsi_weight = 0.15
-macd_weight = 0.10
+macd_weight = 0.20  # Увеличено за по-добро тренд потвърждение
 bb_weight = 0.05
-min_confirmations = 2
-confidence_threshold = 0.7
+min_confirmations = 1
+confidence_threshold = 0.6
 fib_tail_required = true
+ath_weight = 0.15  # Нов ATH proximity бонус за SHORT сигнали
 
 # Балансирани параметри за 75%+ точност
 trend_filter = true
 trend_lookback_days = 30
 trend_threshold = 0.015
 
-# Балансирани изисквания за SHORT сигнали
+# Балансирани изисквания за SHORT сигнали - МНОГО РЕЛАКСИРАНИ
 short_signal_requirements = true
-short_min_fib_level = 0.5
-short_min_tail_strength = 0.6
+short_min_fib_level = 0.1  # Намален още повече за тестване
+short_min_tail_strength = 0.2  # Намален още повече за тестване
 short_trend_confirmation = false  # Изключен за по-малко агресивни SHORT филтри
 
 # Балансирани изисквания за LONG сигнали
@@ -142,27 +154,31 @@ pattern_threshold = 0.02
 volume_confirmation = true
 candle_confirmation = true
 
-# Phase 1: SHORT Signals Improvements
+# Phase 4: SHORT Signals - STRICTER QUALITY FILTERS
 [short_signals]
 enabled = true
 trend_filter = true
-trend_strength_threshold = 0.3
-min_fibonacci_resistance = true
-volume_confirmation = true
-min_tail_strength = 0.6
-burn_filter = false  # Ще се активира след имплементация
-price_action_rejection = false  # Ще се активира след имплементация
-multi_timeframe_alignment = false  # Ще се активира след имплементация
-market_regime_detection = false  # Ще се активира след имплементация
-signal_quality_scoring = false  # Ще се активира след имплементация
-min_quality_score = 70
-confidence_threshold = 0.8
+trend_strength_threshold = 0.1  # ОЩЕ ПО-НАМАЛЕНО - за да позволи SHORT в силен bull market
+min_fibonacci_resistance = false  # ИЗКЛЮЧЕНО - SHORT на всякакви нива
+volume_confirmation = false  # ИЗКЛЮЧЕНО - SHORT без volume изискване
+min_tail_strength = 0.1  # ОЩЕ ПО-НАМАЛЕНО - за да позволи SHORT при по-слаби опашки
+burn_filter = false  # Изключен (проблеми с датите)
+price_action_rejection = false  # ИЗКЛЮЧЕНО - SHORT без rejection изискване
+multi_timeframe_alignment = false  # ИЗКЛЮЧЕНО - SHORT без alignment изискване
+market_regime_detection = false  # ИЗКЛЮЧЕНО - SHORT без regime филтри
+signal_quality_scoring = true  # ВКЛЮЧЕНО - SHORT само при висок score
+min_quality_score = 10  # ОЩЕ ПО-НАМАЛЕНО - много по-ниски изисквания за SHORT
+confidence_threshold = 0.2  # ОЩЕ ПО-НАМАЛЕНО - много по-ниска увереност за SHORT
 
 [long_signals]
 enabled = true
-ema_confirmation = false  # Ще се активира в Phase 2
+ema_confirmation = true   # ✅ АКТИВИРАНО - EMA crossover потвърждение за LONG
 min_risk_reward = 2.0
-burn_enhancement = false  # Ще се активира в Phase 2
+burn_enhancement = true   # ✅ АКТИВИРАНО - BNB burn enhancement за LONG
+ema_fast_period = 10      # Fast EMA период за crossover
+ema_slow_period = 50      # Slow EMA период за crossover
+ema_confidence_bonus = 0.1  # Допълнителна увереност при EMA потвърждение
+burn_confidence_bonus = 0.15  # Допълнителна увереност преди burn
 
 # Phase 2: LONG Signal Enhancements
 volume_confirmation_enabled = true  # Volume confirmation за LONG сигнали
@@ -181,24 +197,24 @@ confidence_threshold_medium = 3.0  # Средно ниво на уверенос
 
 # Phase 3: Advanced LONG Signal Confirmations
 ichimoku_confirmation_enabled = true  # Ichimoku Cloud confirmation за LONG сигнали
-ichimoku_above_cloud_bonus = 0.3     # Бонус за LONG когато цената е над облака
+ichimoku_above_cloud_bonus = 0.05    # Намален за да позволи SHORT сигнали
 
 sentiment_confirmation_enabled = true  # Sentiment confirmation за LONG сигнали
 sentiment_positive_threshold = 55     # Минимален sentiment score за LONG бонус
-sentiment_bonus_long = 0.2           # Бонус за позитивен sentiment
+sentiment_bonus_long = 0.02          # Намален за да позволи SHORT сигнали
 
 whale_confirmation_enabled = true     # Whale activity confirmation за LONG сигнали
 whale_min_signals = 3                # Минимален брой whale сигнали
-whale_bonus_long = 0.4               # Бонус за силна whale активност
+whale_bonus_long = 0.05              # Намален за да позволи SHORT сигнали
 
 price_patterns_confirmation_enabled = true  # Price action patterns за LONG сигнали
-patterns_bonus_long = 0.25           # Бонус за bullish patterns
+patterns_bonus_long = 0.03           # Намален за да позволи SHORT сигнали
 
 elliott_wave_confirmation_enabled = true  # Elliott wave confirmation за LONG сигнали
-elliott_bullish_bonus = 0.35         # Бонус за bullish wave structures
+elliott_bullish_bonus = 0.05         # Намален за да позволи SHORT сигнали
 
 optimal_levels_confirmation_enabled = true  # Optimal levels confirmation за LONG сигнали
-levels_above_support_bonus = 0.2     # Бонус когато цената е над support нива
+levels_above_support_bonus = 0.02    # Намален за да позволи SHORT сигнали
 
 [bnb_burn]
 # Burn filter параметри за SHORT сигнали (Phase 1.5)
@@ -243,7 +259,7 @@ weekly_tails_weight = 30
 trend_weight = 20
 volume_weight = 10
 divergence_weight = 5
-min_short_score = 50  # Минимален score за SHORT сигнали (намален от 70 за по-малко агресивни филтри)
+min_short_score = 90  # ОЩЕ ПО-РЕЛАКСИРАН - за да позволи някои SHORT сигналим 
 
 
 

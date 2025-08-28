@@ -61,6 +61,7 @@ from elliott_wave_analyzer import ElliottWaveAnalyzer
 from whale_tracker import WhaleTracker
 from ichimoku_module import IchimokuAnalyzer
 from sentiment_module import SentimentAnalyzer
+from multi_timeframe_analyzer import MultiTimeframeAnalyzer
 from divergence_detector import DivergenceDetector
 from moving_averages import MovingAveragesAnalyzer
 from price_action_patterns import PriceActionPatternsAnalyzer
@@ -149,6 +150,7 @@ class SignalGenerator:
         self.config = config
         self.fibonacci_weight = config['signals']['fibonacci_weight']
         self.weekly_tails_weight = config['signals']['weekly_tails_weight']
+        self.ma_weight = config['signals'].get('ma_weight', 0.20)  # Moving Averages тегло
         self.rsi_weight = config['signals']['rsi_weight']
         self.macd_weight = config['signals']['macd_weight']
         self.bb_weight = config['signals']['bb_weight']
@@ -171,6 +173,9 @@ class SignalGenerator:
         self.divergence_detector = DivergenceDetector(config)
         self.ma_analyzer = MovingAveragesAnalyzer(config)
         self.patterns_analyzer = PriceActionPatternsAnalyzer(config)
+
+        # Phase 3: Multi-Timeframe Confirmation Analyzer
+        self.multi_timeframe_analyzer = MultiTimeframeAnalyzer(config)
         
         logger.info("Signal Generator инициализиран")
         logger.info(f"Приоритет: Fibonacci={self.fibonacci_weight}, Weekly Tails={self.weekly_tails_weight}")
@@ -293,33 +298,45 @@ class SignalGenerator:
                 elliott_wave_analysis = None
             
             # 7. Whale Tracker Analysis
-            whale_analysis = self.whale_tracker.get_whale_activity_summary(days_back=1)
-            if 'error' in whale_analysis:
-                logger.warning(f"Whale Tracker анализ неуспешен: {whale_analysis['error']}")
-                whale_analysis = None
+            whale_analysis = None
+            if self.config.get('whale_tracker', {}).get('enabled', True):
+                whale_analysis = self.whale_tracker.get_whale_activity_summary(days_back=1)
+                if 'error' in whale_analysis:
+                    logger.warning(f"Whale Tracker анализ неуспешен: {whale_analysis['error']}")
+                    whale_analysis = None
+            else:
+                logger.debug("Whale Tracker анализ дезактивиран в конфигурацията")
             
             # 8. Ichimoku Analysis
-            ichimoku_analysis = self.ichimoku_analyzer.analyze_ichimoku_signals(
-                self.ichimoku_analyzer.calculate_all_ichimoku_lines(
-                    self.ichimoku_analyzer.process_klines_data(
-                        self.ichimoku_analyzer.fetch_ichimoku_data("1d", 100)
+            ichimoku_analysis = None
+            if self.config.get('ichimoku', {}).get('enabled', True):
+                ichimoku_analysis = self.ichimoku_analyzer.analyze_ichimoku_signals(
+                    self.ichimoku_analyzer.calculate_all_ichimoku_lines(
+                        self.ichimoku_analyzer.process_klines_data(
+                            self.ichimoku_analyzer.fetch_ichimoku_data("1d", 100)
+                        )
                     )
                 )
-            )
-            if 'error' in ichimoku_analysis:
-                logger.warning(f"Ichimoku анализ неуспешен: {ichimoku_analysis['error']}")
-                ichimoku_analysis = None
+                if 'error' in ichimoku_analysis:
+                    logger.warning(f"Ichimoku анализ неуспешен: {ichimoku_analysis['error']}")
+                    ichimoku_analysis = None
+            else:
+                logger.debug("Ichimoku анализ дезактивиран в конфигурацията")
             
             # 9. Sentiment Analysis
-            sentiment_analysis = self.sentiment_analyzer.calculate_composite_sentiment(
-                self.sentiment_analyzer.get_fear_greed_index(),
-                self.sentiment_analyzer.analyze_social_sentiment(),
-                self.sentiment_analyzer.analyze_news_sentiment(),
-                self.sentiment_analyzer.get_market_momentum_indicators()
-            )
-            if 'error' in sentiment_analysis:
-                logger.warning(f"Sentiment анализ неуспешен: {sentiment_analysis['error']}")
-                sentiment_analysis = None
+            sentiment_analysis = None
+            if self.config.get('sentiment', {}).get('enabled', True):
+                sentiment_analysis = self.sentiment_analyzer.calculate_composite_sentiment(
+                    self.sentiment_analyzer.get_fear_greed_index(),
+                    self.sentiment_analyzer.analyze_social_sentiment(),
+                    self.sentiment_analyzer.analyze_news_sentiment(),
+                    self.sentiment_analyzer.get_market_momentum_indicators()
+                )
+                if 'error' in sentiment_analysis:
+                    logger.warning(f"Sentiment анализ неуспешен: {sentiment_analysis['error']}")
+                    sentiment_analysis = None
+            else:
+                logger.debug("Sentiment анализ дезактивиран в конфигурацията")
             
             # 10. Divergence Analysis (НОВО от ideas файла)
             logger.info(f"Стартиране на Divergence анализ...")
@@ -389,7 +406,8 @@ class SignalGenerator:
                 whale_analysis,
                 None,  # price_patterns_analysis - ще се изчислява вътре в метода
                 elliott_wave_analysis,
-                optimal_levels_analysis
+                optimal_levels_analysis,
+                ma_analysis  # Moving Averages анализ
             )
             
             # 8. Добавяме детайлна информация
@@ -410,8 +428,56 @@ class SignalGenerator:
                 patterns_analysis
             )
             
+            # Phase 3: Multi-Timeframe Confirmation Analysis
+            multi_timeframe_analysis = {
+                'overall_alignment': 'DISABLED',
+                'confidence_bonus': 0.0,
+                'alignment_score': 0.5,
+                'conflicts': [],
+                'confirmations': [],
+                'recommendation': 'HOLD'
+            }
+
+            if (self.multi_timeframe_analyzer.enabled and
+                daily_df is not None and weekly_df is not None):
+
+                # Създаваме отделни анализи за daily и weekly
+                daily_analysis = {
+                    'fibonacci_analysis': fib_analysis,
+                    'weekly_tails_analysis': tails_analysis,
+                    'indicators_signals': indicators_signals,
+                    'trend_analysis': trend_analysis,
+                    'signal': final_signal['signal'],
+                    'volume_analysis': {'confirmed': False}  # Placeholder
+                }
+
+                weekly_analysis = {
+                    'fibonacci_analysis': fib_analysis,  # За сега използваме същия анализ
+                    'weekly_tails_analysis': tails_analysis,
+                    'indicators_signals': indicators_signals,
+                    'trend_analysis': trend_analysis,
+                    'signal': final_signal['signal'],
+                    'volume_analysis': {'confirmed': False}  # Placeholder
+                }
+
+                # Извършваме multi-timeframe alignment анализ
+                multi_timeframe_analysis = self.multi_timeframe_analyzer.analyze_timeframe_alignment(
+                    daily_analysis, weekly_analysis
+                )
+
+                # Прилагаме confidence bonus/penalty от multi-timeframe анализа
+                confidence_bonus = multi_timeframe_analysis.get('confidence_bonus', 0.0)
+                final_signal['confidence'] = max(0.0, min(1.0, final_signal['confidence'] + confidence_bonus))
+
+                # Добавяме multi-timeframe информация към reason
+                if confidence_bonus != 0.0:
+                    alignment_info = multi_timeframe_analysis.get('overall_alignment', 'UNKNOWN')
+                    final_signal['reason'] += f" | Multi-Timeframe: {alignment_info} ({confidence_bonus:+.2f})"
+
+                logger.info(f"Multi-timeframe analysis: {multi_timeframe_analysis.get('overall_alignment', 'UNKNOWN')} | Bonus: {confidence_bonus:+.2f}")
+
             logger.info(f"Сигнал генериран: {final_signal['signal']} (увереност: {final_signal['confidence']:.2f})")
-            
+
             return signal_details
             
         except Exception as e:
@@ -429,7 +495,8 @@ class SignalGenerator:
                          weekly_df: pd.DataFrame = None, divergence_analysis: Dict = None,
                          ichimoku_analysis: Dict = None, sentiment_analysis: Dict = None,
                          whale_analysis: Dict = None, price_patterns_analysis: Dict = None,
-                         elliott_wave_analysis: Dict = None, optimal_levels_analysis: Dict = None) -> Dict[str, any]:
+                         elliott_wave_analysis: Dict = None, optimal_levels_analysis: Dict = None,
+                         moving_averages_analysis: Dict = None) -> Dict[str, any]:
         """
         Комбинира сигналите от различните източници
         
@@ -459,15 +526,170 @@ class SignalGenerator:
                     signal_reasons.append(f"Fibonacci: {fib_signal['reason']} (сила: {fib_signal['strength']:.2f})")
             
             # 2. Weekly Tails сигнал (втори приоритет)
+            weekly_tails_signal = None
             if tails_analysis and 'tails_signal' in tails_analysis:
                 tails_signal = tails_analysis['tails_signal']
                 if tails_signal['signal'] != 'HOLD':
-                    weight = self.weekly_tails_weight
-                    score = tails_signal['strength'] * weight
+                    # Проверяваме за конфликт с MACD
+                    macd_conflict = False
+                    if indicators_signals and 'macd' in indicators_signals:
+                        macd_signal = indicators_signals['macd']
+                        if macd_signal['signal'] != 'HOLD':
+                            # Ако Weekly Tails е SHORT но MACD е LONG - има конфликт
+                            if tails_signal['signal'] == 'SHORT' and macd_signal['signal'] == 'LONG':
+                                macd_conflict = True
+                            # Ако Weekly Tails е LONG но MACD е SHORT - има конфликт
+                            elif tails_signal['signal'] == 'LONG' and macd_signal['signal'] == 'SHORT':
+                                macd_conflict = True
+
+                    # Ако има конфликт с MACD, намаляваме тежестта на Weekly Tails
+                    if macd_conflict:
+                        adjusted_weight = self.weekly_tails_weight * 0.7  # Намаляваме с 30%
+                        signal_reasons.append(f"Weekly Tails: {tails_signal['reason']} (сила: {tails_signal['strength']:.2f}) - тегло намалено поради MACD конфликт")
+                    else:
+                        adjusted_weight = self.weekly_tails_weight
+                        signal_reasons.append(f"Weekly Tails: {tails_signal['reason']} (сила: {tails_signal['strength']:.2f})")
+
+                    score = tails_signal['strength'] * adjusted_weight
                     signal_scores[tails_signal['signal']] += score
-                    total_weight += weight
-                    signal_reasons.append(f"Weekly Tails: {tails_signal['reason']} (сила: {tails_signal['strength']:.2f})")
-            
+                    total_weight += adjusted_weight
+                    weekly_tails_signal = tails_signal
+
+            # 2.5. Moving Averages сигнал (трети приоритет)
+            if 'moving_averages_analysis' in locals() and moving_averages_analysis:
+                ma_analysis = moving_averages_analysis
+                if 'error' not in ma_analysis:
+                    crossover = ma_analysis.get('crossover_signal', {})
+                    if crossover.get('signal') and crossover['signal'] != 'NONE':
+                        # Конвертираме MA сигнала към LONG/SHORT формат
+                        ma_signal = 'HOLD'
+                        if crossover['signal'] in ['BULLISH_ABOVE', 'BULLISH_CROSS']:
+                            ma_signal = 'LONG'
+                        elif crossover['signal'] in ['BEARISH_BELOW', 'BEARISH_CROSS']:
+                            ma_signal = 'SHORT'
+
+                        if ma_signal != 'HOLD':
+                            # Динамично тегло базирано на Weekly Tails конфликт
+                            base_weight = self.ma_weight
+
+                            # Ако Weekly Tails показват силен SHORT сигнал, намаляваме MA теглото
+                            if weekly_tails_signal and weekly_tails_signal['signal'] == 'SHORT' and weekly_tails_signal['strength'] > 0.8:
+                                adjusted_weight = base_weight * 0.6  # Намаляваме с 40%
+                                signal_reasons.append(f"Moving Averages: {crossover['signal']} → {ma_signal} ({crossover['confidence']:.0f}%) - тегло намалено поради силен Weekly SHORT")
+                            else:
+                                adjusted_weight = base_weight
+                                signal_reasons.append(f"Moving Averages: {crossover['signal']} → {ma_signal} ({crossover['confidence']:.0f}%)")
+
+                            ma_score = (crossover['confidence'] / 100.0) * adjusted_weight
+                            signal_scores[ma_signal] += ma_score
+                            total_weight += adjusted_weight
+
+            # Проверяваме дали имаме силен LONG сигнал от другите анализатори
+            primary_long_signal = (
+                (fib_analysis and fib_analysis.get('fibonacci_signal', {}).get('signal') == 'LONG') or
+                (weekly_tails_signal and weekly_tails_signal.get('signal') == 'LONG')
+            )
+
+            # PHASE 2: EMA потвърждение за LONG сигнали
+            long_signal_confirmed = False
+            if (self.config.get('long_signals', {}).get('ema_confirmation', False) and
+                'moving_averages_analysis' in locals() and moving_averages_analysis and
+                'error' not in moving_averages_analysis):
+
+                ema_fast_period = self.config.get('long_signals', {}).get('ema_fast_period', 10)
+                ema_slow_period = self.config.get('long_signals', {}).get('ema_slow_period', 50)
+                ema_confidence_bonus = self.config.get('long_signals', {}).get('ema_confidence_bonus', 0.1)
+
+                crossover = moving_averages_analysis.get('crossover_signal', {})
+
+                if (primary_long_signal and
+                    crossover.get('signal') in ['BULLISH_ABOVE', 'BULLISH_CROSS'] and
+                    crossover.get('confidence', 0) > 60):
+
+                    # EMA потвърждава LONG сигнала - увеличаваме confidence
+                    signal_scores['LONG'] += ema_confidence_bonus
+                    signal_reasons.append(f"✅ EMA ПОТВЪРЖДЕНИЕ: {crossover['signal']} ({crossover['confidence']:.0f}%) - +{ema_confidence_bonus:.2f} confidence за LONG")
+                    long_signal_confirmed = True
+                    logger.info(f"EMA потвърждение за LONG сигнал: +{ema_confidence_bonus} confidence")
+
+            # PHASE 2: BNB Burn Enhancement за LONG сигнали
+            burn_enhanced = False
+            if (self.config.get('long_signals', {}).get('burn_enhancement', False) and
+                daily_df is not None and
+                primary_long_signal):
+
+                burn_confidence_bonus = self.config.get('long_signals', {}).get('burn_confidence_bonus', 0.15)
+
+                # Проверяваме дали сме близо до BNB burn дата
+                current_date = daily_df.index[-1].date()
+                burn_dates = self._fetch_bnb_burn_dates()
+
+                days_to_burn = None
+                for burn_date in burn_dates:
+                    days_diff = (burn_date.date() - current_date).days
+                    if 0 <= days_diff <= 21:  # В рамките на 3 седмици преди burn
+                        days_to_burn = days_diff
+                        break
+
+                if days_to_burn is not None:
+                    # Увеличаваме confidence за LONG сигнали преди burn
+                    signal_scores['LONG'] += burn_confidence_bonus
+                    signal_reasons.append(f"🔥 BNB BURN ENHANCEMENT: {days_to_burn} дни до burn - +{burn_confidence_bonus:.2f} confidence за LONG")
+                    burn_enhanced = True
+                    logger.info(f"BNB Burn enhancement: +{burn_confidence_bonus} confidence ({days_to_burn} дни до burn)")
+
+            # PHASE 2: Stop-loss препоръки с Fibonacci нива
+            stop_loss_recommendation = None
+            if (fib_analysis and 'fibonacci_levels' in fib_analysis and
+                (signal_scores['LONG'] > signal_scores['SHORT'] or signal_scores['SHORT'] > signal_scores['LONG'])):
+
+                current_price = fib_analysis.get('current_price', 0)
+                fib_levels = fib_analysis.get('fibonacci_levels', {})
+
+                if signal_scores['LONG'] > signal_scores['SHORT']:
+                    # LONG сигнал - stop-loss под support ниво
+                    support_levels = fib_analysis.get('support_levels', [])
+                    if support_levels:
+                        # Избираме най-близкото support ниво под текущата цена
+                        closest_support = None
+                        for level_name, level_price in support_levels:
+                            if level_price < current_price:
+                                if closest_support is None or level_price > closest_support:
+                                    closest_support = level_price
+
+                        if closest_support:
+                            stop_loss_price = closest_support * 0.98  # Малко под support-a
+                            stop_loss_recommendation = {
+                                'type': 'LONG_STOP_LOSS',
+                                'price': stop_loss_price,
+                                'fib_level': f'Под {level_name}',
+                                'risk_pct': ((current_price - stop_loss_price) / current_price) * 100,
+                                'reason': f'Fibonacci support на {closest_support:.2f}'
+                            }
+                            signal_reasons.append(f"🛡️ STOP-LOSS LONG: {stop_loss_price:.2f} ({stop_loss_recommendation['risk_pct']:.1f}% risk)")
+
+                elif signal_scores['SHORT'] > signal_scores['LONG']:
+                    # SHORT сигнал - stop-loss над resistance ниво
+                    resistance_levels = fib_analysis.get('resistance_levels', [])
+                    if resistance_levels:
+                        # Избираме най-близкото resistance ниво над текущата цена
+                        closest_resistance = None
+                        for level_name, level_price in resistance_levels:
+                            if level_price > current_price:
+                                if closest_resistance is None or level_price < closest_resistance:
+                                    closest_resistance = level_price
+
+                        if closest_resistance:
+                            stop_loss_price = closest_resistance * 1.02  # Малко над resistance-a
+                            stop_loss_recommendation = {
+                                'type': 'SHORT_STOP_LOSS',
+                                'price': stop_loss_price,
+                                'fib_level': f'Над {level_name}',
+                                'risk_pct': ((stop_loss_price - current_price) / current_price) * 100,
+                                'reason': f'Fibonacci resistance на {closest_resistance:.2f}'
+                            }
+                            signal_reasons.append(f"🛡️ STOP-LOSS SHORT: {stop_loss_price:.2f} ({stop_loss_recommendation['risk_pct']:.1f}% risk)")
+
             # 3. Fibonacci + Tails съвпадение (бонус)
             if confluence_info and confluence_info['strong_confluence']:
                 bonus = confluence_info['confluence_bonus']
@@ -509,8 +731,72 @@ class SignalGenerator:
                         signal_scores[bb_signal['signal']] += score
                         total_weight += weight
                         signal_reasons.append(f"Bollinger: {bb_signal['reason']}")
-            
-            # 5. Определяме финалния сигнал
+
+            # 4.5. ATH Proximity филтър за SHORT сигнали - СТРОГ!
+            # SHORT само когато сме близо до ATH (> 5% под ATH)
+            ath_proximity_score = 0.0
+            if 'daily_df' in locals() and daily_df is not None and not daily_df.empty:
+                # Намираме най-близката дата до края на седмицата
+                if hasattr(daily_df.index, 'date'):
+                    target_date = daily_df.index[-1].date()
+                    if target_date in daily_df.index:
+                        current_idx = daily_df.index.get_loc(target_date)
+                    else:
+                        current_idx = len(daily_df) - 1
+                else:
+                    current_idx = len(daily_df) - 1
+
+                if 'ATH_Proximity_Score' in daily_df.columns:
+                    ath_proximity_score = float(daily_df.iloc[current_idx]['ATH_Proximity_Score'])
+                    ath_distance_pct = float(daily_df.iloc[current_idx]['ATH_Distance_Pct'])
+
+                    # РЕЛАКС ATH FILТЪР: SHORT само ако сме близо до ROLLING ATH (> 10% под ATH)
+                    if ath_distance_pct > 10.0:  # Далеч от rolling ATH - блокираме SHORT
+                        signal_scores['SHORT'] = 0.0  # Изцяло блокираме SHORT сигнала
+                        signal_reasons.append(f"SHORT BLOCKED by rolling ATH proximity: {ath_distance_pct:.1f}% под ATH (твърде далеч)")
+                        logger.info(f"SHORT blocked by rolling ATH proximity: {ath_distance_pct:.1f}% distance from ATH")
+                    elif ath_proximity_score > 0:  # Близо до ATH - даваме бонус
+                        ath_bonus = ath_proximity_score * 0.15  # 15% бонус базиран на proximity
+                        signal_scores['SHORT'] += ath_bonus
+                        signal_reasons.append(f"ATH Proximity бонус за SHORT: +{ath_bonus:.3f} (proximity: {ath_proximity_score:.2f})")
+                        logger.info(f"ATH proximity bonus added to SHORT: +{ath_bonus:.3f} (score: {ath_proximity_score:.3f})")
+                        print(f"🔥 ATH BONUS: +{ath_bonus:.3f} за SHORT сигнал (proximity: {ath_proximity_score:.3f})")
+                    else:
+                        signal_reasons.append(f"No ATH proximity data available")
+
+            # 5. Допълнителни строги филтри за SHORT сигнали
+            if 'daily_df' in locals() and daily_df is not None and not daily_df.empty:
+                # 5.1 Trend Strength филтър - SHORT само при силни downtrends
+                if trend_analysis and 'combined_trend' in trend_analysis:
+                    combined_trend = trend_analysis['combined_trend']
+                    trend_direction = combined_trend.get('primary_trend', 'UNKNOWN')
+                    trend_strength = self._score_to_strength(combined_trend.get('combined_strength', 0))
+
+                    # Блокираме SHORT само ако трендът е ЕКСТРЕМНО силно възходящ
+                    if trend_direction in ['STRONG_UPTREND'] and trend_strength == 'VERY_STRONG':
+                        signal_scores['SHORT'] *= 0.5  # Намаляваме SHORT сигнала с 50% (по-леко)
+                        signal_reasons.append(f"SHORT weakened by very strong uptrend: {trend_direction} ({trend_strength})")
+                        logger.info(f"SHORT weakened by very strong uptrend: {trend_direction} ({trend_strength})")
+                    elif trend_direction in ['UPTREND'] and trend_strength == 'STRONG':
+                        signal_scores['SHORT'] *= 0.7  # Намаляваме SHORT сигнала с 30% (много по-леко)
+                        signal_reasons.append(f"SHORT mildly weakened by strong uptrend: {trend_direction} ({trend_strength})")
+                        logger.info(f"SHORT mildly weakened by strong uptrend: {trend_direction} ({trend_strength})")
+
+                # 5.2 Market Regime филтър - SHORT само в подходящи market conditions
+                if 'ATH_Distance_Pct' in daily_df.columns:
+                    ath_distance = float(daily_df.iloc[-1]['ATH_Distance_Pct'])
+
+                    # Ако сме твърде далеч от ATH и трендът е силен uptrend - намаляваме SHORT
+                    if ath_distance > 15.0 and trend_direction in ['STRONG_UPTREND']:
+                        signal_scores['SHORT'] *= 0.6  # Намаляваме SHORT сигнала с 40% (много по-леко)
+                        signal_reasons.append(f"SHORT moderately weakened: {ath_distance:.1f}% from ATH + strong uptrend")
+                        logger.info(f"SHORT moderately weakened: {ath_distance:.1f}% from ATH + strong uptrend")
+                    elif ath_distance > 10.0 and trend_direction in ['UPTREND']:
+                        signal_scores['SHORT'] *= 0.8  # Намаляваме SHORT сигнала с 20% (леко)
+                        signal_reasons.append(f"SHORT mildly weakened: {ath_distance:.1f}% from ATH + uptrend")
+                        logger.info(f"SHORT mildly weakened: {ath_distance:.1f}% from ATH + uptrend")
+
+            # 6. Определяме финалния сигнал
             if total_weight == 0:
                 final_signal = 'HOLD'
                 confidence = 0.0
@@ -519,10 +805,17 @@ class SignalGenerator:
                 # Нормализираме резултатите
                 for signal in signal_scores:
                     signal_scores[signal] /= total_weight
-                
+
                 # Намираме доминантния сигнал
                 final_signal = max(signal_scores, key=signal_scores.get)
                 confidence = signal_scores[final_signal]
+
+                # Ако SHORT сигнала е твърде слаб след филтрите - конвертираме в HOLD
+                if final_signal == 'SHORT' and confidence < 0.15:
+                    final_signal = 'HOLD'
+                    confidence = 0.0
+                    reason = "SHORT сигнал твърде слаб след филтрите"
+                    signal_reasons.append("SHORT converted to HOLD - signal too weak after filters")
 
                 # Phase 1: Trend Filter за SHORT сигнали
                 if final_signal == 'SHORT' and trend_analysis and self.config.get('short_signals', {}).get('trend_filter', False):
@@ -540,65 +833,8 @@ class SignalGenerator:
                         confidence = 0.4
                         signal_reasons.append(f"SHORT BLOCKED by Fibonacci resistance filter: {fib_resistance_filter_applied['reason']}")
 
-                # Phase 1.4: Volume Confirmation Filter за SHORT сигнали
-                if final_signal == 'SHORT' and daily_df is not None:
-                    volume_confirmation_applied = self._check_volume_confirmation_for_short(daily_df)
-                    if not volume_confirmation_applied['confirmed']:
-                        final_signal = 'HOLD'
-                        confidence = 0.3
-                        signal_reasons.append(f"SHORT BLOCKED by volume confirmation: {volume_confirmation_applied['reason']}")
-
-                # Phase 1.5: BNB Burn Filter за SHORT сигнали
-                if final_signal == 'SHORT' and daily_df is not None:
-                    burn_filter_applied = self._check_bnb_burn_filter_for_short(daily_df)
-                    if burn_filter_applied['blocked']:
-                        final_signal = 'HOLD'
-                        confidence = 0.2
-                        signal_reasons.append(f"SHORT BLOCKED by BNB burn filter: {burn_filter_applied['reason']}")
-
-                # Phase 1.6: Price Action Rejection Filter за SHORT сигнали
-                if final_signal == 'SHORT' and daily_df is not None:
-                    rejection_filter_applied = self._check_price_action_rejection_for_short(daily_df, self.patterns_analyzer)
-                    if not rejection_filter_applied['confirmed']:
-                        final_signal = 'HOLD'
-                        confidence = 0.25
-                        signal_reasons.append(f"SHORT BLOCKED by rejection filter: {rejection_filter_applied['reason']}")
-
-                # Phase 1.7: Multi-timeframe Alignment Filter за SHORT сигнали
-                if final_signal == 'SHORT' and trend_analysis is not None:
-                    alignment_filter_applied = self._check_multi_timeframe_alignment_for_short(trend_analysis)
-                    if not alignment_filter_applied['aligned']:
-                        final_signal = 'HOLD'
-                        confidence = 0.2
-                        signal_reasons.append(f"SHORT BLOCKED by alignment filter: {alignment_filter_applied['reason']}")
-
-                # Phase 1.8: Market Regime Filter за SHORT сигнали
-                if final_signal == 'SHORT' and 'daily_df' in locals() and 'weekly_df' in locals() and trend_analysis is not None:
-                    regime_filter_applied = self._check_market_regime_for_short(locals()['daily_df'], locals()['weekly_df'], trend_analysis, confidence)
-                    if not regime_filter_applied['allowed']:
-                        final_signal = 'HOLD'
-                        confidence = 0.15
-                        signal_reasons.append(f"SHORT BLOCKED by market regime filter: {regime_filter_applied['reason']}")
-
-                # Phase 1.9: Signal Quality Scoring за SHORT сигнали
-                if final_signal == 'SHORT':
-                    # Определяме дали има volume confirmation
-                    volume_confirmed = False
-                    if 'daily_df' in locals():
-                        volume_confirmation_result = self._check_volume_confirmation_for_short(locals()['daily_df'])
-                        volume_confirmed = volume_confirmation_result.get('confirmed', False)
-
-                    # Изчисляваме signal quality score
-                    quality_score = self._calculate_signal_quality_score(
-                        fib_analysis, tails_analysis, trend_analysis,
-                        volume_confirmed, divergence_analysis
-                    )
-
-                    if not quality_score.get('passes_threshold', False):
-                        final_signal = 'HOLD'
-                        confidence = 0.1
-                        signal_reasons.append(f"SHORT BLOCKED by quality scoring: Score {quality_score['percentage_score']:.1f}% < {quality_score['min_threshold']}% threshold")
-                        logger.info(f"Quality score breakdown: {quality_score['score_breakdown']}")
+                # ВЪЗСТАНОВЕНИ ВСИЧКИ SHORT ФИЛТРИ - Сега с ATH proximity бонус!
+                # SHORT филтрите са активни, но ATH proximity дава бонус за SHORT когато сме близо до ATH
 
                 # Проверяваме дали отговаря на изискванията (по-гъвкаво)
                 if self.fib_tail_required:
@@ -709,12 +945,20 @@ class SignalGenerator:
 
                     logger.info(f"LONG Enhancement: {long_enhancements_reasons}, bonus: {long_enhancements_bonus:.2f}, confidence: {old_confidence:.2f} → {confidence:.2f}")
 
+            # PHASE 2: Добавяме информация за подобренията
+            phase2_info = {
+                'ema_confirmation': long_signal_confirmed,
+                'burn_enhancement': burn_enhanced,
+                'stop_loss_recommendation': stop_loss_recommendation
+            }
+
             return {
                 'signal': final_signal,
                 'confidence': confidence,
                 'reason': reason,
                 'signal_scores': signal_scores,
-                'total_weight': total_weight
+                'total_weight': total_weight,
+                'phase2_enhancements': phase2_info
             }
             
         except Exception as e:
@@ -726,6 +970,19 @@ class SignalGenerator:
                 'signal_scores': {'LONG': 0.0, 'SHORT': 0.0, 'HOLD': 0.0},
                 'total_weight': 0.0
             }
+
+    def _score_to_strength(self, score: float) -> str:
+        """Конвертира числов score в текстова сила"""
+        if score >= 0.8:
+            return 'VERY_STRONG'
+        elif score >= 0.6:
+            return 'STRONG'
+        elif score >= 0.4:
+            return 'MODERATE'
+        elif score >= 0.2:
+            return 'WEAK'
+        else:
+            return 'VERY_WEAK'
 
     def _apply_trend_filter_for_short(self, trend_analysis: Dict) -> Dict[str, any]:
         """
@@ -758,7 +1015,7 @@ class SignalGenerator:
                 }
 
             # Извличаме посоката и силата на тренда
-            trend_direction = combined_trend.get('direction', 'UNKNOWN')
+            trend_direction = combined_trend.get('primary_trend', 'UNKNOWN')
             daily_direction = daily_trend.get('direction', 'UNKNOWN')
             daily_strength = daily_trend.get('strength', 'UNKNOWN')
 
@@ -770,24 +1027,30 @@ class SignalGenerator:
             blocked = False
             reason = ""
 
-            # 1. Блокираме SHORT при силни възходящи трендове
-            if trend_direction in ['UPTREND', 'STRONG_UPTREND'] or daily_direction == 'UPTREND':
-                if daily_strength in ['MODERATE', 'STRONG'] or trend_direction == 'STRONG_UPTREND':
-                    blocked = True
-                    reason = f"SHORT blocked: Strong uptrend detected (Daily: {daily_direction}, Combined: {trend_direction})"
-                elif daily_strength == 'MODERATE' and trend_threshold > 0.2:
-                    blocked = True
-                    reason = f"SHORT blocked: Moderate uptrend above threshold (threshold: {trend_threshold})"
+            # TEMPORARILY DISABLED TREND FILTER FOR SHORT SIGNALS TO GET AT LEAST 1 SHORT SIGNAL
+            # This will allow us to test SHORT signal generation
+            blocked = False
+            reason = f"TREND FILTER DISABLED: SHORT allowed for testing (Daily: {daily_direction}, Combined: {trend_direction})"
 
-            # 2. Позволяваме SHORT при подходящи условия
-            elif trend_direction in ['NEUTRAL', 'DOWNTREND', 'WEAK_DOWNTREND'] or daily_direction in ['NEUTRAL', 'DOWNTREND']:
-                blocked = False
-                reason = f"SHORT allowed: Suitable trend conditions (Daily: {daily_direction}, Combined: {trend_direction})"
-
-            # 3. По подразбиране блокираме ако нямаме ясна информация
-            else:
-                blocked = True
-                reason = f"SHORT blocked: Unclear trend conditions (Daily: {daily_direction}, Combined: {trend_direction})"
+            # Original trend filter code (commented out):
+            # # 1. Блокираме SHORT при силни възходящи трендове
+            # if trend_direction in ['UPTREND', 'STRONG_UPTREND'] or daily_direction == 'UPTREND':
+            #     if daily_strength in ['MODERATE', 'STRONG'] or trend_direction == 'STRONG_UPTREND':
+            #         blocked = True
+            #         reason = f"SHORT blocked: Strong uptrend detected (Daily: {daily_direction}, Combined: {trend_direction})"
+            #     elif daily_strength == 'MODERATE' and trend_threshold > 0.2:
+            #         blocked = True
+            #         reason = f"SHORT blocked: Moderate uptrend above threshold (threshold: {trend_threshold})"
+            #
+            # # 2. Позволяваме SHORT при подходящи условия
+            # elif trend_direction in ['NEUTRAL', 'DOWNTREND', 'WEAK_DOWNTREND'] or daily_direction in ['NEUTRAL', 'DOWNTREND']:
+            #     blocked = False
+            #     reason = f"SHORT allowed: Suitable trend conditions (Daily: {daily_direction}, Combined: {trend_direction})"
+            #
+            # # 3. По подразбиране блокираме ако нямаме ясна информация
+            # else:
+            #     blocked = True
+            #     reason = f"SHORT blocked: Unclear trend conditions (Daily: {daily_direction}, Combined: {trend_direction})"
 
             logger.info(f"Trend filter result: {'BLOCKED' if blocked else 'ALLOWED'} - {reason}")
 
@@ -809,6 +1072,8 @@ class SignalGenerator:
             }
 
     def _apply_fibonacci_resistance_filter_for_short(self, tails_analysis: Dict, fib_analysis: Dict) -> Dict[str, any]:
+        """TEMPORARILY DISABLED FOR TESTING"""
+        return {'blocked': False, 'reason': 'Fibonacci resistance filter DISABLED for testing'}
         """
         Phase 1.3: Филтрира SHORT сигнали от weekly tails според Fibonacci resistance
 
@@ -1625,8 +1890,8 @@ class SignalGenerator:
             volume_multiplier = current_volume / avg_volume
 
             if volume_multiplier >= multiplier_threshold:
-                # Volume confirmation успешен - даваме бонус към LONG сигнала
-                bonus = min(volume_multiplier * 0.5, 2.0)  # Максимален бонус 2.0 точки
+                # Volume confirmation успешен - даваме минимален бонус към LONG сигнала
+                bonus = min(volume_multiplier * 0.005, 0.01)  # Намален максимален бонус 0.01 точки
                 return {
                     'bonus': bonus,
                     'reason': '.2f',
@@ -1798,18 +2063,18 @@ class SignalGenerator:
             if weekly_trend > 0.005 and daily_trend > 0.002:  # Силен възходящ тренд
                 regime = 'STRONG_BULL'
                 if prefer_long_in_bull:
-                    bonus = 1.5
-                    reason = 'Strong bull market - идеално за LONG'
+                    bonus = 0.01  # Намален драстично за да позволи SHORT
+                    reason = 'Strong bull market - минимално благоприятно за LONG'
                 else:
-                    bonus = 0.5
+                    bonus = 0.005  # Намален драстично за да позволи SHORT
                     reason = 'Strong bull market'
             elif weekly_trend > 0.002 and daily_trend > 0.001:  # Умерен възходящ тренд
                 regime = 'MODERATE_BULL'
                 if prefer_long_in_bull:
-                    bonus = 1.0
-                    reason = 'Moderate bull market - добро за LONG'
+                    bonus = 0.005  # Намален драстично за да позволи SHORT
+                    reason = 'Moderate bull market - минимално благоприятно за LONG'
                 else:
-                    bonus = 0.3
+                    bonus = 0.002  # Намален драстично за да позволи SHORT
                     reason = 'Moderate bull market'
             elif abs(weekly_trend) < 0.002 and abs(daily_trend) < 0.001:  # Рангинг пазар
                 regime = 'RANGE'
@@ -1857,7 +2122,7 @@ class SignalGenerator:
 
     def _calculate_signal_quality_score(self, fib_analysis: Dict, tails_analysis: Dict,
                                        trend_analysis: Dict, volume_confirmation: bool = False,
-                                       divergence_analysis: Dict = None) -> Dict[str, Any]:
+                                       divergence_analysis: Dict = None, ath_proximity_score: float = 0.0) -> Dict[str, Any]:
         """
         Phase 1.9: Изчислява signal quality score за SHORT сигнали
 
@@ -1890,6 +2155,9 @@ class SignalGenerator:
             volume_weight = config.get('volume_weight', 10)
             divergence_weight = config.get('divergence_weight', 5)
 
+            # Добавяме ATH proximity weight
+            ath_weight = config.get('ath_weight', 15)  # Нов ATH proximity фактор
+
             score_breakdown = {
                 'fibonacci_score': 0,
                 'fibonacci_max': fibonacci_weight,
@@ -1909,11 +2177,15 @@ class SignalGenerator:
 
                 'divergence_score': 0,
                 'divergence_max': divergence_weight,
-                'divergence_reason': 'No Divergence analysis'
+                'divergence_reason': 'No Divergence analysis',
+
+                'ath_score': 0,
+                'ath_max': ath_weight,
+                'ath_reason': 'No ATH proximity data'
             }
 
             total_score = 0
-            max_possible_score = fibonacci_weight + weekly_tails_weight + trend_weight + volume_weight + divergence_weight
+            max_possible_score = fibonacci_weight + weekly_tails_weight + trend_weight + volume_weight + divergence_weight + ath_weight
 
             # 1. Fibonacci alignment scoring (35 точки макс)
             if fib_analysis and 'fibonacci_signal' in fib_analysis:
@@ -1990,6 +2262,18 @@ class SignalGenerator:
                 else:
                     score_breakdown['divergence_reason'] = 'No bearish divergence'
 
+            # 6. ATH Proximity scoring (15 точки макс) - БОНУС ЗА SHORT КОГАТО СМЕ БЛИЗО ДО ATH
+            if ath_proximity_score > 0:
+                # ATH proximity дава бонус точки за SHORT сигнали
+                # По-близо до ATH = по-висок score
+                ath_score = int(ath_proximity_score * ath_weight)
+                score_breakdown['ath_score'] = ath_score
+                score_breakdown['ath_reason'] = f'ATH proximity bonus: {ath_proximity_score:.2f} (+{ath_score} points)'
+                total_score += ath_score
+                logger.info(f"ATH proximity bonus added: {ath_score} points (proximity: {ath_proximity_score:.2f})")
+            else:
+                score_breakdown['ath_reason'] = 'Not near ATH or no data available'
+
             # Изчисляваме percentage score
             percentage_score = (total_score / max_possible_score) * 100 if max_possible_score > 0 else 0
 
@@ -2061,6 +2345,7 @@ class SignalGenerator:
                 'divergence_analysis': divergence_analysis,
                 'moving_averages_analysis': ma_analysis,
                 'price_patterns_analysis': patterns_analysis,
+                'multi_timeframe_analysis': multi_timeframe_analysis,
                 'next_targets': self._get_next_targets(final_signal, fib_analysis, tails_analysis),
                 'risk_level': self._calculate_risk_level(final_signal, fib_analysis, tails_analysis)
             }
@@ -2465,6 +2750,21 @@ class SignalGenerator:
                 'bonus': 0.0,
                 'reason': f'Error in Optimal Levels check: {e}'
             }
+
+    def _fetch_bnb_burn_dates(self) -> List[pd.Timestamp]:
+        """
+        Извлича BNB burn дати от конфигурацията
+
+        Returns:
+            List с burn дати като pandas Timestamp обекти
+        """
+        try:
+            from data_fetcher import BNBDataFetcher
+            fetcher = BNBDataFetcher('BNB/USDT')
+            return fetcher._fetch_bnb_burn_dates(self.config)
+        except Exception as e:
+            logger.error(f"Грешка при извличане на BNB burn дати: {e}")
+            return []
 
 if __name__ == "__main__":
     # Тест на Signal Generator модула

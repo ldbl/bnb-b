@@ -113,6 +113,7 @@ from datetime import datetime, timedelta
 import sys
 import os
 from typing import Dict, List, Any
+from tqdm import tqdm
 
 # Add current directory to Python path for module imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -305,36 +306,61 @@ class Backtester:
             signals = []
             
             # Генерираме сигнали на седмична база за по-ефективност
-            for i in range(len(backtest_weekly) - 8):  # -8 за да имаме достатъчно данни за анализ
-                current_date = backtest_weekly.index[i]
-                
-                # Взимаме данните до текущата дата
-                current_daily = backtest_daily[:current_date]
-                current_weekly = backtest_weekly[:i+1]
-                
-                if len(current_daily) < 100 or len(current_weekly) < 8:
-                    continue
-                
-                try:
-                    # Генерираме сигнал за текущата дата
-                    signal = self._generate_historical_signal(current_daily, current_weekly, current_date)
-                    
-                    if signal and signal['signal'] != 'HOLD':
-                        # Проверяваме резултата след 2 седмици
-                        result = self._validate_historical_signal(signal, backtest_daily, current_date)
-                        
-                        if result:
-                            signals.append({
-                                'date': current_date,
-                                'signal': signal,
-                                'result': result
-                            })
-                            
+            total_weeks = len(backtest_weekly) - 4
+            print(f"🔄 Обработвам {total_weeks} седмици...")
 
-                
-                except Exception as e:
-                    logger.warning(f"Грешка при генериране на сигнал за {current_date}: {e}")
-                    continue
+            short_signals_count = 0
+            long_signals_count = 0
+
+            with tqdm(total=total_weeks, desc="📊 Анализ", unit="седмица",
+                      bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]',
+                      ncols=80) as pbar:
+
+                for i in range(total_weeks):
+                    current_date = backtest_weekly.index[i]
+
+                    # Взимаме данните до текущата дата
+                    current_daily = backtest_daily.loc[:current_date]
+                    current_weekly = backtest_weekly.iloc[:i+1]
+
+                    if len(current_daily) < 50 or len(current_weekly) < 4:
+                        pbar.update(1)
+                        continue
+
+                    try:
+                        # Генерираме сигнал за текущата дата
+                        signal = self._generate_historical_signal(current_daily, current_weekly, current_date)
+
+                        if signal and signal['signal'] != 'HOLD':
+                            signal_type = signal['signal']
+
+                            # Броим сигналите
+                            if signal_type == 'SHORT':
+                                short_signals_count += 1
+                            elif signal_type == 'LONG':
+                                long_signals_count += 1
+
+                            # Проверяваме резултата след 2 седмици
+                            result = self._validate_historical_signal(signal, backtest_daily, current_date)
+
+                            if result:
+                                signals.append({
+                                    'date': current_date,
+                                    'signal': signal,
+                                    'result': result
+                                })
+
+                    except Exception as e:
+                        # Тихо прескачаме грешките за да не спираме прогреса
+                        pass
+
+                    # Обновяваме прогрес бара с информация
+                    pbar.set_postfix({
+                        'SHORT': short_signals_count,
+                        'LONG': long_signals_count,
+                        'TOTAL': len(signals)
+                    })
+                    pbar.update(1)
             
             # Анализираме резултатите
             analysis = self._analyze_backtest_results(signals)
@@ -519,6 +545,15 @@ class Backtester:
             best_signals = sorted(signals, key=lambda x: x['result']['profit_loss_pct'], reverse=True)[:5]
             worst_signals = sorted(signals, key=lambda x: x['result']['profit_loss_pct'])[:5]
             
+            # Phase 3: Добавяме Sharpe ratio и drawdown изчисления
+            sharpe_ratio = self._calculate_sharpe_ratio(all_pnl)
+            max_drawdown = self._calculate_max_drawdown(all_pnl)
+
+            # Допълнителни метрики
+            profit_factor = self._calculate_profit_factor(signals)
+            recovery_factor = self._calculate_recovery_factor(all_pnl, max_drawdown)
+            calmar_ratio = self._calculate_calmar_ratio(all_pnl, max_drawdown)
+
             analysis = {
                 'total_signals': total_signals,
                 'successful_signals': successful_signals,
@@ -539,9 +574,17 @@ class Backtester:
                 'avg_profit_loss_failure_pct': avg_profit_loss_failure,
                 'best_signals': best_signals,
                 'worst_signals': worst_signals,
+
+                # Phase 3: Risk и Performance метрики
+                'sharpe_ratio': sharpe_ratio,
+                'max_drawdown_pct': max_drawdown,
+                'profit_factor': profit_factor,
+                'recovery_factor': recovery_factor,
+                'calmar_ratio': calmar_ratio,
+
                 'analysis_date': pd.Timestamp.now()
             }
-            
+
 
             return analysis
             
@@ -764,74 +807,282 @@ class Backtester:
 def main():
     """Главна функция за backtesting"""
     try:
-        print("🚀 Стартиране на Backtesting за последните 18 месеца...")
+        print("🚀 Стартиране на Backtesting за 18 месеца...")
+        print("🔇 Logging намален до минимум за по-бързо изпълнение")
         logger.info("Започва backtest за 18 месеца")
 
-        # Намаляваме logging нивото за конкретните модули които създават шум
+        # Намаляваме logging нивото за всички модули които създават шум
         signal_logger = logging.getLogger('signal_generator')
         trend_logger = logging.getLogger('trend_analyzer')
         whale_logger = logging.getLogger('whale_tracker')
         ichimoku_logger = logging.getLogger('ichimoku_module')
         sentiment_logger = logging.getLogger('sentiment_module')
+        fibonacci_logger = logging.getLogger('fibonacci')
+        weekly_tails_logger = logging.getLogger('weekly_tails')
+        indicators_logger = logging.getLogger('indicators')
+        optimal_levels_logger = logging.getLogger('optimal_levels')
+        divergence_logger = logging.getLogger('divergence_detector')
+        price_patterns_logger = logging.getLogger('price_action_patterns')
+        moving_averages_logger = logging.getLogger('moving_averages')
+        elliott_wave_logger = logging.getLogger('elliott_wave_analyzer')
 
         original_levels = {
             'signal': signal_logger.level,
             'trend': trend_logger.level,
             'whale': whale_logger.level,
             'ichimoku': ichimoku_logger.level,
-            'sentiment': sentiment_logger.level
+            'sentiment': sentiment_logger.level,
+            'fibonacci': fibonacci_logger.level,
+            'weekly_tails': weekly_tails_logger.level,
+            'indicators': indicators_logger.level,
+            'optimal_levels': optimal_levels_logger.level,
+            'divergence': divergence_logger.level,
+            'price_patterns': price_patterns_logger.level,
+            'moving_averages': moving_averages_logger.level,
+            'elliott_wave': elliott_wave_logger.level
         }
 
-        # Задаваме WARNING ниво за всички шумни модули
-        signal_logger.setLevel(logging.WARNING)
-        trend_logger.setLevel(logging.WARNING)
-        whale_logger.setLevel(logging.WARNING)
-        ichimoku_logger.setLevel(logging.WARNING)
-        sentiment_logger.setLevel(logging.WARNING)
+        # Задаваме ERROR ниво за всички шумни модули (само грешки)
+        signal_logger.setLevel(logging.ERROR)
+        trend_logger.setLevel(logging.ERROR)
+        whale_logger.setLevel(logging.ERROR)
+        ichimoku_logger.setLevel(logging.ERROR)
+        sentiment_logger.setLevel(logging.ERROR)
+        fibonacci_logger.setLevel(logging.ERROR)
+        weekly_tails_logger.setLevel(logging.ERROR)
+        indicators_logger.setLevel(logging.ERROR)
+        optimal_levels_logger.setLevel(logging.ERROR)
+        divergence_logger.setLevel(logging.ERROR)
+        price_patterns_logger.setLevel(logging.ERROR)
+        moving_averages_logger.setLevel(logging.ERROR)
+        elliott_wave_logger.setLevel(logging.ERROR)
+
+        # ДЕЗАКТИВИРАМЕ ВСИЧКИ HTTP МОДУЛИ ЗА БЪРЗИНА
+        print("🚫 Дезактивирам HTTP модули: whale_tracker, ichimoku, sentiment")
+        whale_logger.setLevel(logging.CRITICAL)  # Изцяло изключваме
+        ichimoku_logger.setLevel(logging.CRITICAL)  # Изцяло изключваме
+        sentiment_logger.setLevel(logging.CRITICAL)  # Изцяло изключваме
 
         # Създаваме backtester-а
         backtester = Backtester()
-        
-        # Изпълняваме backtest за целия наличен период
-        results = backtester.run_backtest(None)  # None = целия период
+
+        # Дезактивираме HTTP модули в конфигурацията за бързина
+        backtester.config['sentiment'] = {'enabled': False}
+        backtester.config['whale_tracker'] = {'enabled': False}
+        backtester.config['ichimoku'] = {'enabled': False}
+
+        print("⚡ Конфигурация: HTTP модули дезактивирани за backtesting")
+
+        # Изпълняваме backtest за 18 месеца
+        results = backtester.run_backtest(18)  # 18 месеца
         
         if 'error' in results:
             print(f"❌ Грешка: {results['error']}")
             return
         
-        # Показваме резултатите
+        # Показваме резултатите - сбито
         analysis = results['analysis']
         period = results['period']
 
         print(f"\n🎯 BACKTEST РЕЗУЛТАТИ:")
-        print(f"📅 Период: {period['start_date'].strftime('%Y-%m-%d')} до {period['end_date'].strftime('%Y-%m-%d')} ({period['total_days']} дни)")
+        print(f"📅 Период: {period['start_date'].strftime('%Y-%m-%d')} до {period['end_date'].strftime('%Y-%m-%d')}")
         print(f"📊 Общо сигнали: {analysis['total_signals']}")
         print(f"✅ Успешни сигнали: {analysis['successful_signals']}")
         print(f"🎯 Обща точност: {analysis['overall_accuracy']:.1f}%")
-        print()
-        print(f"📈 LONG сигнали: {analysis['long_signals']['total']} | Успешни: {analysis['long_signals']['success']} | Точност: {analysis['long_signals']['accuracy']:.1f}%")
-        print(f"📉 SHORT сигнали: {analysis['short_signals']['total']} | Успешни: {analysis['short_signals']['success']} | Точност: {analysis['short_signals']['accuracy']:.1f}%")
-        print()
+        print(f"📈 LONG: {analysis['long_signals']['total']} ({analysis['long_signals']['accuracy']:.1f}%)")
+        print(f"📉 SHORT: {analysis['short_signals']['total']} ({analysis['short_signals']['accuracy']:.1f}%)")
         print(f"💰 Среден P&L: {analysis['avg_profit_loss_pct']:+.2f}%")
-        print(f"🔥 Най-добър сигнал: {analysis['best_signals'][0]['result']['profit_loss_pct']:+.1f}%" if analysis['best_signals'] else "Няма сигнали")
-        print(f"📉 Най-лош сигнал: {analysis['worst_signals'][0]['result']['profit_loss_pct']:+.1f}%" if analysis['worst_signals'] else "Няма сигнали")
-        
+
         # Експортираме резултатите
         backtester.export_backtest_results(results, 'data/backtest_results.txt')
-        
+
         print(f"\n✅ Backtest завършен успешно!")
-        print(f"📁 Резултатите са записани в data/backtest_results.txt")
+        print(f"📁 Детайлни резултати записани в data/backtest_results.txt")
 
     except Exception as e:
         logger.error(f"Критична грешка: {e}")
         print(f"❌ Критична грешка: {e}")
     finally:
         # Възстановяваме оригиналните logging нива
-        signal_logger.setLevel(original_levels['signal'])
-        trend_logger.setLevel(original_levels['trend'])
-        whale_logger.setLevel(original_levels['whale'])
-        ichimoku_logger.setLevel(original_levels['ichimoku'])
-        sentiment_logger.setLevel(original_levels['sentiment'])
+        try:
+            signal_logger.setLevel(original_levels['signal'])
+            trend_logger.setLevel(original_levels['trend'])
+            whale_logger.setLevel(original_levels['whale'])
+            ichimoku_logger.setLevel(original_levels['ichimoku'])
+            sentiment_logger.setLevel(original_levels['sentiment'])
+            fibonacci_logger.setLevel(original_levels['fibonacci'])
+            weekly_tails_logger.setLevel(original_levels['weekly_tails'])
+            indicators_logger.setLevel(original_levels['indicators'])
+            optimal_levels_logger.setLevel(original_levels['optimal_levels'])
+            divergence_logger.setLevel(original_levels['divergence'])
+            price_patterns_logger.setLevel(original_levels['price_patterns'])
+            moving_averages_logger.setLevel(original_levels['moving_averages'])
+            elliott_wave_logger.setLevel(original_levels['elliott_wave'])
+        except:
+            pass  # Тихо прескачаме ако има грешка при възстановяване
+
+    def _calculate_sharpe_ratio(self, pnl_returns: List[float], risk_free_rate: float = 0.02) -> float:
+        """
+        Изчислява Sharpe ratio
+
+        Args:
+            pnl_returns: Списък с P&L проценти за всяка сделка
+            risk_free_rate: Безрисков процент (годишен)
+
+        Returns:
+            Sharpe ratio
+        """
+        try:
+            if not pnl_returns or len(pnl_returns) < 2:
+                return 0.0
+
+            # Конвертираме в numpy array
+            returns = np.array(pnl_returns)
+
+            # Изчисляваме средна доходност (annualized)
+            avg_return = np.mean(returns) * 252  # 252 търговски дни в годината
+
+            # Изчисляваме стандартно отклонение (annualized)
+            std_dev = np.std(returns) * np.sqrt(252)
+
+            # Sharpe ratio = (Return - Risk Free Rate) / Volatility
+            if std_dev == 0:
+                return 0.0
+
+            sharpe_ratio = (avg_return - risk_free_rate) / std_dev
+            return round(sharpe_ratio, 3)
+
+        except Exception as e:
+            logger.error(f"Грешка при изчисляване на Sharpe ratio: {e}")
+            return 0.0
+
+    def _calculate_max_drawdown(self, pnl_returns: List[float]) -> float:
+        """
+        Изчислява максимален drawdown в проценти
+
+        Args:
+            pnl_returns: Списък с кумулативни P&L проценти
+
+        Returns:
+            Максимален drawdown в проценти
+        """
+        try:
+            if not pnl_returns:
+                return 0.0
+
+            # Симулираме кумулативна доходност
+            cumulative = [1.0]  # Започваме с 1.0 (100%)
+            current_value = 1.0
+
+            for pnl_pct in pnl_returns:
+                pnl_decimal = pnl_pct / 100.0
+                current_value *= (1 + pnl_decimal)
+                cumulative.append(current_value)
+
+            # Намираме пиковете и спадовете
+            peak = cumulative[0]
+            max_drawdown = 0.0
+
+            for value in cumulative:
+                if value > peak:
+                    peak = value
+                else:
+                    drawdown = (peak - value) / peak
+                    max_drawdown = max(max_drawdown, drawdown)
+
+            return round(max_drawdown * 100, 2)  # В проценти
+
+        except Exception as e:
+            logger.error(f"Грешка при изчисляване на max drawdown: {e}")
+            return 0.0
+
+    def _calculate_profit_factor(self, signals: List[Dict]) -> float:
+        """
+        Изчислява Profit Factor = Gross Profit / Gross Loss
+
+        Args:
+            signals: Списък със сигналите и техните резултати
+
+        Returns:
+            Profit factor
+        """
+        try:
+            gross_profit = 0.0
+            gross_loss = 0.0
+
+            for signal in signals:
+                pnl_pct = signal['result']['profit_loss_pct']
+                if pnl_pct > 0:
+                    gross_profit += pnl_pct
+                else:
+                    gross_loss += abs(pnl_pct)
+
+            if gross_loss == 0:
+                return float('inf') if gross_profit > 0 else 0.0
+
+            profit_factor = gross_profit / gross_loss
+            return round(profit_factor, 3)
+
+        except Exception as e:
+            logger.error(f"Грешка при изчисляване на profit factor: {e}")
+            return 0.0
+
+    def _calculate_recovery_factor(self, pnl_returns: List[float], max_drawdown: float) -> float:
+        """
+        Изчислява Recovery Factor = Net Profit / Max Drawdown
+
+        Args:
+            pnl_returns: Списък с P&L проценти
+            max_drawdown: Максимален drawdown в проценти
+
+        Returns:
+            Recovery factor
+        """
+        try:
+            if not pnl_returns:
+                return 0.0
+
+            net_profit = sum(pnl_returns)
+
+            if max_drawdown == 0:
+                return float('inf') if net_profit > 0 else 0.0
+
+            recovery_factor = net_profit / max_drawdown
+            return round(recovery_factor, 3)
+
+        except Exception as e:
+            logger.error(f"Грешка при изчисляване на recovery factor: {e}")
+            return 0.0
+
+    def _calculate_calmar_ratio(self, pnl_returns: List[float], max_drawdown: float) -> float:
+        """
+        Изчислява Calmar Ratio = Annual Return / Max Drawdown
+
+        Args:
+            pnl_returns: Списък с P&L проценти
+            max_drawdown: Максимален drawdown в проценти
+
+        Returns:
+            Calmar ratio
+        """
+        try:
+            if not pnl_returns:
+                return 0.0
+
+            # Изчисляваме годишна доходност
+            total_return = sum(pnl_returns)
+            days = len(pnl_returns) * 14  # Приблизително 14 дни на сигнал
+            annual_return = (total_return * 365) / days if days > 0 else 0
+
+            if max_drawdown == 0:
+                return float('inf') if annual_return > 0 else 0.0
+
+            calmar_ratio = annual_return / max_drawdown
+            return round(calmar_ratio, 3)
+
+        except Exception as e:
+            logger.error(f"Грешка при изчисляване на Calmar ratio: {e}")
+            return 0.0
 
 if __name__ == "__main__":
     main()

@@ -18,8 +18,9 @@ SUPPORTED INDICATORS:
     1. RSI (Relative Strength Index) - Momentum oscillator
     2. MACD (Moving Average Convergence Divergence) - Trend following
     3. Bollinger Bands - Volatility-based support/resistance
-    4. Volume Analysis - Volume confirmation signals
-    5. Moving Averages - Trend direction and strength
+    4. ATR (Average True Range) - Volatility measurement
+    5. Volume Analysis - Volume confirmation signals
+    6. Moving Averages - Trend direction and strength
 
 KEY FEATURES:
     - High-performance TA-Lib calculations
@@ -206,11 +207,15 @@ class TechnicalIndicators:
         self.macd_signal = config['indicators']['macd_signal']
         self.bb_period = config['indicators']['bb_period']
         self.bb_std = config['indicators']['bb_std']
-        
+
+        # ATR parameters
+        self.atr_period = config['indicators']['atr_period']
+
         logger.info("Технически индикатори инициализирани")
         logger.info(f"RSI: период={self.rsi_period}, overbought={self.rsi_overbought}, oversold={self.rsi_oversold}")
         logger.info(f"MACD: fast={self.macd_fast}, slow={self.macd_slow}, signal={self.macd_signal}")
         logger.info(f"Bollinger Bands: период={self.bb_period}, std={self.bb_std}")
+        logger.info(f"ATR: период={self.atr_period}")
     
     def calculate_indicators(self, df: pd.DataFrame) -> pd.DataFrame:
         """
@@ -242,7 +247,10 @@ class TechnicalIndicators:
             df_with_indicators['BB_Lower'] = bb_data['lower']
             df_with_indicators['BB_Width'] = bb_data['width']
             df_with_indicators['BB_Position'] = bb_data['position']
-            
+
+            # Изчисляваме ATR
+            df_with_indicators['ATR'] = self._calculate_atr(df)
+
             # Премахваме NaN стойности
             df_with_indicators.dropna(inplace=True)
             
@@ -341,7 +349,43 @@ class TechnicalIndicators:
                 'width': pd.Series(index=prices.index),
                 'position': pd.Series(index=prices.index)
             }
-    
+
+    def _calculate_atr(self, df: pd.DataFrame) -> pd.Series:
+        """
+        Изчислява Average True Range (ATR)
+
+        Args:
+            df: DataFrame с OHLC данни
+
+        Returns:
+            pd.Series: ATR стойности
+        """
+        try:
+            if len(df) < self.atr_period:
+                return pd.Series(index=df.index, dtype=float)
+
+            high = df['High']
+            low = df['Low']
+            close = df['Close']
+
+            # Изчисляваме True Range
+            tr1 = high - low
+            tr2 = abs(high - close.shift(1))
+            tr3 = abs(low - close.shift(1))
+
+            # True Range е максимума от трите
+            tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+
+            # Изчисляваме ATR като rolling mean на True Range
+            atr = tr.rolling(window=self.atr_period).mean()
+
+            logger.info(f"ATR изчислен за период {self.atr_period}")
+            return atr
+
+        except Exception as e:
+            logger.error(f"Грешка при изчисляване на ATR: {e}")
+            return pd.Series(index=df.index, dtype=float)
+
     def get_rsi_signal(self, current_rsi: float) -> Dict[str, any]:
         """
         Генерира RSI сигнал
@@ -495,7 +539,49 @@ class TechnicalIndicators:
         except Exception as e:
             logger.error(f"Грешка при генериране на Bollinger Bands сигнал: {e}")
             return {'signal': 'HOLD', 'reason': f'Грешка: {e}', 'strength': 0.0}
-    
+
+    def get_atr_signal(self, current_atr: float) -> Dict[str, any]:
+        """
+        Генерира ATR сигнал базиран на волатилност
+
+        Args:
+            current_atr: Текуща ATR стойност
+
+        Returns:
+            Dict с ATR сигнал информация
+        """
+        try:
+            if pd.isna(current_atr) or current_atr <= 0:
+                return {'signal': 'HOLD', 'reason': 'ATR не е наличен', 'strength': 0.0}
+
+            # ATR е мярка за волатилност - висока волатилност може да означава
+            # предстоящи големи движения, ниска волатилност - консолидация
+
+            # За сега ATR ще се използва основно за risk management
+            # и няма да генерира основни trading сигнали
+
+            signal = 'HOLD'
+            strength = 0.4
+            reason = f"ATR волатилност: {current_atr:.4f}"
+
+            # Можем да добавим логика за extreme volatility signals в бъдеще
+            if current_atr > 0:
+                signal = 'VOLATILE'
+                strength = 0.5
+                reason = f"Нормална волатилност (ATR: {current_atr:.4f})"
+
+            return {
+                'signal': signal,
+                'strength': strength,
+                'reason': reason,
+                'atr_value': current_atr,
+                'volatility_level': 'NORMAL'
+            }
+
+        except Exception as e:
+            logger.error(f"Грешка при генериране на ATR сигнал: {e}")
+            return {'signal': 'HOLD', 'strength': 0.0, 'reason': 'Грешка в ATR сигнал'}
+
     def get_all_indicators_signals(self, df: pd.DataFrame) -> Dict[str, any]:
         """
         Връща сигналите от всички индикатори
@@ -530,11 +616,15 @@ class TechnicalIndicators:
                 latest['BB_Lower'],
                 latest['BB_Position']
             )
-            
+
+            # ATR сигнал
+            atr_signal = self.get_atr_signal(latest['ATR'])
+
             all_signals = {
                 'rsi': rsi_signal,
                 'macd': macd_signal,
                 'bollinger': bb_signal,
+                'atr': atr_signal,
                 'current_price': latest['Close'],
                 'analysis_date': df.index[-1]
             }
