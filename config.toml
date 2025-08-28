@@ -64,8 +64,9 @@ atr_period = 14
 atr_multiplier = 2.0
 
 [signals]
-fibonacci_weight = 0.35
-weekly_tails_weight = 0.35
+fibonacci_weight = 0.25
+weekly_tails_weight = 0.30  # Повишено за SHORT приоритет
+ma_weight = 0.20  # Ново - Moving Averages тегло
 rsi_weight = 0.15
 macd_weight = 0.10
 bb_weight = 0.05

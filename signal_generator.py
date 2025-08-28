@@ -149,6 +149,7 @@ class SignalGenerator:
         self.config = config
         self.fibonacci_weight = config['signals']['fibonacci_weight']
         self.weekly_tails_weight = config['signals']['weekly_tails_weight']
+        self.ma_weight = config['signals'].get('ma_weight', 0.20)  # Moving Averages тегло
         self.rsi_weight = config['signals']['rsi_weight']
         self.macd_weight = config['signals']['macd_weight']
         self.bb_weight = config['signals']['bb_weight']
@@ -401,7 +402,8 @@ class SignalGenerator:
                 whale_analysis,
                 None,  # price_patterns_analysis - ще се изчислява вътре в метода
                 elliott_wave_analysis,
-                optimal_levels_analysis
+                optimal_levels_analysis,
+                ma_analysis  # Moving Averages анализ
             )
             
             # 8. Добавяме детайлна информация
@@ -441,7 +443,8 @@ class SignalGenerator:
                          weekly_df: pd.DataFrame = None, divergence_analysis: Dict = None,
                          ichimoku_analysis: Dict = None, sentiment_analysis: Dict = None,
                          whale_analysis: Dict = None, price_patterns_analysis: Dict = None,
-                         elliott_wave_analysis: Dict = None, optimal_levels_analysis: Dict = None) -> Dict[str, any]:
+                         elliott_wave_analysis: Dict = None, optimal_levels_analysis: Dict = None,
+                         moving_averages_analysis: Dict = None) -> Dict[str, any]:
         """
         Комбинира сигналите от различните източници
         
@@ -471,6 +474,7 @@ class SignalGenerator:
                     signal_reasons.append(f"Fibonacci: {fib_signal['reason']} (сила: {fib_signal['strength']:.2f})")
             
             # 2. Weekly Tails сигнал (втори приоритет)
+            weekly_tails_signal = None
             if tails_analysis and 'tails_signal' in tails_analysis:
                 tails_signal = tails_analysis['tails_signal']
                 if tails_signal['signal'] != 'HOLD':
@@ -479,7 +483,37 @@ class SignalGenerator:
                     signal_scores[tails_signal['signal']] += score
                     total_weight += weight
                     signal_reasons.append(f"Weekly Tails: {tails_signal['reason']} (сила: {tails_signal['strength']:.2f})")
-            
+                    weekly_tails_signal = tails_signal
+
+            # 2.5. Moving Averages сигнал (трети приоритет)
+            if 'moving_averages_analysis' in locals() and moving_averages_analysis:
+                ma_analysis = moving_averages_analysis
+                if 'error' not in ma_analysis:
+                    crossover = ma_analysis.get('crossover_signal', {})
+                    if crossover.get('signal') and crossover['signal'] != 'NONE':
+                        # Конвертираме MA сигнала към LONG/SHORT формат
+                        ma_signal = 'HOLD'
+                        if crossover['signal'] in ['BULLISH_ABOVE', 'BULLISH_CROSS']:
+                            ma_signal = 'LONG'
+                        elif crossover['signal'] in ['BEARISH_BELOW', 'BEARISH_CROSS']:
+                            ma_signal = 'SHORT'
+
+                        if ma_signal != 'HOLD':
+                            # Динамично тегло базирано на Weekly Tails конфликт
+                            base_weight = self.ma_weight
+
+                            # Ако Weekly Tails показват силен SHORT сигнал, намаляваме MA теглото
+                            if weekly_tails_signal and weekly_tails_signal['signal'] == 'SHORT' and weekly_tails_signal['strength'] > 0.8:
+                                adjusted_weight = base_weight * 0.6  # Намаляваме с 40%
+                                signal_reasons.append(f"Moving Averages: {crossover['signal']} → {ma_signal} ({crossover['confidence']:.0f}%) - тегло намалено поради силен Weekly SHORT")
+                            else:
+                                adjusted_weight = base_weight
+                                signal_reasons.append(f"Moving Averages: {crossover['signal']} → {ma_signal} ({crossover['confidence']:.0f}%)")
+
+                            ma_score = (crossover['confidence'] / 100.0) * adjusted_weight
+                            signal_scores[ma_signal] += ma_score
+                            total_weight += adjusted_weight
+
             # 3. Fibonacci + Tails съвпадение (бонус)
             if confluence_info and confluence_info['strong_confluence']:
                 bonus = confluence_info['confluence_bonus']
