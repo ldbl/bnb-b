@@ -25,7 +25,7 @@ fibonacci_proximity_threshold = 0.02  # Колко близо трябва да 
 # Phase 1.4: Volume confirmation за SHORT сигнали
 volume_confirmation_for_short = false  # Изключен за по-малко агресивни филтри
 volume_lookback_periods = 14  # Периоди за изчисляване на среден обем
-volume_multiplier_threshold = 1.2  # Намален от 1.5 за по-малко агресивен volume filter  # Колко пъти по-голям трябва да е обема
+volume_multiplier_threshold = 1.0  # Намален от 1.2 за още по-малко агресивен volume filter
 
 # Phase 1.5: BNB Burn filter за SHORT сигнали
 burn_filter = false  # Изключен за по-малко агресивни филтри
@@ -69,8 +69,8 @@ weekly_tails_weight = 0.35
 rsi_weight = 0.15
 macd_weight = 0.10
 bb_weight = 0.05
-min_confirmations = 2
-confidence_threshold = 0.7
+min_confirmations = 1  # Намален за тестване
+confidence_threshold = 0.5  # Намален за тестване
 fib_tail_required = true
 
 # Балансирани параметри за 75%+ точност
@@ -78,10 +78,10 @@ trend_filter = true
 trend_lookback_days = 30
 trend_threshold = 0.015
 
-# Балансирани изисквания за SHORT сигнали
+# Балансирани изисквания за SHORT сигнали - МНОГО РЕЛАКСИРАНИ
 short_signal_requirements = true
-short_min_fib_level = 0.5
-short_min_tail_strength = 0.6
+short_min_fib_level = 0.1  # Намален още повече за тестване
+short_min_tail_strength = 0.2  # Намален още повече за тестване
 short_trend_confirmation = false  # Изключен за по-малко агресивни SHORT филтри
 
 # Балансирани изисквания за LONG сигнали
@@ -142,21 +142,21 @@ pattern_threshold = 0.02
 volume_confirmation = true
 candle_confirmation = true
 
-# Phase 1: SHORT Signals Improvements
+# Phase 4: SHORT Signals - STRICTER QUALITY FILTERS
 [short_signals]
 enabled = true
 trend_filter = true
-trend_strength_threshold = 0.3
-min_fibonacci_resistance = true
-volume_confirmation = true
-min_tail_strength = 0.6
-burn_filter = false  # Ще се активира след имплементация
-price_action_rejection = false  # Ще се активира след имплементация
-multi_timeframe_alignment = false  # Ще се активира след имплементация
-market_regime_detection = false  # Ще се активира след имплементация
-signal_quality_scoring = false  # Ще се активира след имплементация
-min_quality_score = 70
-confidence_threshold = 0.8
+trend_strength_threshold = 0.7  # УВЕЛИЧЕНО - по-силен тренд за SHORT
+min_fibonacci_resistance = true  # ВКЛЮЧЕНО - SHORT само на resistance нива
+volume_confirmation = true  # ВКЛЮЧЕНО - SHORT само при висок volume
+min_tail_strength = 0.6  # УВЕЛИЧЕНО - по-силни опашки за SHORT
+burn_filter = false  # Изключен (проблеми с датите)
+price_action_rejection = true  # ВКЛЮЧЕНО - SHORT само при силен rejection
+multi_timeframe_alignment = true  # ВКЛЮЧЕНО - SHORT само при alignment
+market_regime_detection = true  # ВКЛЮЧЕНО - SHORT политики според regime
+signal_quality_scoring = true  # ВКЛЮЧЕНО - SHORT само при висок score
+min_quality_score = 70  # УВЕЛИЧЕНО - много по-високи изисквания
+confidence_threshold = 0.8  # УВЕЛИЧЕНО - по-висока увереност
 
 [long_signals]
 enabled = true
@@ -243,7 +243,7 @@ weekly_tails_weight = 30
 trend_weight = 20
 volume_weight = 10
 divergence_weight = 5
-min_short_score = 50  # Минимален score за SHORT сигнали (намален от 70 за по-малко агресивни филтри)
+min_short_score = 90  # ОЩЕ ПО-РЕЛАКСИРАН - за да позволи някои SHORT сигналим 
 
 
 

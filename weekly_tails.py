@@ -226,11 +226,12 @@ class WeeklyTailsAnalyzer:
             Dict с информация за опашката или None ако няма значима опашка
         """
         try:
-            open_price = row['Open']
-            high_price = row['High']
-            low_price = row['Low']
-            close_price = row['Close']
-            
+            # Извличаме стойностите като скаларни числа, не като Series
+            open_price = float(row['Open'])
+            high_price = float(row['High'])
+            low_price = float(row['Low'])
+            close_price = float(row['Close'])
+
             # Изчисляваме размера на body (Open до Close)
             body_size = abs(close_price - open_price)
             
@@ -254,37 +255,38 @@ class WeeklyTailsAnalyzer:
                 tail_direction = 'support'  # Долната опашка показва support
             
             # Изчисляваме силата на опашката като процент от body
-            if body_size > 0:
-                tail_strength = tail_size / body_size
+            # Защитни проверки за да избегнем DataFrame операции
+            if isinstance(body_size, (int, float)) and body_size > 0.01:  # Минимален body size
+                tail_strength = float(tail_size) / float(body_size)
             else:
-                tail_strength = 0
+                tail_strength = 0.0
             
-            # Проверяваме дали опашката е значима
-            if tail_strength < self.min_tail_size:
+            # Проверяваме дали опашката е значима (ПО-СТРИКТНИ ПРАГОВЕ)
+            if tail_strength < 0.9:  # МАКСИМАЛНО СТРИКТЕН
                 return None
             
-            # Определяме силата на опашката
-            if tail_strength >= self.strong_tail_size:
+            # Определяме силата на опашката (МАКСИМАЛНО СТРИКТНИ КРИТЕРИИ)
+            if tail_strength >= 0.95:  # Само най-силните опашки
+                strength_category = 'ULTRA_EXTREME'
+                signal_strength = 0.99
+            elif tail_strength >= 0.9:  # Много силни опашки
+                strength_category = 'EXTREME'
+                signal_strength = 0.95
+            else:
                 strength_category = 'STRONG'
                 signal_strength = 0.8
-            elif tail_strength >= self.min_tail_size:
-                strength_category = 'MODERATE'
-                signal_strength = 0.6
-            else:
-                strength_category = 'WEAK'
-                signal_strength = 0.4
             
-            # Генерираме сигнал базиран на опашката
-            if dominant_tail == 'lower' and is_bullish:
+            # Генерираме сигнал базиран на опашката (ПО-СТРИКТНИ ПРАВИЛА ЗА SHORT)
+            if dominant_tail == 'lower' and is_bullish and tail_strength >= 0.4:
                 # Долна опашка + bullish candle = LONG сигнал
                 signal = 'LONG'
                 reason = f"Сигнална долна опашка ({tail_strength:.1%}) + bullish candle"
-            elif dominant_tail == 'upper' and not is_bullish:
-                # Горна опашка + bearish candle = SHORT сигнал
+            elif dominant_tail == 'upper' and not is_bullish and tail_strength >= 0.95:
+                # Горна опашка + bearish candle + СИЛНА опашка = SHORT сигнал
                 signal = 'SHORT'
                 reason = f"Сигнална горна опашка ({tail_strength:.1%}) + bearish candle"
             else:
-                # Смесени сигнали
+                # Смесени сигнали или недостатъчно силни опашки
                 signal = 'HOLD'
                 reason = f"Смесен сигнал: {dominant_tail} опашка ({tail_strength:.1%})"
             
@@ -456,17 +458,17 @@ class WeeklyTailsAnalyzer:
             long_tails = [t for t in tails_analysis if t['signal'] == 'LONG']
             short_tails = [t for t in tails_analysis if t['signal'] == 'SHORT']
 
-            # Изчисляваме средната сила за всеки тип
-            long_strength = np.mean([t['signal_strength'] for t in long_tails]) if long_tails else 0
-            short_strength = np.mean([t['signal_strength'] for t in short_tails]) if short_tails else 0
+            # Изчисляваме средната сила за всеки тип (с защитни проверки)
+            long_strength = float(np.mean([float(t['signal_strength']) for t in long_tails])) if long_tails else 0.0
+            short_strength = float(np.mean([float(t['signal_strength']) for t in short_tails])) if short_tails else 0.0
             
-            # Определяме доминантния сигнал (намален threshold за по-гъвкавост)
+            # Определяме доминантния сигнал (ПО-СТРИКТНИ ПРАГОВЕ ЗА SHORT)
             if long_strength > short_strength and long_strength >= 0.3:  # Намалено от 0.5
                 signal = 'LONG'
                 strength = long_strength
                 reason = f"Доминантни LONG опашки (сила: {strength:.2f})"
                 tail_count = len(long_tails)
-            elif short_strength > long_strength and short_strength >= 0.3:  # Намалено от 0.5
+            elif short_strength > long_strength and short_strength >= 0.99:  # МАКСИМАЛНО СТРИКТЕН
                 signal = 'SHORT'
                 strength = short_strength
                 reason = f"Доминантни SHORT опашки (сила: {strength:.2f})"
@@ -478,7 +480,7 @@ class WeeklyTailsAnalyzer:
                     strength = max([t['signal_strength'] for t in long_tails])
                     reason = f"Единична силна LONG опашка (сила: {strength:.2f})"
                     tail_count = len(long_tails)
-                elif short_tails and max([t['signal_strength'] for t in short_tails]) >= 0.6:
+                elif short_tails and max([t['signal_strength'] for t in short_tails]) >= 0.99:
                     signal = 'SHORT'
                     strength = max([t['signal_strength'] for t in short_tails])
                     reason = f"Единична силна SHORT опашка (сила: {strength:.2f})"
