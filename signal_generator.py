@@ -58,6 +58,14 @@ from indicators import TechnicalIndicators
 from optimal_levels import OptimalLevelsAnalyzer
 from trend_analyzer import TrendAnalyzer
 from elliott_wave_analyzer import ElliottWaveAnalyzer
+
+# Phase 2.2: Integration of Smart SHORT Signals
+try:
+    from smart_short_generator import SmartShortSignalGenerator, create_short_signal_dict
+    SMART_SHORT_AVAILABLE = True
+except ImportError:
+    SMART_SHORT_AVAILABLE = False
+    logger.warning("SmartShortSignalGenerator не е наличен - SHORT сигнали ще бъдат ограничени")
 from whale_tracker import WhaleTracker
 from ichimoku_module import IchimokuAnalyzer
 from sentiment_module import SentimentAnalyzer
@@ -176,7 +184,15 @@ class SignalGenerator:
 
         # Phase 3: Multi-Timeframe Confirmation Analyzer
         self.multi_timeframe_analyzer = MultiTimeframeAnalyzer(config)
-        
+
+        # Phase 2.2: Smart SHORT Signal Generator Integration
+        if SMART_SHORT_AVAILABLE:
+            self.smart_short_generator = SmartShortSignalGenerator(config)
+            logger.info("🧠 SmartShortSignalGenerator успешно интегриран")
+        else:
+            self.smart_short_generator = None
+            logger.warning("⚠️ SmartShortSignalGenerator не е наличен")
+
         logger.info("Signal Generator инициализиран")
         logger.info(f"Приоритет: Fibonacci={self.fibonacci_weight}, Weekly Tails={self.weekly_tails_weight}")
         logger.info(f"Минимум потвърждения: {self.min_confirmations}")
@@ -2384,7 +2400,48 @@ class SignalGenerator:
                 'next_targets': self._get_next_targets(final_signal, fib_analysis, tails_analysis),
                 'risk_level': self._calculate_risk_level(final_signal, fib_analysis, tails_analysis)
             }
-            
+
+            # Phase 2.2: SHORT Signal Integration
+            # Добавяме SHORT сигнали ако има подходящи условия
+            short_signals = []
+            if self.smart_short_generator is not None:
+                try:
+                    logger.info("🎯 Проверяваме за SHORT сигнали...")
+                    short_candidates = self.smart_short_generator.generate_short_signals(daily_df, weekly_df)
+
+                    if short_candidates:
+                        logger.info(f"✅ Генерирани {len(short_candidates)} SHORT сигнали")
+
+                        # Конвертираме SHORT кандидатите в signal dictionaries
+                        for candidate in short_candidates:
+                            short_signal_dict = create_short_signal_dict(candidate)
+                            short_signals.append(short_signal_dict)
+
+                        # Ако имаме силни SHORT сигнали, можем да ги включим
+                        strong_short_signals = [s for s in short_signals if s.get('confidence', 0) > 0.7]
+
+                        if strong_short_signals:
+                            # Взимаме най-силния SHORT сигнал
+                            best_short = max(strong_short_signals, key=lambda x: x['confidence'])
+                            logger.info(f"🎯 Най-силен SHORT сигнал: {best_short['confidence']:.2f} confidence")
+
+                            # Ако SHORT сигналът е по-силен от текущия LONG сигнал, го използваме
+                            if best_short['confidence'] > final_signal['confidence']:
+                                logger.info(f"🔄 Превключваме на SHORT сигнал (по-висока увереност)")
+                                final_signal = best_short
+                                signal_details['signal'] = 'SHORT'
+                                signal_details['confidence'] = best_short['confidence']
+                                signal_details['reason'] = best_short.get('reason', 'Smart SHORT signal')
+
+                    else:
+                        logger.info("ℹ️ Няма подходящи SHORT сигнали за текущия пазар")
+
+                except Exception as e:
+                    logger.error(f"❌ Грешка при SHORT сигнал интеграция: {e}")
+
+            # Добавяме SHORT сигнали в signal_details за анализ
+            signal_details['short_signals'] = short_signals
+
             return signal_details
             
         except Exception as e:

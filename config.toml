@@ -3,6 +3,33 @@ symbol = "BNB/USDT"
 lookback_days = 500
 timeframes = ["1d", "1w"]
 
+[smart_short]
+# Phase 2.2: Smart SHORT Signal Generator Configuration
+enabled = true
+
+# ATH Proximity Settings
+min_ath_distance_pct = 5.0      # Minimum distance from ATH for SHORT
+max_ath_distance_pct = 25.0     # Maximum distance from ATH for SHORT
+
+# Confluence Requirements
+min_confluence_score = 3         # Minimum confluence requirements (3/7)
+min_risk_reward_ratio = 1.5     # Minimum R:R ratio
+
+# Technical Filters
+volume_divergence_required = true
+timeframe_alignment_required = true
+technical_indicators_required = true
+
+# Risk Management
+max_stop_loss_pct = 5.0         # Maximum stop loss percentage
+min_short_confidence = 0.7      # Minimum confidence to activate SHORT
+
+# Market Regime Settings
+bull_market_block = true        # Block SHORT in STRONG_BULL
+moderate_bull_allowed = true    # Allow SHORT in MODERATE_BULL
+neutral_allowed = true          # Allow SHORT in NEUTRAL
+bear_allowed = true             # Allow SHORT in BEAR markets
+
 [fibonacci]
 swing_lookback = 100
 key_levels = [0.382, 0.618]

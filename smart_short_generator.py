@@ -221,17 +221,21 @@ class MarketRegimeDetector:
             return 'NEUTRAL'
 
     def _are_short_signals_allowed(self, regime: str, ath_distance: float) -> bool:
-        """Определя дали SHORT сигнали са позволени"""
-        # Never allow SHORT in strong bull markets
-        if regime == 'STRONG_BULL':
+        """Определя дали SHORT сигнали са позволени базирано на конфигурацията"""
+        # Check ATH proximity first
+        if ath_distance > self.short_thresholds['max_ath_distance_pct']:
             return False
 
-        # Allow SHORT only if close to ATH (within 20%)
-        if ath_distance > 20.0:
-            return False
+        # Check market regime rules
+        regime_rules = {
+            'STRONG_BULL': not self.short_thresholds['bull_market_block'],
+            'MODERATE_BULL': self.short_thresholds['moderate_bull_allowed'],
+            'NEUTRAL': self.short_thresholds['neutral_allowed'],
+            'MODERATE_BEAR': self.short_thresholds['bear_allowed'],
+            'STRONG_BEAR': self.short_thresholds['bear_allowed']
+        }
 
-        # Allow in moderate bull, neutral, and bear markets
-        return regime in ['MODERATE_BULL', 'NEUTRAL', 'MODERATE_BEAR', 'STRONG_BEAR']
+        return regime_rules.get(regime, False)
 
     def _calculate_regime_confidence(self, daily_trend: float, weekly_trend: float) -> float:
         """Изчислява увереността в regime detection"""
@@ -257,15 +261,22 @@ class SmartShortSignalGenerator:
         self.config = config
         self.market_detector = MarketRegimeDetector()
 
-        # SHORT specific thresholds
+        # SHORT specific thresholds from config
+        short_config = config.get('smart_short', {})
+
         self.short_thresholds = {
-            'min_ath_distance_pct': 5.0,      # Minimum distance from ATH for SHORT
-            'max_ath_distance_pct': 25.0,     # Maximum distance from ATH for SHORT
-            'min_confluence_score': 3,         # Minimum confluence requirements
-            'min_risk_reward_ratio': 1.5,     # Minimum R:R ratio
-            'max_stop_loss_pct': 5.0,         # Maximum stop loss percentage
-            'volume_divergence_required': True,
-            'timeframe_alignment_required': True
+            'min_ath_distance_pct': short_config.get('min_ath_distance_pct', 5.0),
+            'max_ath_distance_pct': short_config.get('max_ath_distance_pct', 25.0),
+            'min_confluence_score': short_config.get('min_confluence_score', 3),
+            'min_risk_reward_ratio': short_config.get('min_risk_reward_ratio', 1.5),
+            'max_stop_loss_pct': short_config.get('max_stop_loss_pct', 5.0),
+            'volume_divergence_required': short_config.get('volume_divergence_required', True),
+            'timeframe_alignment_required': short_config.get('timeframe_alignment_required', True),
+            'technical_indicators_required': short_config.get('technical_indicators_required', True),
+            'bull_market_block': short_config.get('bull_market_block', True),
+            'moderate_bull_allowed': short_config.get('moderate_bull_allowed', True),
+            'neutral_allowed': short_config.get('neutral_allowed', True),
+            'bear_allowed': short_config.get('bear_allowed', True)
         }
 
         logger.info("🧠 SmartShortSignalGenerator инициализиран")
