@@ -2407,6 +2407,7 @@ class SignalGenerator:
             if self.smart_short_generator is not None:
                 try:
                     logger.info("🎯 Проверяваме за SHORT сигнали...")
+                    # Използваме същите данни които използвахме за LONG анализ
                     short_candidates = self.smart_short_generator.generate_short_signals(daily_df, weekly_df)
 
                     if short_candidates:
