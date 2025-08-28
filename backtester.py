@@ -545,6 +545,15 @@ class Backtester:
             best_signals = sorted(signals, key=lambda x: x['result']['profit_loss_pct'], reverse=True)[:5]
             worst_signals = sorted(signals, key=lambda x: x['result']['profit_loss_pct'])[:5]
             
+            # Phase 3: Добавяме Sharpe ratio и drawdown изчисления
+            sharpe_ratio = self._calculate_sharpe_ratio(all_pnl)
+            max_drawdown = self._calculate_max_drawdown(all_pnl)
+
+            # Допълнителни метрики
+            profit_factor = self._calculate_profit_factor(signals)
+            recovery_factor = self._calculate_recovery_factor(all_pnl, max_drawdown)
+            calmar_ratio = self._calculate_calmar_ratio(all_pnl, max_drawdown)
+
             analysis = {
                 'total_signals': total_signals,
                 'successful_signals': successful_signals,
@@ -565,9 +574,17 @@ class Backtester:
                 'avg_profit_loss_failure_pct': avg_profit_loss_failure,
                 'best_signals': best_signals,
                 'worst_signals': worst_signals,
+
+                # Phase 3: Risk и Performance метрики
+                'sharpe_ratio': sharpe_ratio,
+                'max_drawdown_pct': max_drawdown,
+                'profit_factor': profit_factor,
+                'recovery_factor': recovery_factor,
+                'calmar_ratio': calmar_ratio,
+
                 'analysis_date': pd.Timestamp.now()
             }
-            
+
 
             return analysis
             
@@ -903,6 +920,169 @@ def main():
             elliott_wave_logger.setLevel(original_levels['elliott_wave'])
         except:
             pass  # Тихо прескачаме ако има грешка при възстановяване
+
+    def _calculate_sharpe_ratio(self, pnl_returns: List[float], risk_free_rate: float = 0.02) -> float:
+        """
+        Изчислява Sharpe ratio
+
+        Args:
+            pnl_returns: Списък с P&L проценти за всяка сделка
+            risk_free_rate: Безрисков процент (годишен)
+
+        Returns:
+            Sharpe ratio
+        """
+        try:
+            if not pnl_returns or len(pnl_returns) < 2:
+                return 0.0
+
+            # Конвертираме в numpy array
+            returns = np.array(pnl_returns)
+
+            # Изчисляваме средна доходност (annualized)
+            avg_return = np.mean(returns) * 252  # 252 търговски дни в годината
+
+            # Изчисляваме стандартно отклонение (annualized)
+            std_dev = np.std(returns) * np.sqrt(252)
+
+            # Sharpe ratio = (Return - Risk Free Rate) / Volatility
+            if std_dev == 0:
+                return 0.0
+
+            sharpe_ratio = (avg_return - risk_free_rate) / std_dev
+            return round(sharpe_ratio, 3)
+
+        except Exception as e:
+            logger.error(f"Грешка при изчисляване на Sharpe ratio: {e}")
+            return 0.0
+
+    def _calculate_max_drawdown(self, pnl_returns: List[float]) -> float:
+        """
+        Изчислява максимален drawdown в проценти
+
+        Args:
+            pnl_returns: Списък с кумулативни P&L проценти
+
+        Returns:
+            Максимален drawdown в проценти
+        """
+        try:
+            if not pnl_returns:
+                return 0.0
+
+            # Симулираме кумулативна доходност
+            cumulative = [1.0]  # Започваме с 1.0 (100%)
+            current_value = 1.0
+
+            for pnl_pct in pnl_returns:
+                pnl_decimal = pnl_pct / 100.0
+                current_value *= (1 + pnl_decimal)
+                cumulative.append(current_value)
+
+            # Намираме пиковете и спадовете
+            peak = cumulative[0]
+            max_drawdown = 0.0
+
+            for value in cumulative:
+                if value > peak:
+                    peak = value
+                else:
+                    drawdown = (peak - value) / peak
+                    max_drawdown = max(max_drawdown, drawdown)
+
+            return round(max_drawdown * 100, 2)  # В проценти
+
+        except Exception as e:
+            logger.error(f"Грешка при изчисляване на max drawdown: {e}")
+            return 0.0
+
+    def _calculate_profit_factor(self, signals: List[Dict]) -> float:
+        """
+        Изчислява Profit Factor = Gross Profit / Gross Loss
+
+        Args:
+            signals: Списък със сигналите и техните резултати
+
+        Returns:
+            Profit factor
+        """
+        try:
+            gross_profit = 0.0
+            gross_loss = 0.0
+
+            for signal in signals:
+                pnl_pct = signal['result']['profit_loss_pct']
+                if pnl_pct > 0:
+                    gross_profit += pnl_pct
+                else:
+                    gross_loss += abs(pnl_pct)
+
+            if gross_loss == 0:
+                return float('inf') if gross_profit > 0 else 0.0
+
+            profit_factor = gross_profit / gross_loss
+            return round(profit_factor, 3)
+
+        except Exception as e:
+            logger.error(f"Грешка при изчисляване на profit factor: {e}")
+            return 0.0
+
+    def _calculate_recovery_factor(self, pnl_returns: List[float], max_drawdown: float) -> float:
+        """
+        Изчислява Recovery Factor = Net Profit / Max Drawdown
+
+        Args:
+            pnl_returns: Списък с P&L проценти
+            max_drawdown: Максимален drawdown в проценти
+
+        Returns:
+            Recovery factor
+        """
+        try:
+            if not pnl_returns:
+                return 0.0
+
+            net_profit = sum(pnl_returns)
+
+            if max_drawdown == 0:
+                return float('inf') if net_profit > 0 else 0.0
+
+            recovery_factor = net_profit / max_drawdown
+            return round(recovery_factor, 3)
+
+        except Exception as e:
+            logger.error(f"Грешка при изчисляване на recovery factor: {e}")
+            return 0.0
+
+    def _calculate_calmar_ratio(self, pnl_returns: List[float], max_drawdown: float) -> float:
+        """
+        Изчислява Calmar Ratio = Annual Return / Max Drawdown
+
+        Args:
+            pnl_returns: Списък с P&L проценти
+            max_drawdown: Максимален drawdown в проценти
+
+        Returns:
+            Calmar ratio
+        """
+        try:
+            if not pnl_returns:
+                return 0.0
+
+            # Изчисляваме годишна доходност
+            total_return = sum(pnl_returns)
+            days = len(pnl_returns) * 14  # Приблизително 14 дни на сигнал
+            annual_return = (total_return * 365) / days if days > 0 else 0
+
+            if max_drawdown == 0:
+                return float('inf') if annual_return > 0 else 0.0
+
+            calmar_ratio = annual_return / max_drawdown
+            return round(calmar_ratio, 3)
+
+        except Exception as e:
+            logger.error(f"Грешка при изчисляване на Calmar ratio: {e}")
+            return 0.0
 
 if __name__ == "__main__":
     main()

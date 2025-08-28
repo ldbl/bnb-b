@@ -63,6 +63,16 @@ bb_volume_lookback = 20
 atr_period = 14
 atr_multiplier = 2.0
 
+# Phase 3: Multi-timeframe Confirmation
+[multi_timeframe]
+enabled = true
+daily_weekly_trend_alignment = true  # Проверка за тренд alignment
+fibonacci_alignment_bonus = 0.15     # Бонус за Fibonacci alignment
+macd_alignment_bonus = 0.10         # Бонус за MACD alignment
+volume_alignment_bonus = 0.05       # Бонус за volume alignment
+weekly_tails_confirmation = true    # Weekly tails потвърждение за daily сигнали
+trend_consistency_threshold = 0.7   # Минимална консистентност за бонус
+
 [signals]
 fibonacci_weight = 0.25
 weekly_tails_weight = 0.20  # Намалено за да се балансира с MACD
@@ -70,10 +80,10 @@ ma_weight = 0.20  # Moving Averages тегло
 rsi_weight = 0.15
 macd_weight = 0.20  # Увеличено за по-добро тренд потвърждение
 bb_weight = 0.05
-ath_weight = 0.15  # Нов ATH proximity бонус за SHORT сигнали
-min_confirmations = 1  # Намален за тестване
-confidence_threshold = 0.5  # Намален за тестване
+min_confirmations = 1
+confidence_threshold = 0.6
 fib_tail_required = true
+ath_weight = 0.15  # Нов ATH proximity бонус за SHORT сигнали
 
 # Балансирани параметри за 75%+ точност
 trend_filter = true

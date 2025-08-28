@@ -61,6 +61,7 @@ from elliott_wave_analyzer import ElliottWaveAnalyzer
 from whale_tracker import WhaleTracker
 from ichimoku_module import IchimokuAnalyzer
 from sentiment_module import SentimentAnalyzer
+from multi_timeframe_analyzer import MultiTimeframeAnalyzer
 from divergence_detector import DivergenceDetector
 from moving_averages import MovingAveragesAnalyzer
 from price_action_patterns import PriceActionPatternsAnalyzer
@@ -172,6 +173,9 @@ class SignalGenerator:
         self.divergence_detector = DivergenceDetector(config)
         self.ma_analyzer = MovingAveragesAnalyzer(config)
         self.patterns_analyzer = PriceActionPatternsAnalyzer(config)
+
+        # Phase 3: Multi-Timeframe Confirmation Analyzer
+        self.multi_timeframe_analyzer = MultiTimeframeAnalyzer(config)
         
         logger.info("Signal Generator инициализиран")
         logger.info(f"Приоритет: Fibonacci={self.fibonacci_weight}, Weekly Tails={self.weekly_tails_weight}")
@@ -424,8 +428,56 @@ class SignalGenerator:
                 patterns_analysis
             )
             
+            # Phase 3: Multi-Timeframe Confirmation Analysis
+            multi_timeframe_analysis = {
+                'overall_alignment': 'DISABLED',
+                'confidence_bonus': 0.0,
+                'alignment_score': 0.5,
+                'conflicts': [],
+                'confirmations': [],
+                'recommendation': 'HOLD'
+            }
+
+            if (self.multi_timeframe_analyzer.enabled and
+                daily_df is not None and weekly_df is not None):
+
+                # Създаваме отделни анализи за daily и weekly
+                daily_analysis = {
+                    'fibonacci_analysis': fib_analysis,
+                    'weekly_tails_analysis': tails_analysis,
+                    'indicators_signals': indicators_signals,
+                    'trend_analysis': trend_analysis,
+                    'signal': final_signal['signal'],
+                    'volume_analysis': {'confirmed': False}  # Placeholder
+                }
+
+                weekly_analysis = {
+                    'fibonacci_analysis': fib_analysis,  # За сега използваме същия анализ
+                    'weekly_tails_analysis': tails_analysis,
+                    'indicators_signals': indicators_signals,
+                    'trend_analysis': trend_analysis,
+                    'signal': final_signal['signal'],
+                    'volume_analysis': {'confirmed': False}  # Placeholder
+                }
+
+                # Извършваме multi-timeframe alignment анализ
+                multi_timeframe_analysis = self.multi_timeframe_analyzer.analyze_timeframe_alignment(
+                    daily_analysis, weekly_analysis
+                )
+
+                # Прилагаме confidence bonus/penalty от multi-timeframe анализа
+                confidence_bonus = multi_timeframe_analysis.get('confidence_bonus', 0.0)
+                final_signal['confidence'] = max(0.0, min(1.0, final_signal['confidence'] + confidence_bonus))
+
+                # Добавяме multi-timeframe информация към reason
+                if confidence_bonus != 0.0:
+                    alignment_info = multi_timeframe_analysis.get('overall_alignment', 'UNKNOWN')
+                    final_signal['reason'] += f" | Multi-Timeframe: {alignment_info} ({confidence_bonus:+.2f})"
+
+                logger.info(f"Multi-timeframe analysis: {multi_timeframe_analysis.get('overall_alignment', 'UNKNOWN')} | Bonus: {confidence_bonus:+.2f}")
+
             logger.info(f"Сигнал генериран: {final_signal['signal']} (увереност: {final_signal['confidence']:.2f})")
-            
+
             return signal_details
             
         except Exception as e:
@@ -2293,6 +2345,7 @@ class SignalGenerator:
                 'divergence_analysis': divergence_analysis,
                 'moving_averages_analysis': ma_analysis,
                 'price_patterns_analysis': patterns_analysis,
+                'multi_timeframe_analysis': multi_timeframe_analysis,
                 'next_targets': self._get_next_targets(final_signal, fib_analysis, tails_analysis),
                 'risk_level': self._calculate_risk_level(final_signal, fib_analysis, tails_analysis)
             }
