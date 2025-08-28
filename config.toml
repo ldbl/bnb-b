@@ -69,6 +69,7 @@ weekly_tails_weight = 0.35
 rsi_weight = 0.15
 macd_weight = 0.10
 bb_weight = 0.05
+ath_weight = 0.15  # Нов ATH proximity бонус за SHORT сигнали
 min_confirmations = 1  # Намален за тестване
 confidence_threshold = 0.5  # Намален за тестване
 fib_tail_required = true

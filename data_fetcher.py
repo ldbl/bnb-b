@@ -220,9 +220,12 @@ class BNBDataFetcher:
             # Конвертираме в DataFrames
             daily_df = self._convert_to_dataframe(daily_data, '1d')
             weekly_df = self._convert_to_dataframe(weekly_data, '1w')
-            
+
+            # Добавяме ATH анализ към daily данни
+            daily_df = self.add_ath_analysis(daily_df)
+
             logger.info(f"Успешно извлечени данни: Daily={len(daily_df)} редове, Weekly={len(weekly_df)} редове")
-            
+
             return {
                 'daily': daily_df,
                 'weekly': weekly_df
@@ -231,7 +234,50 @@ class BNBDataFetcher:
         except Exception as e:
             logger.error(f"Грешка при извличане на данни: {e}")
             raise
-    
+
+    def add_ath_analysis(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Добавя ATH (All Time High) анализ към DataFrame
+
+        Args:
+            df: DataFrame с OHLCV данни
+
+        Returns:
+            DataFrame с ATH колони
+        """
+        try:
+            # Копираме DataFrame за да не променяме оригинала
+            df = df.copy()
+
+            # Намираме ATH до момента за всяка дата
+            df['ATH'] = df['High'].expanding().max()
+
+            # Изчисляваме разстоянието до ATH в проценти
+            df['ATH_Distance_Pct'] = ((df['ATH'] - df['Close']) / df['ATH']) * 100
+
+            # Определяме дали цената е близо до ATH (< 5%)
+            df['Near_ATH'] = df['ATH_Distance_Pct'] < 5.0
+
+            # ATH Proximity Score (по-висок = по-близо до ATH)
+            df['ATH_Proximity_Score'] = np.where(
+                df['ATH_Distance_Pct'] < 5.0,
+                1.0 - (df['ATH_Distance_Pct'] / 5.0),  # 0.0 до 1.0
+                0.0
+            )
+
+            # ATH Trend - дали сме в ATH режим
+            df['ATH_Trend'] = df['ATH'] == df['High']
+
+            logger.info(f"ATH анализ добавен. Текуща ATH: ${df['ATH'].iloc[-1]:.2f}")
+            logger.info(f"Разстояние до ATH: {df['ATH_Distance_Pct'].iloc[-1]:.2f}%")
+            logger.info(f"Близо до ATH: {df['Near_ATH'].iloc[-1]}")
+
+            return df
+
+        except Exception as e:
+            logger.error(f"Грешка при ATH анализ: {e}")
+            return df
+
     def _convert_to_dataframe(self, ohlcv_data: List, timeframe: str) -> pd.DataFrame:
         """
         Конвертира OHLCV данни в pandas DataFrame

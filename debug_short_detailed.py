@@ -103,6 +103,13 @@ def debug_short_detailed():
                             fib_signal = signal['fibonacci_analysis'].get('fibonacci_signal', 'UNKNOWN')
                             print(f"   🎯 Fibonacci: {fib_signal}")
 
+                        # Показваме ATH proximity бонус ако има такъв
+                        if 'reasons' in signal:
+                            ath_reasons = [r for r in signal['reasons'] if 'ATH Proximity' in r]
+                            if ath_reasons:
+                                for reason in ath_reasons:
+                                    print(f"   🔥 {reason}")
+
                     else:
                         print(f"   ❌ КРАЕН РЕЗУЛТАТ: {signal.get('signal', 'HOLD') if signal else 'Няма сигнал'}")
                         print("   🔍 Причина за блокиране:")

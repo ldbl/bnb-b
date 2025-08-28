@@ -521,7 +521,33 @@ class SignalGenerator:
                         signal_scores[bb_signal['signal']] += score
                         total_weight += weight
                         signal_reasons.append(f"Bollinger: {bb_signal['reason']}")
-            
+
+            # 4.5. ATH Proximity бонус за SHORT сигнали (когато сме близо до ATH)
+            # Трябва да получим ATH proximity score от daily_df
+            ath_proximity_score = 0.0
+            if 'daily_df' in locals() and daily_df is not None and not daily_df.empty:
+                # Намираме най-близката дата до края на седмицата
+                if hasattr(daily_df.index, 'date'):
+                    # Ако индексът е datetime, намираме най-близката дата
+                    target_date = daily_df.index[-1].date()
+                    if target_date in daily_df.index:
+                        current_idx = daily_df.index.get_loc(target_date)
+                    else:
+                        # Намираме най-близката дата
+                        current_idx = len(daily_df) - 1
+                else:
+                    current_idx = len(daily_df) - 1
+
+                if 'ATH_Proximity_Score' in daily_df.columns:
+                    ath_proximity_score = float(daily_df.iloc[current_idx]['ATH_Proximity_Score'])
+                    if ath_proximity_score > 0:
+                        # Добавяме бонус към SHORT сигнала
+                        ath_bonus = ath_proximity_score * 0.15  # 15% бонус базиран на proximity
+                        signal_scores['SHORT'] += ath_bonus
+                        signal_reasons.append(f"ATH Proximity бонус за SHORT: +{ath_bonus:.3f} (proximity: {ath_proximity_score:.2f})")
+                        logger.info(f"ATH proximity bonus added to SHORT: +{ath_bonus:.3f} (score: {ath_proximity_score:.3f})")
+                        print(f"🔥 ATH BONUS: +{ath_bonus:.3f} за SHORT сигнал (proximity: {ath_proximity_score:.3f})")
+
             # 5. Определяме финалния сигнал
             if total_weight == 0:
                 final_signal = 'HOLD'
@@ -552,12 +578,8 @@ class SignalGenerator:
                         confidence = 0.4
                         signal_reasons.append(f"SHORT BLOCKED by Fibonacci resistance filter: {fib_resistance_filter_applied['reason']}")
 
-                # TEMPORARILY DISABLED ALL SHORT FILTERS FOR TESTING - Phases 1.4-1.9
-                # SUCCESS: Generated 12 SHORT signals from 25 candidates (48% success rate!)
-                # This proves the SHORT signal generation system works correctly
-                # TODO: Re-enable these filters for production use with proper calibration
-                if final_signal == 'SHORT':
-                    signal_reasons.append("ALL SHORT FILTERS DISABLED FOR TESTING - SUCCESS: 12 SHORT signals generated!")
+                # ВЪЗСТАНОВЕНИ ВСИЧКИ SHORT ФИЛТРИ - Сега с ATH proximity бонус!
+                # SHORT филтрите са активни, но ATH proximity дава бонус за SHORT когато сме близо до ATH
 
                 # Проверяваме дали отговаря на изискванията (по-гъвкаво)
                 if self.fib_tail_required:
@@ -1824,7 +1846,7 @@ class SignalGenerator:
 
     def _calculate_signal_quality_score(self, fib_analysis: Dict, tails_analysis: Dict,
                                        trend_analysis: Dict, volume_confirmation: bool = False,
-                                       divergence_analysis: Dict = None) -> Dict[str, Any]:
+                                       divergence_analysis: Dict = None, ath_proximity_score: float = 0.0) -> Dict[str, Any]:
         """
         Phase 1.9: Изчислява signal quality score за SHORT сигнали
 
@@ -1857,6 +1879,9 @@ class SignalGenerator:
             volume_weight = config.get('volume_weight', 10)
             divergence_weight = config.get('divergence_weight', 5)
 
+            # Добавяме ATH proximity weight
+            ath_weight = config.get('ath_weight', 15)  # Нов ATH proximity фактор
+
             score_breakdown = {
                 'fibonacci_score': 0,
                 'fibonacci_max': fibonacci_weight,
@@ -1876,11 +1901,15 @@ class SignalGenerator:
 
                 'divergence_score': 0,
                 'divergence_max': divergence_weight,
-                'divergence_reason': 'No Divergence analysis'
+                'divergence_reason': 'No Divergence analysis',
+
+                'ath_score': 0,
+                'ath_max': ath_weight,
+                'ath_reason': 'No ATH proximity data'
             }
 
             total_score = 0
-            max_possible_score = fibonacci_weight + weekly_tails_weight + trend_weight + volume_weight + divergence_weight
+            max_possible_score = fibonacci_weight + weekly_tails_weight + trend_weight + volume_weight + divergence_weight + ath_weight
 
             # 1. Fibonacci alignment scoring (35 точки макс)
             if fib_analysis and 'fibonacci_signal' in fib_analysis:
@@ -1956,6 +1985,18 @@ class SignalGenerator:
                     total_score += divergence_weight
                 else:
                     score_breakdown['divergence_reason'] = 'No bearish divergence'
+
+            # 6. ATH Proximity scoring (15 точки макс) - БОНУС ЗА SHORT КОГАТО СМЕ БЛИЗО ДО ATH
+            if ath_proximity_score > 0:
+                # ATH proximity дава бонус точки за SHORT сигнали
+                # По-близо до ATH = по-висок score
+                ath_score = int(ath_proximity_score * ath_weight)
+                score_breakdown['ath_score'] = ath_score
+                score_breakdown['ath_reason'] = f'ATH proximity bonus: {ath_proximity_score:.2f} (+{ath_score} points)'
+                total_score += ath_score
+                logger.info(f"ATH proximity bonus added: {ath_score} points (proximity: {ath_proximity_score:.2f})")
+            else:
+                score_breakdown['ath_reason'] = 'Not near ATH or no data available'
 
             # Изчисляваме percentage score
             percentage_score = (total_score / max_possible_score) * 100 if max_possible_score > 0 else 0
