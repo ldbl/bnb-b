@@ -162,9 +162,13 @@ confidence_threshold = 0.2  # ОЩЕ ПО-НАМАЛЕНО - много по-н�
 
 [long_signals]
 enabled = true
-ema_confirmation = false  # Ще се активира в Phase 2
+ema_confirmation = true   # ✅ АКТИВИРАНО - EMA crossover потвърждение за LONG
 min_risk_reward = 2.0
-burn_enhancement = false  # Ще се активира в Phase 2
+burn_enhancement = true   # ✅ АКТИВИРАНО - BNB burn enhancement за LONG
+ema_fast_period = 10      # Fast EMA период за crossover
+ema_slow_period = 50      # Slow EMA период за crossover
+ema_confidence_bonus = 0.1  # Допълнителна увереност при EMA потвърждение
+burn_confidence_bonus = 0.15  # Допълнителна увереност преди burn
 
 # Phase 2: LONG Signal Enhancements
 volume_confirmation_enabled = true  # Volume confirmation за LONG сигнали

@@ -532,6 +532,112 @@ class SignalGenerator:
                             signal_scores[ma_signal] += ma_score
                             total_weight += adjusted_weight
 
+            # Проверяваме дали имаме силен LONG сигнал от другите анализатори
+            primary_long_signal = (
+                (fib_analysis and fib_analysis.get('fibonacci_signal', {}).get('signal') == 'LONG') or
+                (weekly_tails_signal and weekly_tails_signal.get('signal') == 'LONG')
+            )
+
+            # PHASE 2: EMA потвърждение за LONG сигнали
+            long_signal_confirmed = False
+            if (self.config.get('long_signals', {}).get('ema_confirmation', False) and
+                'moving_averages_analysis' in locals() and moving_averages_analysis and
+                'error' not in moving_averages_analysis):
+
+                ema_fast_period = self.config.get('long_signals', {}).get('ema_fast_period', 10)
+                ema_slow_period = self.config.get('long_signals', {}).get('ema_slow_period', 50)
+                ema_confidence_bonus = self.config.get('long_signals', {}).get('ema_confidence_bonus', 0.1)
+
+                crossover = moving_averages_analysis.get('crossover_signal', {})
+
+                if (primary_long_signal and
+                    crossover.get('signal') in ['BULLISH_ABOVE', 'BULLISH_CROSS'] and
+                    crossover.get('confidence', 0) > 60):
+
+                    # EMA потвърждава LONG сигнала - увеличаваме confidence
+                    signal_scores['LONG'] += ema_confidence_bonus
+                    signal_reasons.append(f"✅ EMA ПОТВЪРЖДЕНИЕ: {crossover['signal']} ({crossover['confidence']:.0f}%) - +{ema_confidence_bonus:.2f} confidence за LONG")
+                    long_signal_confirmed = True
+                    logger.info(f"EMA потвърждение за LONG сигнал: +{ema_confidence_bonus} confidence")
+
+            # PHASE 2: BNB Burn Enhancement за LONG сигнали
+            burn_enhanced = False
+            if (self.config.get('long_signals', {}).get('burn_enhancement', False) and
+                daily_df is not None and
+                primary_long_signal):
+
+                burn_confidence_bonus = self.config.get('long_signals', {}).get('burn_confidence_bonus', 0.15)
+
+                # Проверяваме дали сме близо до BNB burn дата
+                current_date = daily_df.index[-1].date()
+                burn_dates = self._fetch_bnb_burn_dates()
+
+                days_to_burn = None
+                for burn_date in burn_dates:
+                    days_diff = (burn_date.date() - current_date).days
+                    if 0 <= days_diff <= 21:  # В рамките на 3 седмици преди burn
+                        days_to_burn = days_diff
+                        break
+
+                if days_to_burn is not None:
+                    # Увеличаваме confidence за LONG сигнали преди burn
+                    signal_scores['LONG'] += burn_confidence_bonus
+                    signal_reasons.append(f"🔥 BNB BURN ENHANCEMENT: {days_to_burn} дни до burn - +{burn_confidence_bonus:.2f} confidence за LONG")
+                    burn_enhanced = True
+                    logger.info(f"BNB Burn enhancement: +{burn_confidence_bonus} confidence ({days_to_burn} дни до burn)")
+
+            # PHASE 2: Stop-loss препоръки с Fibonacci нива
+            stop_loss_recommendation = None
+            if (fib_analysis and 'fibonacci_levels' in fib_analysis and
+                (signal_scores['LONG'] > signal_scores['SHORT'] or signal_scores['SHORT'] > signal_scores['LONG'])):
+
+                current_price = fib_analysis.get('current_price', 0)
+                fib_levels = fib_analysis.get('fibonacci_levels', {})
+
+                if signal_scores['LONG'] > signal_scores['SHORT']:
+                    # LONG сигнал - stop-loss под support ниво
+                    support_levels = fib_analysis.get('support_levels', [])
+                    if support_levels:
+                        # Избираме най-близкото support ниво под текущата цена
+                        closest_support = None
+                        for level_name, level_price in support_levels:
+                            if level_price < current_price:
+                                if closest_support is None or level_price > closest_support:
+                                    closest_support = level_price
+
+                        if closest_support:
+                            stop_loss_price = closest_support * 0.98  # Малко под support-a
+                            stop_loss_recommendation = {
+                                'type': 'LONG_STOP_LOSS',
+                                'price': stop_loss_price,
+                                'fib_level': f'Под {level_name}',
+                                'risk_pct': ((current_price - stop_loss_price) / current_price) * 100,
+                                'reason': f'Fibonacci support на {closest_support:.2f}'
+                            }
+                            signal_reasons.append(f"🛡️ STOP-LOSS LONG: {stop_loss_price:.2f} ({stop_loss_recommendation['risk_pct']:.1f}% risk)")
+
+                elif signal_scores['SHORT'] > signal_scores['LONG']:
+                    # SHORT сигнал - stop-loss над resistance ниво
+                    resistance_levels = fib_analysis.get('resistance_levels', [])
+                    if resistance_levels:
+                        # Избираме най-близкото resistance ниво над текущата цена
+                        closest_resistance = None
+                        for level_name, level_price in resistance_levels:
+                            if level_price > current_price:
+                                if closest_resistance is None or level_price < closest_resistance:
+                                    closest_resistance = level_price
+
+                        if closest_resistance:
+                            stop_loss_price = closest_resistance * 1.02  # Малко над resistance-a
+                            stop_loss_recommendation = {
+                                'type': 'SHORT_STOP_LOSS',
+                                'price': stop_loss_price,
+                                'fib_level': f'Над {level_name}',
+                                'risk_pct': ((stop_loss_price - current_price) / current_price) * 100,
+                                'reason': f'Fibonacci resistance на {closest_resistance:.2f}'
+                            }
+                            signal_reasons.append(f"🛡️ STOP-LOSS SHORT: {stop_loss_price:.2f} ({stop_loss_recommendation['risk_pct']:.1f}% risk)")
+
             # 3. Fibonacci + Tails съвпадение (бонус)
             if confluence_info and confluence_info['strong_confluence']:
                 bonus = confluence_info['confluence_bonus']
@@ -787,12 +893,20 @@ class SignalGenerator:
 
                     logger.info(f"LONG Enhancement: {long_enhancements_reasons}, bonus: {long_enhancements_bonus:.2f}, confidence: {old_confidence:.2f} → {confidence:.2f}")
 
+            # PHASE 2: Добавяме информация за подобренията
+            phase2_info = {
+                'ema_confirmation': long_signal_confirmed,
+                'burn_enhancement': burn_enhanced,
+                'stop_loss_recommendation': stop_loss_recommendation
+            }
+
             return {
                 'signal': final_signal,
                 'confidence': confidence,
                 'reason': reason,
                 'signal_scores': signal_scores,
-                'total_weight': total_weight
+                'total_weight': total_weight,
+                'phase2_enhancements': phase2_info
             }
             
         except Exception as e:
@@ -2583,6 +2697,21 @@ class SignalGenerator:
                 'bonus': 0.0,
                 'reason': f'Error in Optimal Levels check: {e}'
             }
+
+    def _fetch_bnb_burn_dates(self) -> List[pd.Timestamp]:
+        """
+        Извлича BNB burn дати от конфигурацията
+
+        Returns:
+            List с burn дати като pandas Timestamp обекти
+        """
+        try:
+            from data_fetcher import BNBDataFetcher
+            fetcher = BNBDataFetcher('BNB/USDT')
+            return fetcher._fetch_bnb_burn_dates(self.config)
+        except Exception as e:
+            logger.error(f"Грешка при извличане на BNB burn дати: {e}")
+            return []
 
 if __name__ == "__main__":
     # Тест на Signal Generator модула
