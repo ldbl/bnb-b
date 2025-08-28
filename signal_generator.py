@@ -441,7 +441,9 @@ class SignalGenerator:
                 sentiment_analysis,
                 divergence_analysis,
                 ma_analysis,
-                patterns_analysis
+                patterns_analysis,
+                daily_df,  # За SHORT интеграция
+                weekly_df  # За SHORT интеграция
             )
             
             # Phase 3: Multi-Timeframe Confirmation Analysis
@@ -2346,13 +2348,14 @@ class SignalGenerator:
                 'recommendation': 'SHORT_BLOCKED'
             }
     
-    def _create_signal_details(self, final_signal: Dict, fib_analysis: Dict, 
-                              tails_analysis: Dict, indicators_signals: Dict, 
-                              confluence_info: Dict, optimal_levels_analysis: Dict = None, 
+    def _create_signal_details(self, final_signal: Dict, fib_analysis: Dict,
+                              tails_analysis: Dict, indicators_signals: Dict,
+                              confluence_info: Dict, optimal_levels_analysis: Dict = None,
                               trend_analysis: Dict = None, elliott_wave_analysis: Dict = None,
                               whale_analysis: Dict = None, ichimoku_analysis: Dict = None,
                               sentiment_analysis: Dict = None, divergence_analysis: Dict = None,
-                              ma_analysis: Dict = None, patterns_analysis: Dict = None) -> Dict[str, any]:
+                              ma_analysis: Dict = None, patterns_analysis: Dict = None,
+                              daily_df: pd.DataFrame = None, weekly_df: pd.DataFrame = None) -> Dict[str, any]:
         """
         Създава детайлна информация за сигнала
         
@@ -2405,18 +2408,23 @@ class SignalGenerator:
             # Добавяме SHORT сигнали ако има подходящи условия
             short_signals = []
             if self.smart_short_generator is not None:
+                logger.info("🎯 Проверяваме за SHORT сигнали...")
+
                 try:
-                    logger.info("🎯 Проверяваме за SHORT сигнали...")
-                    # Използваме същите данни които използвахме за LONG анализ
+                    # Използваме данните от основния анализ
                     short_candidates = self.smart_short_generator.generate_short_signals(daily_df, weekly_df)
 
                     if short_candidates:
-                        logger.info(f"✅ Генерирани {len(short_candidates)} SHORT сигнали")
+                        logger.info(f"✅ Генерирани {len(short_candidates)} SHORT кандидати")
 
                         # Конвертираме SHORT кандидатите в signal dictionaries
                         for candidate in short_candidates:
-                            short_signal_dict = create_short_signal_dict(candidate)
-                            short_signals.append(short_signal_dict)
+                            try:
+                                short_signal_dict = create_short_signal_dict(candidate)
+                                short_signals.append(short_signal_dict)
+                            except Exception as e:
+                                logger.warning(f"Грешка при конвертиране на SHORT кандидат: {e}")
+                                continue
 
                         # Ако имаме силни SHORT сигнали, можем да ги включим
                         strong_short_signals = [s for s in short_signals if s.get('confidence', 0) > 0.7]
@@ -2439,6 +2447,9 @@ class SignalGenerator:
 
                 except Exception as e:
                     logger.error(f"❌ Грешка при SHORT сигнал интеграция: {e}")
+                    logger.error(f"Error details: {str(e)}")
+                    import traceback
+                    logger.error(f"Traceback: {traceback.format_exc()}")
 
             # Добавяме SHORT сигнали в signal_details за анализ
             signal_details['short_signals'] = short_signals
