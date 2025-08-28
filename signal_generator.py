@@ -2434,13 +2434,16 @@ class SignalGenerator:
                             best_short = max(strong_short_signals, key=lambda x: x['confidence'])
                             logger.info(f"🎯 Най-силен SHORT сигнал: {best_short['confidence']:.2f} confidence")
 
-                            # Ако SHORT сигналът е по-силен от текущия LONG сигнал, го използваме
-                            if best_short['confidence'] > final_signal['confidence']:
-                                logger.info(f"🔄 Превключваме на SHORT сигнал (по-висока увереност)")
+                            # FIXED: Always include SHORT signals if they exist and are strong enough
+                            # Don't compare to LONG confidence - they are different strategies
+                            if best_short['confidence'] > 0.6:  # Minimum threshold for SHORT signals
+                                logger.info(f"✅ Включваме SHORT сигнал (confidence > 0.6)")
                                 final_signal = best_short
                                 signal_details['signal'] = 'SHORT'
                                 signal_details['confidence'] = best_short['confidence']
                                 signal_details['reason'] = best_short.get('reason', 'Smart SHORT signal')
+                            else:
+                                logger.info(f"⚠️ SHORT сигнал твърде слаб (confidence <= 0.6)")
 
                     else:
                         logger.info("ℹ️ Няма подходящи SHORT сигнали за текущия пазар")

@@ -491,11 +491,21 @@ class Backtester:
             if future_data.empty:
                 return None
             
-            # Взимаме цената след 2 седмици (или най-близката налична)
-            target_data = future_data[future_data.index >= validation_date]
+            # ФИКС: Взимаме най-близката дата до 14 дни напред (не по-далеч в бъдещето)
+            # Ограничаваме търсенето до максимум 21 дни напред за гъвкавост
+            max_validation_date = signal_date + pd.Timedelta(days=21)
+            target_data = future_data[
+                (future_data.index >= validation_date) & 
+                (future_data.index <= max_validation_date)
+            ]
+            
             if target_data.empty:
-                # Ако няма данни точно след 2 седмици, взимаме последните налични
-                target_data = future_data.tail(1)
+                # Ако няма данни в 14-21 дневния прозорец, търсим най-близката в рамките на 30 дни
+                extended_window = future_data[future_data.index <= signal_date + pd.Timedelta(days=30)]
+                if extended_window.empty:
+                    logger.warning(f"Няма данни за валидация в разумен период след {signal_date.strftime('%Y-%m-%d')}")
+                    return None
+                target_data = extended_window.tail(1)  # Вземаме последната в 30-дневния прозорец
             
             validation_price = target_data.iloc[-1]['Close']
             validation_date_actual = target_data.index[-1]
