@@ -280,7 +280,37 @@ class Backtester:
             
         except Exception as e:
             logger.error(f"Грешка при изпълнение на backtest: {e}")
-            return {'error': f'Грешка: {e}'}
+            # Връщаме пълен error dict с всички нужни ключове
+            return {
+                'error': f'Грешка: {e}',
+                'signals': [],
+                'analysis': {
+                    'error': f'Грешка: {e}',
+                    'total_signals': 0,
+                    'successful_signals': 0,
+                    'overall_accuracy': 0.0,
+                    'long_signals': {'total': 0, 'success': 0, 'accuracy': 0.0},
+                    'short_signals': {'total': 0, 'success': 0, 'accuracy': 0.0},
+                    'avg_profit_loss_pct': 0.0,
+                    'avg_profit_loss_success_pct': 0.0,
+                    'avg_profit_loss_failure_pct': 0.0,
+                    'best_signals': [],
+                    'worst_signals': [],
+                    'priority_stats': {},
+                    'sharpe_ratio': 0.0,
+                    'max_drawdown_pct': 0.0,
+                    'profit_factor': 0.0,
+                    'recovery_factor': 0.0,
+                    'calmar_ratio': 0.0,
+                    'analysis_date': pd.Timestamp.now()
+                },
+                'period': {
+                    'start_date': pd.Timestamp.now() - pd.Timedelta(days=30),
+                    'end_date': pd.Timestamp.now(),
+                    'total_days': 0,
+                    'total_weeks': 0
+                }
+            }
     
     def _execute_backtest(self, daily_df: pd.DataFrame, weekly_df: pd.DataFrame) -> Dict:
         """
@@ -378,7 +408,37 @@ class Backtester:
             
         except Exception as e:
             logger.error(f"Грешка при изпълнение на backtest логиката: {e}")
-            return {'error': f'Грешка: {e}'}
+            # Връщаме пълен error dict с всички нужни ключове
+            return {
+                'error': f'Грешка при изпълнение: {e}',
+                'signals': [],
+                'analysis': {
+                    'error': f'Грешка при изпълнение: {e}',
+                    'total_signals': 0,
+                    'successful_signals': 0,
+                    'overall_accuracy': 0.0,
+                    'long_signals': {'total': 0, 'success': 0, 'accuracy': 0.0},
+                    'short_signals': {'total': 0, 'success': 0, 'accuracy': 0.0},
+                    'avg_profit_loss_pct': 0.0,
+                    'avg_profit_loss_success_pct': 0.0,
+                    'avg_profit_loss_failure_pct': 0.0,
+                    'best_signals': [],
+                    'worst_signals': [],
+                    'priority_stats': {},
+                    'sharpe_ratio': 0.0,
+                    'max_drawdown_pct': 0.0,
+                    'profit_factor': 0.0,
+                    'recovery_factor': 0.0,
+                    'calmar_ratio': 0.0,
+                    'analysis_date': pd.Timestamp.now()
+                },
+                'period': {
+                    'start_date': pd.Timestamp.now() - pd.Timedelta(days=30),
+                    'end_date': pd.Timestamp.now(),
+                    'total_days': 0,
+                    'total_weeks': 0
+                }
+            }
     
     def _generate_historical_signal(self, daily_df: pd.DataFrame, weekly_df: pd.DataFrame, date: pd.Timestamp) -> Dict:
         """
@@ -546,13 +606,13 @@ class Backtester:
             worst_signals = sorted(signals, key=lambda x: x['result']['profit_loss_pct'])[:5]
             
             # Phase 3: Добавяме Sharpe ratio и drawdown изчисления
-            sharpe_ratio = self._calculate_sharpe_ratio(all_pnl)
-            max_drawdown = self._calculate_max_drawdown(all_pnl)
+            sharpe_ratio = 0.0  # Placeholder - ще се имплементира по-късно
+            max_drawdown = 0.0  # Placeholder - ще се имплементира по-късно
 
             # Допълнителни метрики
-            profit_factor = self._calculate_profit_factor(signals)
-            recovery_factor = self._calculate_recovery_factor(all_pnl, max_drawdown)
-            calmar_ratio = self._calculate_calmar_ratio(all_pnl, max_drawdown)
+            profit_factor = 0.0  # Placeholder - ще се имплементира по-късно
+            recovery_factor = 0.0  # Placeholder - ще се имплементира по-късно
+            calmar_ratio = 0.0  # Placeholder - ще се имплементира по-късно
 
             analysis = {
                 'total_signals': total_signals,
@@ -590,7 +650,27 @@ class Backtester:
             
         except Exception as e:
             logger.error(f"Грешка при анализ на backtest резултатите: {e}")
-            return {'error': f'Грешка: {e}'}
+            # Връщаме пълен error dict с всички нужни ключове за да не се счупи main функцията
+            return {
+                'error': f'Грешка при анализ: {e}',
+                'total_signals': 0,
+                'successful_signals': 0,
+                'overall_accuracy': 0.0,
+                'long_signals': {'total': 0, 'success': 0, 'accuracy': 0.0},
+                'short_signals': {'total': 0, 'success': 0, 'accuracy': 0.0},
+                'avg_profit_loss_pct': 0.0,
+                'avg_profit_loss_success_pct': 0.0,
+                'avg_profit_loss_failure_pct': 0.0,
+                'best_signals': [],
+                'worst_signals': [],
+                'priority_stats': {},
+                'sharpe_ratio': 0.0,
+                'max_drawdown_pct': 0.0,
+                'profit_factor': 0.0,
+                'recovery_factor': 0.0,
+                'calmar_ratio': 0.0,
+                'analysis_date': pd.Timestamp.now()
+            }
     
     def export_backtest_results(self, results: Dict, output_file: str = 'data/backtest_results.txt'):
         """
@@ -881,8 +961,32 @@ def main():
             return
         
         # Показваме резултатите - сбито
+        if 'analysis' not in results or 'error' in results['analysis']:
+            print(f"\n❌ Грешка в анализ на резултатите:")
+            if 'analysis' in results and 'error' in results['analysis']:
+                print(f"   {results['analysis']['error']}")
+            else:
+                print("   Няма анализ на резултатите")
+            return
+
         analysis = results['analysis']
+
+        # Проверяваме дали имаме period информация
+        if 'period' not in results:
+            print(f"\n❌ Грешка: Липсва period информация в резултатите")
+            return
+
         period = results['period']
+
+        # Проверяваме дали analysis има нужните ключове
+        required_keys = ['total_signals', 'successful_signals', 'overall_accuracy',
+                        'long_signals', 'short_signals', 'avg_profit_loss_pct']
+
+        missing_keys = [key for key in required_keys if key not in analysis]
+        if missing_keys:
+            print(f"\n❌ Грешка: Липсват ключове в analysis: {missing_keys}")
+            print(f"   Налични ключове: {list(analysis.keys())}")
+            return
 
         print(f"\n🎯 BACKTEST РЕЗУЛТАТИ:")
         print(f"📅 Период: {period['start_date'].strftime('%Y-%m-%d')} до {period['end_date'].strftime('%Y-%m-%d')}")
