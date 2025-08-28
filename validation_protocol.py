@@ -376,8 +376,15 @@ class ValidationProtocol:
         # В силен bull market е нормално да няма SHORT сигнали
         # В bear/correction период SHORT сигналите трябва да са 10-40%
 
-        # Проверяваме дали имаме достатъчно LONG сигнали за оценка
-        if long_signals == 0:
+        # Анализираме сигналите
+        total_signals = len([r for r in test_results.values() if r and hasattr(r, 'total_signals')])
+        long_signals = sum([r.long_signals for r in test_results.values() if r and hasattr(r, 'long_signals')])
+        short_signals = sum([r.short_signals for r in test_results.values() if r and hasattr(r, 'short_signals')])
+
+        # Дефинираме reasonable_range в началото
+        reasonable_range = (10, 40)
+
+        if total_signals == 0:
             # Никакви сигнали - не можем да оценим
             passed = False
         elif short_signals == 0 and long_signals >= 10:
@@ -385,7 +392,6 @@ class ValidationProtocol:
             passed = True
         elif short_signals > 0:
             # Има SHORT сигнали - проверяваме дали са в разумен диапазон
-            reasonable_range = (10, 40)
             passed = reasonable_range[0] <= short_percentage <= reasonable_range[1]
         else:
             # Малко LONG сигнали - не можем да оценим SHORT логиката
