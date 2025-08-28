@@ -313,7 +313,7 @@ class SmartShortSignalGenerator:
             market_regime = self.market_detector.detect_market_regime(daily_df, weekly_df)
 
             # Update regime with SHORT-specific logic
-            market_regime['short_signals_allowed'] = self._are_short_signals_allowed(
+            market_regime['short_signals_allowed'] = self.market_detector._are_short_signals_allowed(
                 market_regime['regime'], market_regime['ath_distance_pct'], self.short_thresholds
             )
 
