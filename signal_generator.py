@@ -522,33 +522,63 @@ class SignalGenerator:
                         total_weight += weight
                         signal_reasons.append(f"Bollinger: {bb_signal['reason']}")
 
-            # 4.5. ATH Proximity бонус за SHORT сигнали (когато сме близо до ATH)
-            # Трябва да получим ATH proximity score от daily_df
+            # 4.5. ATH Proximity филтър за SHORT сигнали - СТРОГ!
+            # SHORT само когато сме близо до ATH (> 5% под ATH)
             ath_proximity_score = 0.0
             if 'daily_df' in locals() and daily_df is not None and not daily_df.empty:
                 # Намираме най-близката дата до края на седмицата
                 if hasattr(daily_df.index, 'date'):
-                    # Ако индексът е datetime, намираме най-близката дата
                     target_date = daily_df.index[-1].date()
                     if target_date in daily_df.index:
                         current_idx = daily_df.index.get_loc(target_date)
                     else:
-                        # Намираме най-близката дата
                         current_idx = len(daily_df) - 1
                 else:
                     current_idx = len(daily_df) - 1
 
                 if 'ATH_Proximity_Score' in daily_df.columns:
                     ath_proximity_score = float(daily_df.iloc[current_idx]['ATH_Proximity_Score'])
-                    if ath_proximity_score > 0:
-                        # Добавяме бонус към SHORT сигнала
+                    ath_distance_pct = float(daily_df.iloc[current_idx]['ATH_Distance_Pct'])
+
+                    # СТРОГ ATH FILТЪР: SHORT само ако сме близо до ATH (> 5% под ATH)
+                    if ath_distance_pct > 5.0:  # Далеч от ATH - блокираме SHORT
+                        signal_scores['SHORT'] = 0.0  # Изцяло блокираме SHORT сигнала
+                        signal_reasons.append(f"SHORT BLOCKED by ATH proximity: {ath_distance_pct:.1f}% под ATH (твърде далеч)")
+                        logger.info(f"SHORT blocked by ATH proximity: {ath_distance_pct:.1f}% distance from ATH")
+                    elif ath_proximity_score > 0:  # Близо до ATH - даваме бонус
                         ath_bonus = ath_proximity_score * 0.15  # 15% бонус базиран на proximity
                         signal_scores['SHORT'] += ath_bonus
                         signal_reasons.append(f"ATH Proximity бонус за SHORT: +{ath_bonus:.3f} (proximity: {ath_proximity_score:.2f})")
                         logger.info(f"ATH proximity bonus added to SHORT: +{ath_bonus:.3f} (score: {ath_proximity_score:.3f})")
                         print(f"🔥 ATH BONUS: +{ath_bonus:.3f} за SHORT сигнал (proximity: {ath_proximity_score:.3f})")
+                    else:
+                        signal_reasons.append(f"No ATH proximity data available")
 
-            # 5. Определяме финалния сигнал
+            # 5. Допълнителни строги филтри за SHORT сигнали
+            if 'daily_df' in locals() and daily_df is not None and not daily_df.empty:
+                # 5.1 Trend Strength филтър - SHORT само при силни downtrends
+                if trend_analysis and 'combined_trend' in trend_analysis:
+                    combined_trend = trend_analysis['combined_trend']
+                    trend_direction = combined_trend.get('direction', 'UNKNOWN')
+                    trend_strength = combined_trend.get('strength', 'UNKNOWN')
+
+                    # Блокираме SHORT ако трендът е силно възходящ
+                    if trend_direction in ['UPTREND', 'STRONG_UPTREND'] and trend_strength == 'STRONG':
+                        signal_scores['SHORT'] *= 0.3  # Намаляваме SHORT сигнала с 70%
+                        signal_reasons.append(f"SHORT weakened by strong uptrend: {trend_direction} ({trend_strength})")
+                        logger.info(f"SHORT weakened by strong uptrend: {trend_direction} ({trend_strength})")
+
+                # 5.2 Market Regime филтър - SHORT само в подходящи market conditions
+                if 'ATH_Distance_Pct' in daily_df.columns:
+                    ath_distance = float(daily_df.iloc[-1]['ATH_Distance_Pct'])
+
+                    # Ако сме твърде далеч от ATH и трендът е силен uptrend - блокираме SHORT
+                    if ath_distance > 10.0 and trend_direction in ['UPTREND', 'STRONG_UPTREND']:
+                        signal_scores['SHORT'] *= 0.1  # Намаляваме SHORT сигнала с 90%
+                        signal_reasons.append(f"SHORT heavily weakened: {ath_distance:.1f}% from ATH + strong uptrend")
+                        logger.info(f"SHORT heavily weakened: {ath_distance:.1f}% from ATH + strong uptrend")
+
+            # 6. Определяме финалния сигнал
             if total_weight == 0:
                 final_signal = 'HOLD'
                 confidence = 0.0
@@ -557,10 +587,17 @@ class SignalGenerator:
                 # Нормализираме резултатите
                 for signal in signal_scores:
                     signal_scores[signal] /= total_weight
-                
+
                 # Намираме доминантния сигнал
                 final_signal = max(signal_scores, key=signal_scores.get)
                 confidence = signal_scores[final_signal]
+
+                # Ако SHORT сигнала е твърде слаб след филтрите - конвертираме в HOLD
+                if final_signal == 'SHORT' and confidence < 0.3:
+                    final_signal = 'HOLD'
+                    confidence = 0.0
+                    reason = "SHORT сигнал твърде слаб след филтрите"
+                    signal_reasons.append("SHORT converted to HOLD - signal too weak after filters")
 
                 # Phase 1: Trend Filter за SHORT сигнали
                 if final_signal == 'SHORT' and trend_analysis and self.config.get('short_signals', {}).get('trend_filter', False):
