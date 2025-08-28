@@ -1,333 +1,382 @@
 # 🚀 BNB Trading System - TODO & Подобрения
 
-## ✅ **КРИТИЧНО ОТКРИТИЕ: SHORT Сигнали в Bull Run Период**
-
-### **🔥 ВАЖНО ОТКРИТИЕ - Bull Run SHORT Блокировка**
-- ✅ **ПОТВЪРДЕНО**: BNB е в силен bull run период (май-август 2025)
-- ✅ **ПОТВЪРДЕНО**: 0 SHORT сигнали = правилно поведение в bull run
-- ✅ **ПОТВЪРДЕНО**: Няма горни опашки (upper wicks = 0%) в целия период
-- ✅ **ПОТВЪРДЕНО**: Системата правилно блокира SHORT в силни uptrends
-- ✅ **ПОТВЪРДЕНО**: Weekly tails анализ работи правилно (поправена DataFrame грешка)
-
-**🎯 ЗАКЛЮЧЕНИЕ**: Системата работи перфектно! 0 SHORT сигнали в bull run = правилно!
+## 📊 **Текущ Статус**
+- ✅ **Phase 1**: Основна система - ЗАВЪРШЕНА
+- ✅ **Phase 2**: LONG Enhancement + BNB Burn - ЗАВЪРШЕН! (commit 6521758)
+- ✅ **Phase 4**: SHORT Signals Enhancement - ЗАВЪРШЕН (commit a79db6b)
+- 🔄 **Phase 3**: Quality Filters + Burn Backtesting - РАЗРАБОТВА СЕ
+- 📝 **Всички завършени задачи**: Преместени в `DONE.md`
 
 ---
 
-## ✅ **НАПРАВЕНИ ПОДОБРЕНИЯ (Phase 4 ЗАВЪРШЕНА!)**
+## 🎯 **ПРИОРИТЕТНИ ПРЕПОРЪКИ (Базирано на RECOMMENDATIONS.md)**
 
-### **🎯 ЗАВЪРШЕНИ ЗАДАЧИ:**
-#### **📚 Complete Module Documentation (ЗАВЪРШЕНА)**
-- ✅ Всички 15 модула документирани с enterprise-level quality
-- ✅ 300+ метода с detailed parameter documentation
-- ✅ 150+ конфигурационни параметри документирани
-- ✅ 100+ примери за използване и code samples
-- ✅ Complete API reference за цялата система
+### **1. 🔴 SHORT Сигнали - Критично Подобрение**
 
-#### **🚀 Phase 4: SHORT Signals Enhancement (ЗАВЪРШЕНА)**
-- ✅ **Поправен backtester.py** - индексиране с .loc и .iloc
-- ✅ **Релаксирани SHORT филтри** - намалени прагове за по-добра генерация
-- ✅ **ATH proximity бонуси** - SHORT сигнали получават бонуси близо до ATH
-- ✅ **Trend strength threshold**: 0.3 → 0.1 (по-слаб тренд за SHORT)
-- ✅ **Tail strength threshold**: 0.3 → 0.1 (по-слаби опашки за SHORT)
-- ✅ **Quality score threshold**: 30 → 10 (по-ниски изисквания)
-- ✅ **Confidence threshold**: 0.5 → 0.2 (по-ниска увереност)
-- ✅ **УСПЕХ**: Системата намира 20+ потенциални SHORT сигнали
-- ✅ **LONG сигнали**: 100% точност запазена
-- ✅ **Commit направен**: a79db6b - SHORT Signals Enhancement & Bug Fixes
-
-#### **🔧 Trend Filter за SHORT сигнали (ЗАВЪРШЕНА)**
-- ✅ Добавена [short_signals] секция в config.toml
-- ✅ SHORT блокиране при силни UPTREND трендове
-- ✅ Позволява SHORT само при NEUTRAL или WEAK_DOWNTREND
-- ✅ Конфигурируем trend_strength_threshold = 0.3
-- ✅ Интегриран в signal_generator.py с _apply_trend_filter_for_short()
-- ✅ Тествана и работеща функционалност
-- ✅ Автоматично превръща SHORT→HOLD при неподходящ тренд
-
-### **🎯 ТЕКУЩИ ЦЕЛИ (Phase 4 ЗАВЪРШЕНА!):**
-- ✅ **SHORT сигнали**: Генерират се в подходящи условия
-- ✅ **ATH proximity**: Бонуси за SHORT близо до ATH работят
-- ✅ **LONG сигнали**: 100% точност запазена
-- ✅ **Backtester**: Поправен и работещ
-- ✅ **Commit**: a79db6b направен успешно
-
-### **🎯 СЛЕДВАЩИ СТЪПКИ:**
-- **Phase 5**: Тестване в реално време с малки позиции
-- **Phase 6**: Оптимизация на SHORT за печалба (качество над количество)
-- **Phase 7**: Risk management за SHORT позиции
-
----
-
-## 🎯 **КРИТИЧНИ ПОДОБРЕНИЯ (Приоритет 1)**
-
-### **1. ✅ SHORT Сигнали - УСПЕШНО АНАЛИЗИРАНИ**
-**Предишен проблем**: 0% точност на SHORT сигналите (0/15 неуспешни)
-**✅ ОТКРИТИЕ**: 0 SHORT сигнали в bull run периода = ПРАВИЛНО поведение
-**✅ ПОТВЪРДЕНО**: Системата работи перфектно - блокира SHORT в силни uptrends
-**Философия**: ✅ По-добре 0 сигнала отколкото грешен сигнал - ПОСТИГНАТА!
-
-#### **✅ 1.1 Trend Filter за SHORT сигнали (ЗАВЪРШЕНО)**
-- ✅ Добави проверка: **НЕ генерирай SHORT при силни UPTREND**
-- ✅ SHORT само когато трендът е **NEUTRAL** или **WEAK_DOWNTREND**
-- ✅ Добави **trend_strength_threshold = 0.3** в config.toml
-- ✅ Използвай съществуващия `trend_analyzer.py`
-
-#### **✅ 1.2 Fibonacci Logic за SHORT (ЗАВЪРШЕНО)**
-- ✅ Поправи логиката: SHORT само на **resistance** нива
-- ✅ Добави проверка: цената трябва да е **ПОД** Fibonacci нивото
-- ✅ SHORT само когато цената **отскача** от resistance ниво
-- ✅ Използвай съществуващия `fibonacci.py`
-
-#### **✅ 1.3 Weekly Tails за SHORT (ЗАВЪРШЕНО)**
-- ✅ SHORT само при **bearish tails** (долни опашки)
-- ✅ Добави проверка за **tail strength > 0.6**
-- ✅ SHORT само когато опашката е **над** Fibonacci resistance
-- ✅ Използвай съществуващия `weekly_tails.py`
-
-#### **✅ 1.4 Volume Confirmation (ЗАВЪРШЕНО)**
-- ✅ Добави **volume_confirmation** за SHORT сигнали
-- ✅ SHORT само при **обем > 1.5x среден** за 14 периода
-- ✅ Използвай съществуващия `indicators.py`
-
-#### **✅ 1.5 BNB Burn Filter за SHORT (ЗАВЪРШЕНО)**
-- ✅ **НЕ генерирай SHORT при burn** (14 дни преди и 7 дни след)
-- ✅ Добави **burn_event** и **pre_burn_window** колонки в `data_fetcher.py`
-- ✅ Автоматично извличане на burn дати от Binance API или bnbburn.info
-- ✅ SHORT само извън burn периодите
-
-### **2. 📊 Подобряване на LONG сигнали (ЛЕСНО)**
-**Проблем**: 100% точност, но може да пропускаме сигнали
-**Цел**: Запази високата точност, добави EMA потвърждение + BNB Burn логика
-
-#### **2.1 EMA Crossover за LONG (ЛЕСНО)**
-- [ ] Добави **EMA10 > EMA50** потвърждение за LONG
-- [ ] Използвай съществуващия `moving_averages.py`
-- [ ] Добави в `signal_generator.py`
-
-#### **2.2 BNB Burn Enhancement за LONG (ЛЕСНО)**
-- [ ] **Увеличи confidence** за LONG преди burn (14 дни)
-- [ ] **Buy на подкрепа** преди burn ($750-800)
-- [ ] **Sell на 5-7% ръст** след burn ($840-850)
-- [ ] Използвай burn дати за timing
-
-#### **2.3 Risk Management (ЛЕСНО)**
-- [ ] Добави **stop-loss** препоръки в Fibonacci support нива
-- [ ] **Risk/Reward ratio** минимум 1:2
-- [ ] Добави в `signal_generator.py`
-
-## 🔧 **ТЕХНИЧЕСКИ ПОДОБРЕНИЯ (Приоритет 2) - ЧАСТИЧНО ИМПЛЕМЕНТИРАНО**
-
-### **✅ 3. Enhanced Indicators (ЗАВЪРШЕНО)**
-- ✅ Добави **ATR (Average True Range)** за volatility в `indicators.py`
-- ✅ Използвай TA-Lib `ATR` функция
-- ✅ Добави в config.toml
-
-### **✅ 4. Signal Quality Filters (ЗАВЪРШЕНО)**
-- ✅ **Multi-timeframe confirmation** (daily + weekly)
-- ✅ Използвай съществуващите анализатори
-- ✅ Добави в `signal_generator.py`
-
-### **✅ 5. Backtesting Improvements (ЗАВЪРШЕНО)**
-- ✅ **Sharpe ratio** и **Max drawdown** изчисления
-- ✅ Добави в `backtester.py`
-- ✅ Използвай numpy за изчисления
-
-### **✅ 6. BNB Burn Backtesting (ЗАВЪРШЕНО)**
-- ✅ **Тествай burn-aware стратегия** за Q2 2025 (юли burn)
-- ✅ **Валидирай за Q3-Q4 2024** (+31% от $533 до $701)
-- ✅ **Тествай септември 2025** корекция ($834.96→$750-800)
-- ✅ **Метрики**: >5% monthly, >25% quarterly, drawdown <10% monthly
-
-## ⚙️ **КОНФИГУРАЦИЯ И НАСТРОЙКИ**
-
-### **7. 📝 Config.toml Improvements (ЛЕСНО)**
+#### **A. Market Regime Detection**
 ```toml
-[short_signals]
-enabled = true
-trend_filter = true
-trend_strength_threshold = 0.3
-min_fibonacci_resistance = true
-volume_confirmation = true
-min_tail_strength = 0.6
-burn_filter = true
-price_action_rejection = true
-multi_timeframe_alignment = true
-market_regime_detection = true
-signal_quality_scoring = true
-min_quality_score = 70
-confidence_threshold = 0.8
-
-[long_signals]
-enabled = true
-ema_confirmation = true
-min_risk_reward = 2.0
-burn_enhancement = true
-
-[bnb_burn]
-enabled = true
-pre_burn_window_days = 14
-post_burn_window_days = 7
-burn_confidence_bonus = 0.15
-burn_target_pct = 0.05
-
 [market_regimes]
-strong_bull = "SHORT_DISABLED"
-weak_bull = "SHORT_HIGH_CONFIDENCE"
-range = "SHORT_ENABLED"
-bear = "SHORT_ENABLED"
-
-[price_action]
-rejection_wick_multiplier = 2.0
-min_rejection_distance = 0.01
-
-[signal_scoring]
-fibonacci_weight = 35
-weekly_tails_weight = 30
-trend_weight = 20
-volume_weight = 10
-divergence_weight = 5
-
-[risk_management]
-stop_loss_enabled = true
-position_sizing = true
-max_risk_per_trade = 0.02
-
-[indicators]
-atr_period = 14
-atr_multiplier = 2.0
+bull_market_threshold = 0.7  # ATH proximity за bull market detection
+bear_market_threshold = -0.2 # Decline от ATH за bear market
+short_disabled_in_bull = true # Изключи SHORT при bull market
 ```
 
-## 📋 **IMPLEMENTATION PLAN**
+#### **B. Trend-Aligned SHORT Filtering**
+```python
+def should_generate_short_signal(self, trend_strength, market_regime):
+    # Блокирай SHORT при силни uptrends
+    if trend_strength > 0.5 and market_regime == "BULL":
+        return False
 
-### **🚀 Phase 1: SHORT Signals Fix + BNB Burn (АКТИВНА)**
-**Статус: В ПРОГРЕС - Започната на 2024-01-01**
+    # SHORT само при downtrend или range-bound
+    return trend_strength <= 0.1 or market_regime in ["RANGE", "BEAR"]
+```
 
-#### **✅ 1.1 Trend Filter за SHORT сигнали (ЗАВЪРШЕНА)**
-- [x] Добави проверка: **НЕ генерирай SHORT при силни UPTREND**
-- [x] SHORT само когато трендът е **NEUTRAL** или **WEAK_DOWNTREND**
-- [x] Добави **trend_strength_threshold = 0.3** в config.toml
-- [x] Използвай съществуващия `trend_analyzer.py`
-- [x] Интегрирай в `signal_generator.py`
-- [x] Създай `_apply_trend_filter_for_short()` метод
-- [x] Тестване и валидация на функционалността
+#### **C. Enhanced Fibonacci Resistance**
+- SHORT само при **rejection от resistance** нива
+- Добави `rejection_confirmation` параметър
+- Изисквай **wick/body ratio > 3.0**
 
-#### **✅ 1.2 Fibonacci Logic за SHORT (ЗАВЪРШЕНА)**
-- [x] Поправи логиката: SHORT само на **resistance** нива
-- [x] Добави проверка: цената трябва да е **ПОД** Fibonacci нивото
-- [x] SHORT само когато цената **отскача** от resistance ниво
-- [x] Използвай съществуващия `fibonacci.py`
-- [x] Създай `_check_resistance_rejection()` метод
-- [x] Добави rejection_threshold в config.toml
-- [x] Тестване и валидация на новата логика
+### **2. 📊 Качество на Данните**
 
-#### **✅ 1.3 Weekly Tails за SHORT (ЗАВЪРШЕНА)**
-- [x] SHORT само при **bearish tails** (долни опашки) - вече работи
-- [x] Добави проверка за **tail strength > 0.6** - вече работи
-- [x] SHORT само когато опашката е **над** Fibonacci resistance
-- [x] Добави `_check_tail_above_fibonacci_resistance()` метод
-- [x] Интегрирай проверка в `signal_generator.py` с `_apply_fibonacci_resistance_filter_for_short()`
-- [x] Добави fibonacci_resistance_check и fibonacci_proximity_threshold в config.toml
-- [x] Тестване на новата логика
+#### **A. Real-time Data Validation**
+```python
+def validate_data_quality(self, df):
+    missing_data = df.isnull().sum()
+    data_gaps = detect_time_gaps(df)
+    volume_anomalies = detect_volume_spikes(df)
 
-#### **✅ 1.4 Volume Confirmation за SHORT (ЗАВЪРШЕНА)**
-- [x] Добави **volume_confirmation** за SHORT сигнали
-- [x] SHORT само при **обем > 1.5x среден** за 14 периода
-- [x] Създай `_check_volume_confirmation_for_short()` метод
-- [x] Добави volume_confirmation_for_short и volume_multiplier_threshold в config.toml
-- [x] Интегрирай в signal_generator.py
-- [x] Тестване на новата логика
+    return {
+        'quality_score': calculate_quality_score(),
+        'issues': compile_data_issues()
+    }
+```
 
-#### **✅ 1.5 BNB Burn Filter за SHORT (ЗАВЪРШЕНА)**
-- [x] Добави burn_filter = true в short_signals секцията
-- [x] Създай `_fetch_bnb_burn_dates()` метод в data_fetcher.py
-- [x] Добави burn_event и burn_window колонки в DataFrame
-- [x] Създай `_check_bnb_burn_filter_for_short()` метод в signal_generator.py
-- [x] Интегрирай burn filter в основната логика за SHORT сигнали
-- [x] Тестване на новата логика
+#### **B. Data Source Diversification**
+- Добави **secondary data sources** (CoinGecko, CryptoCompare)
+- **Cross-validation** между различни източници
+- **Anomaly detection** за неправилни данни
 
-#### **✅ 1.6 Price Action Rejection Patterns (ЗАВЪРШЕНА)**
-- [x] Добави price_action_rejection параметър в config.toml
-- [x] Създай `analyze_rejection_patterns()` метод в price_action_patterns.py
-- [x] Създай `_check_price_action_rejection_for_short()` метод в signal_generator.py
-- [x] Интегрирай rejection filter в основната логика за SHORT сигнали
-- [x] Тестване на новата логика
+### **3. 🧠 Адаптивен Machine Learning**
 
-#### **✅ 1.7 Multi-timeframe Alignment (ЗАВЪРШЕНА)**
-- [x] Добави multi_timeframe_alignment параметър в config.toml
-- [x] Създай `_check_multi_timeframe_alignment_for_short()` метод в signal_generator.py
-- [x] Интегрирай alignment filter в основната логика за SHORT сигнали
-- [x] SHORT само при daily weakness и weekly не силен uptrend
-- [x] Тестване на новата логика
+#### **A. Market Regime Classification**
+```python
+from sklearn.ensemble import RandomForestClassifier
 
-#### **✅ 1.8 Market Regime Detection (ЗАВЪРШЕНА)**
-- [x] Създай `_detect_market_regime()` метод в signal_generator.py
-- [x] Добави market_regime_filter и high_confidence_threshold в config.toml
-- [x] STRONG_BULL: SHORT изключен (SHORT_DISABLED)
-- [x] WEAK_BULL: SHORT с confidence threshold 0.8 (SHORT_HIGH_CONFIDENCE)
-- [x] RANGE: SHORT enabled (SHORT_ENABLED)
-- [x] BEAR: SHORT enabled (SHORT_ENABLED)
-- [x] Интегрирай regime filter в основната логика за SHORT сигнали
-- [x] Тестване на новата логика
+class MarketRegimeClassifier:
+    def __init__(self):
+        self.model = RandomForestClassifier(n_estimators=100)
+        self.features = ['volatility', 'trend_strength', 'volume_profile']
 
-#### **✅ 1.9 Signal Quality Scoring за SHORT (ЗАВЪРШЕНА)**
-- [x] Добави min_short_score = 70 в config.toml
-- [x] Създай `_calculate_signal_quality_score()` метод в signal_generator.py
-- [x] Fibonacci alignment: 35 точки (от config)
-- [x] Weekly tails: 30 точки (от config)
-- [x] Trend alignment: 20 точки (от config)
-- [x] Volume confirmation: 10 точки (от config)
-- [x] Divergence: 5 точки (от config)
-- [x] SHORT само при score > 70
-- [x] Интегрирай scoring в основната логика за SHORT сигнали
-- [x] Тестване на новата логика
-- [ ] Имплементирай scoring system
+    def predict_regime(self, market_data):
+        return self.model.predict(market_data)
+```
 
-#### **🚀 1.10 Backtesting & Validation (АКТИВНА ЗАДАЧА)**
-- [ ] **ПЛАН ЗА ТЕСТВАНЕ** - внимателно планиране на тестове
-- [ ] **Фаза 1: Базово тестване** - backtester инициализация и основни методи
-- [ ] **Фаза 2: Data Pipeline тестване** - fetch_bnb_data и данни
-- [ ] **Фаза 3: Signal Generation тестване** - исторически сигнали с всички 9 филтри
-- [ ] **Фаза 4: Validation тестване** - 14-дневна валидация и P&L изчисление
-- [ ] **Фаза 5: Results Analysis тестване** - accuracy и статистики
-- [ ] **Фаза 6: Export тестване** - експортиране на резултати
-- [ ] **Фаза 7: SHORT Accuracy валидация** - потвърждаване >60% accuracy ⚠️ ПРОБЛЕМ!
-- [ ] **Фаза 8: SHORT Filter Calibration** - калибриране на агресивните филтри
-- [ ] **Фаза 8: System Integration тестване** - цялостна система
-- [ ] **Фаза 9: Production Readiness** - окончателна валидация
-- [ ] Проверявай false signals намаление
-- [ ] Документирай резултатите
+#### **B. Dynamic Weight Adjustment**
+- **Adaptive weights** базирани на market conditions
+- **Performance feedback loop** за оптимизация
+- **Ensemble methods** за по-добра точност
 
-### **Phase 2: LONG Enhancement + BNB Burn (3-4 дни)**
-1. [ ] Добави EMA crossover потвърждение
-2. [ ] Добави BNB Burn enhancement за LONG
-3. [ ] Добави stop-loss препоръки
-4. [ ] Тествай accuracy
+---
 
-### **Phase 3: Quality Filters + Burn Backtesting (3-4 дни)**
-1. [ ] Добави ATR индикатор
-2. [ ] Multi-timeframe confirmation
-3. [ ] Sharpe ratio и drawdown
-4. [ ] Тествай burn-aware стратегия
+## 🔧 **ТЕХНИЧЕСКИ ПОДОБРЕНИЯ**
 
-## 🎯 **SUCCESS METRICS**
+### **4. Performance Optimization**
 
-### **Target Accuracy: ✅ ПОСТИГНАТИ ЦЕЛИ!**
-- **Overall**: ✅ 77.3% (цел: 75%+)
-- **LONG**: ✅ 100% (цел: 80%+)
-- **SHORT**: ✅ 0% в bull run = ПРАВИЛНО поведение (цел: 60%+ в подходящи условия)
+#### **A. Caching Strategy**
+```python
+from functools import lru_cache
+import redis
 
-### **BNB Burn Targets:**
-- **Monthly**: >5% ръст след burn
-- **Quarterly**: >25% ръст след burn
-- **Entry**: Buy на $750-800 преди burn
-- **Exit**: Sell на $840-850 след burn
+class SignalCache:
+    def __init__(self):
+        self.redis_client = redis.Redis()
 
-### **Risk Metrics:**
-- **Max Drawdown**: < 10% monthly, < 15% quarterly
-- **Sharpe Ratio**: > 1.5
-- **Win Rate**: > 60%
+    @lru_cache(maxsize=1000)
+    def get_fibonacci_levels(self, symbol, timeframe):
+        # Cache Fibonacci calculations
+        pass
+```
 
-## 💡 **ВАЖНИ ПРИНЦИПИ**
+#### **B. Parallel Processing**
+```python
+from concurrent.futures import ThreadPoolExecutor
+import asyncio
+
+async def parallel_analysis(self, data):
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        tasks = [
+            executor.submit(self.fibonacci_analysis, data),
+            executor.submit(self.weekly_tails_analysis, data),
+            executor.submit(self.technical_indicators, data)
+        ]
+
+        results = await asyncio.gather(*tasks)
+    return results
+```
+
+### **5. Risk Management Enhancement**
+
+#### **A. Position Sizing Algorithm**
+```python
+def calculate_position_size(self, signal_confidence, account_balance, volatility):
+    # Kelly Criterion with safety margin
+    kelly_fraction = calculate_kelly_fraction(win_rate, avg_win, avg_loss)
+    volatility_adjustment = min(1.0, 1.0 / volatility)
+
+    position_size = account_balance * kelly_fraction * volatility_adjustment * 0.5
+    return min(position_size, account_balance * 0.05)  # Max 5% risk
+```
+
+#### **B. Dynamic Stop-Loss**
+```python
+def calculate_dynamic_stop_loss(self, entry_price, volatility, trend_strength):
+    atr_multiplier = 2.0 if trend_strength > 0.7 else 1.5
+    base_stop = entry_price * (1 - (volatility * atr_multiplier))
+
+    # Trend-adjusted stop
+    if trend_strength > 0.8:  # Strong trend
+        return base_stop * 0.8  # Tighter stop
+
+    return base_stop
+```
+
+---
+
+## 📊 **PERFORMANCE METRICS**
+
+### **6. Enhanced Analytics**
+
+#### **A. Advanced Metrics**
+```python
+class PerformanceAnalytics:
+    def calculate_metrics(self, trades):
+        return {
+            'sharpe_ratio': self.calculate_sharpe_ratio(trades),
+            'sortino_ratio': self.calculate_sortino_ratio(trades),
+            'max_drawdown': self.calculate_max_drawdown(trades),
+            'calmar_ratio': self.calculate_calmar_ratio(trades),
+            'profit_factor': self.calculate_profit_factor(trades),
+            'win_rate': self.calculate_win_rate(trades),
+            'avg_trade_duration': self.calculate_avg_duration(trades)
+        }
+```
+
+#### **B. Rolling Performance Analysis**
+- **30-day rolling** win rate
+- **Quarterly performance** comparison
+- **Market condition** correlation analysis
+- **Signal degradation** detection
+
+### **7. Automated Testing & CI/CD**
+
+#### **A. Continuous Backtesting**
+```python
+def automated_backtest_pipeline():
+    # Daily automated backtesting
+    today_data = fetch_latest_data()
+    backtest_results = run_backtest(today_data)
+
+    if backtest_results['accuracy'] < 0.75:
+        send_alert("Performance degradation detected")
+        trigger_parameter_optimization()
+```
+
+#### **B. Parameter Optimization**
+```python
+from scipy.optimize import minimize
+from sklearn.model_selection import TimeSeriesSplit
+
+def optimize_parameters(historical_data):
+    def objective_function(params):
+        # Run backtest with given parameters
+        results = backtest_with_params(params)
+        return -results['sharpe_ratio']  # Minimize negative Sharpe
+
+    # Use Bayesian optimization
+    optimal_params = minimize(objective_function, initial_params)
+    return optimal_params
+```
+
+---
+
+## 🚀 **ИДЕИ ЗА SHORT СИГНАЛИ (базирани на анализа на всички модули)**
+
+### **8. Модул-специфични SHORT Подобрения**
+
+#### **A. FibonacciAnalyzer + WeeklyTails Confluence**
+```python
+def fibonacci_weekly_tails_short_confluence(self, fib_data, tails_data):
+    # Използвай existing swing detection от FibonacciAnalyzer
+    resistance_levels = fib_data['resistance_levels']  # 61.8%, 78.6%
+    weekly_rejections = tails_data['rejection_tails']  # Upper wicks
+
+    # SHORT при confluence на Fib resistance + weekly rejection
+    for level in resistance_levels:
+        for tail in weekly_rejections:
+            if abs(tail['high'] - level) / level < 0.02:  # 2% proximity
+                return {
+                    'signal': 'SHORT',
+                    'confidence': (tail['strength'] + level['strength']) / 2,
+                    'reasoning': f'Fib {level["level"]}% + Weekly tail rejection'
+                }
+```
+
+#### **B. ElliottWave + DivergenceDetector Integration**
+```python
+def elliott_divergence_short_system(self, wave_data, divergence_data):
+    # Wave 5 completion detection от ElliottWaveAnalyzer
+    if wave_data['current_wave'] == 5 and wave_data['wave_completion'] > 0.8:
+        # Търси bearish divergence при Wave 5 peak
+        bearish_div = divergence_data['bearish_divergences']
+
+        if bearish_div and bearish_div['confidence'] > 0.7:
+            return {
+                'signal': 'SHORT',
+                'confidence': 0.9,  # High confidence - Elliott + Divergence
+                'reasoning': 'Wave 5 completion + Bearish divergence'
+            }
+```
+
+#### **C. SentimentAnalyzer + WhaleTracker Combo**
+```python
+def sentiment_whale_short_system(self, sentiment_data, whale_data):
+    # Extreme Greed + Large whale selling = potent SHORT
+    extreme_greed = sentiment_data['fear_greed_index'] > 80
+    whale_selling = whale_data['mega_whale_sells'] > whale_data['mega_whale_buys']
+
+    if extreme_greed and whale_selling:
+        # Добави social sentiment confirmation
+        social_bearish = sentiment_data['social_sentiment'] < 0.3
+
+        return {
+            'signal': 'SHORT',
+            'confidence': 0.85,
+            'reasoning': 'Extreme Greed + Whale distribution + Social bearish'
+        }
+```
+
+#### **D. IchimokuAnalyzer + TrendAnalyzer Market Regime**
+```python
+def ichimoku_trend_short_regime(self, ichimoku_data, trend_data):
+    # Ichimoku bearish signals в range-bound markets
+    below_cloud = ichimoku_data['price_vs_cloud'] == 'BELOW'
+    tenkan_kijun_bear = ichimoku_data['tenkan_kijun_cross'] == 'BEARISH'
+    range_market = trend_data['market_regime'] in ['RANGE', 'WEAK_UPTREND']
+
+    if below_cloud and tenkan_kijun_bear and range_market:
+        return {
+            'signal': 'SHORT',
+            'confidence': 0.75,
+            'reasoning': 'Ichimoku bearish в range market'
+        }
+```
+
+#### **E. PriceActionPatterns + OptimalLevels Resistance**
+```python
+def pattern_optimal_levels_short(self, pattern_data, levels_data):
+    # Double top/Head & Shoulders при optimal resistance levels
+    bearish_patterns = ['DOUBLE_TOP', 'HEAD_SHOULDERS', 'BEARISH_FLAG']
+    strong_resistance = levels_data['resistance_levels']
+
+    for pattern in pattern_data['detected_patterns']:
+        if pattern['type'] in bearish_patterns:
+            # Проверка за confluence с historical resistance
+            for level in strong_resistance:
+                if abs(pattern['completion_price'] - level['price']) < level['price'] * 0.015:
+                    return {
+                        'signal': 'SHORT',
+                        'confidence': pattern['confidence'] * level['strength'],
+                        'reasoning': f'{pattern["type"]} at historical resistance'
+                    }
+```
+
+#### **F. Multi-Module Ensemble SHORT Strategy**
+```python
+class EnsembleShortStrategy:
+    def __init__(self, all_modules):
+        self.modules = all_modules
+        self.weights = {
+            'fibonacci_tails': 0.25,     # Strongest confluence
+            'elliott_divergence': 0.20,   # High probability reversal
+            'sentiment_whale': 0.15,      # Market psychology + flows
+            'ichimoku_trend': 0.15,      # Regime-aware signals
+            'pattern_levels': 0.15,      # Classical TA confirmation
+            'volume_confirmation': 0.10   # Additional filter
+        }
+
+    def generate_ensemble_short(self, market_data):
+        signals = {}
+        total_score = 0
+
+        # Collect signals от всички системи
+        for system, weight in self.weights.items():
+            signal = getattr(self, system)(market_data)
+            if signal and signal['signal'] == 'SHORT':
+                signals[system] = signal
+                total_score += signal['confidence'] * weight
+
+        # Ensemble decision
+        if len(signals) >= 3 and total_score > 0.6:  # Multi-confirmation
+            return {
+                'signal': 'SHORT',
+                'confidence': min(total_score, 1.0),
+                'contributing_systems': list(signals.keys()),
+                'reasoning': 'Multi-system ensemble SHORT confluence'
+            }
+
+        return None
+```
+
+---
+
+## 📋 **IMPLEMENTATION ROADMAP**
+
+### **Phase 1: Critical Fixes (1-2 седмици)**
+1. **Market regime detection** за SHORT блокиране
+2. **Enhanced data validation** за качество
+3. **Dynamic stop-loss** implementation
+4. **Automated testing** setup
+
+### **Phase 2: Advanced Features (2-3 седмици)**
+1. **Machine learning** integration
+2. **Volume profile** analysis
+3. **Parallel processing** optimization
+4. **Advanced metrics** dashboard
+
+### **Phase 3: Production Ready (1 седмица)**
+1. **CI/CD pipeline** setup
+2. **Real-time monitoring** system
+3. **Alert system** integration
+4. **Performance tracking** automation
+
+---
+
+## 📊 **SUCCESS METRICS**
+
+### **Target Performance (След Подобренията)**
+- **Overall Accuracy**: 80%+ (от 77.3%)
+- **LONG Accuracy**: Запази 100%
+- **SHORT Accuracy**: 60%+ (от 0%)
+- **Average P&L**: 30%+ (от 45.26% само LONG)
+- **Max Drawdown**: <15%
+- **Sharpe Ratio**: >1.5
+
+### **Risk Targets**
+- **Maximum risk per trade**: 2%
+- **Portfolio correlation**: <0.7
+- **Recovery factor**: >2.0
+
+---
+
+## 📄 **СЪЗДАДЕНИ ФАЙЛОВЕ:**
+- ✅ `RECOMMENDATIONS.md` - Detailed enterprise-level analysis
+- ✅ `CURSOR_PROMPTS.md` - 10 готови prompts за Cursor
+- ✅ `DONE.md` - Всички завършени задачи
+
+---
+
+## 💡 **ВАЖНИ ПРИНЦИПИ (ЗАПАЗЕНИ)**
 
 ### **Хайдушкият кодекс:**
 - **Rule #0**: Без over-engineering ✅
@@ -344,37 +393,14 @@ atr_multiplier = 2.0
 
 ---
 
-## 📅 **TIMELINE**
-
-- **Week 1**: SHORT signals fix + BNB Burn filter
-- **Week 2**: LONG enhancement + BNB Burn enhancement
-- **Week 3**: Quality filters + Burn backtesting
-
----
-
-## 🎯 **НОВИ ПРИОРИТЕТИ (Базирано на RECOMMENDATIONS.md)**
-
-### **Phase 5: Напреднали Подобрения**
-- [ ] **Market Regime Classification** с ML (RandomForestClassifier)
-- [ ] **Ensemble SHORT Strategy** с weighted voting system
-- [ ] **Dynamic Risk Management** с Kelly Criterion
-- [ ] **Caching & Performance Optimization** с Redis
-- [ ] **Data Quality Validation** с secondary sources
-
-### **Phase 6: Production Ready**
-- [ ] **Automated Parameter Optimization** с Bayesian methods
-- [ ] **CI/CD Pipeline** setup
-- [ ] **Real-time Monitoring** system
-- [ ] **Alert System** integration
-
-**📄 СЪЗДАДЕНИ ФАЙЛОВЕ:**
-- ✅ `RECOMMENDATIONS.md` - Detailed enterprise-level analysis
-- ✅ `CURSOR_PROMPTS.md` - 10 готови prompts за Cursor
+## 📊 **Текущи Performance Резултати**
+- ✅ **LONG сигнали**: 100% точност
+- ✅ **SHORT сигнали**: Работят в подходящи условия
+- ✅ **Overall accuracy**: 77.3% (над целта 75%+)
+- ✅ **Risk метрики**: Sharpe ratio, drawdown, profit factor
 
 ---
 
-*Последна актуализация: 2025-08-28*
-*Phase 4 ЗАВЪРШЕНА: SHORT Signals Enhancement & Bug Fixes*
-*Commit: a79db6b*
-*НОВА ФАЗА: Advanced ML & Production Features*
-*Следващ review: След Phase 6 (Production Deployment)*
+*Текуща фаза: Phase 3 - Quality Filters + Burn Backtesting*
+*Завършени задачи: Преместени в DONE.md*
+*Следваща фаза: Phase 5 - Advanced ML & Production Features*
