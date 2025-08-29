@@ -270,7 +270,12 @@ class TrendAnalyzer:
             start_price = y[0]
             end_price = y[-1]
             price_change = end_price - start_price
-            price_change_pct = (price_change / start_price) * 100
+            # Guard against division by zero in daily trend analysis
+            if start_price != 0:
+                price_change_pct = (price_change / start_price) * 100
+            else:
+                logger.warning(f"Start price is zero in daily trend analysis, using 0% change")
+                price_change_pct = 0.0
             
             # Определяме силата на тренда
             if abs(price_change_pct) < 5:
@@ -326,7 +331,12 @@ class TrendAnalyzer:
             start_price = y[0]
             end_price = y[-1]
             price_change = end_price - start_price
-            price_change_pct = (price_change / start_price) * 100
+            # Guard against division by zero in weekly trend analysis
+            if start_price != 0:
+                price_change_pct = (price_change / start_price) * 100
+            else:
+                logger.warning(f"Start price is zero in weekly trend analysis, using 0% change")
+                price_change_pct = 0.0
             
             # Определяме силата
             if abs(price_change_pct) < 10:
@@ -376,13 +386,23 @@ class TrendAnalyzer:
             current_high = recent_data['High'].max()
             current_low = recent_data['Low'].min()
             current_range = current_high - current_low
-            current_range_pct = (current_range / current_low) * 100
+            # Guard against division by zero in current range calculation
+            if current_low != 0:
+                current_range_pct = (current_range / current_low) * 100
+            else:
+                logger.warning(f"Current low price is zero in range analysis, using 0% range")
+                current_range_pct = 0.0
             
             # Намираме исторически range
             historical_high = df['High'].max()
             historical_low = df['Low'].min()
             historical_range = historical_high - historical_low
-            historical_range_pct = (historical_range / historical_low) * 100
+            # Guard against division by zero in historical range calculation
+            if historical_low != 0:
+                historical_range_pct = (historical_range / historical_low) * 100
+            else:
+                logger.warning(f"Historical low price is zero in range analysis, using 0% range")
+                historical_range_pct = 0.0
             
             # Определяме дали range се разширява или свива
             if current_range_pct > historical_range_pct * 0.8:
@@ -392,9 +412,15 @@ class TrendAnalyzer:
             else:
                 range_status = 'STABLE'
             
-            # Позиция в текущия range
+            # Позиция в текущия range - guard against division by zero
             current_price = df['Close'].iloc[-1]
-            range_position = (current_price - current_low) / current_range
+            if current_range > 0:
+                range_position = (current_price - current_low) / current_range
+            else:
+                # When current_high == current_low (no range), position is undefined
+                # Set to 0.5 (middle) as reasonable default for flat price action
+                range_position = 0.5
+                logger.debug(f"No price range detected (high={current_high}, low={current_low}), using default range_position=0.5")
             
             range_analysis = {
                 'current_range': current_range,
