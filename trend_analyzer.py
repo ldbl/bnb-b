@@ -202,9 +202,18 @@ class TrendAnalyzer:
         self.trend_threshold = config.get('trend', {}).get('trend_threshold', 0.015)
         self.range_analysis_periods = 20  # Периоди за range анализ
         
+        # НОВИ ПАРАМЕТРИ ЗА ДЪЛГОСРОЧЕН АНАЛИЗ
+        self.long_term_lookback_days = 180  # 6 месеца дългосрочен анализ
+        self.medium_term_lookback_days = 90  # 3 месеца средносрочен анализ
+        self.bull_market_threshold = 50.0   # 50%+ за STRONG_BULL
+        self.sustained_bull_months = 12     # 12 месеца за sustained bull
+        
         logger.info("Trend анализатор инициализиран")
-        logger.info(f"Trend lookback: {self.trend_lookback_days} дни")
+        logger.info(f"Short-term lookback: {self.trend_lookback_days} дни")
+        logger.info(f"Medium-term lookback: {self.medium_term_lookback_days} дни") 
+        logger.info(f"Long-term lookback: {self.long_term_lookback_days} дни")
         logger.info(f"Trend threshold: {self.trend_threshold:.1%}")
+        logger.info(f"Bull market threshold: {self.bull_market_threshold:.1f}%")
     
     def analyze_trend(self, daily_df: pd.DataFrame, weekly_df: pd.DataFrame) -> Dict:
         """
@@ -220,17 +229,24 @@ class TrendAnalyzer:
         try:
             logger.info("Анализ на тренда...")
             
-            # 1. Анализ на дневния тренд
+            # 1. Анализ на дневния тренд (краткосрочен)
             daily_trend = self._analyze_daily_trend(daily_df)
             
             # 2. Анализ на седмичния тренд
             weekly_trend = self._analyze_weekly_trend(weekly_df)
             
-            # 3. Range анализ
+            # 3. НОВИ: Средносрочен и дългосрочен анализ
+            medium_term_trend = self._analyze_medium_term_trend(daily_df)
+            long_term_trend = self._analyze_long_term_trend(daily_df)
+            
+            # 4. Range анализ
             range_analysis = self._analyze_price_range(daily_df)
             
-            # 4. Комбиниран тренд анализ
-            combined_trend = self._combine_trend_analysis(daily_trend, weekly_trend, range_analysis)
+            # 5. НОВИ: Market regime detection
+            market_regime = self._detect_market_regime(daily_df, medium_term_trend, long_term_trend)
+            
+            # 6. Комбиниран тренд анализ (обновен)
+            combined_trend = self._combine_trend_analysis(daily_trend, weekly_trend, medium_term_trend, long_term_trend, range_analysis, market_regime)
             
             # 5. Генерираме адаптивни entry стратегии
             adaptive_strategy = self._generate_adaptive_strategy(combined_trend, daily_df)
@@ -238,6 +254,9 @@ class TrendAnalyzer:
             trend_analysis = {
                 'daily_trend': daily_trend,
                 'weekly_trend': weekly_trend,
+                'medium_term_trend': medium_term_trend,
+                'long_term_trend': long_term_trend,
+                'market_regime': market_regime,
                 'range_analysis': range_analysis,
                 'combined_trend': combined_trend,
                 'adaptive_strategy': adaptive_strategy,
@@ -417,36 +436,72 @@ class TrendAnalyzer:
             logger.error(f"Грешка при range анализ: {e}")
             return {'error': f'Грешка: {e}'}
     
-    def _combine_trend_analysis(self, daily_trend: Dict, weekly_trend: Dict, range_analysis: Dict) -> Dict:
-        """Комбинира различните тренд анализи"""
+    def _combine_trend_analysis(self, daily_trend: Dict, weekly_trend: Dict, medium_term_trend: Dict, long_term_trend: Dict, range_analysis: Dict, market_regime: Dict) -> Dict:
+        """Комбинира различните тренд анализи с нов дългосрочен анализ"""
         try:
-            if 'error' in daily_trend or 'error' in weekly_trend or 'error' in range_analysis:
+            if ('error' in daily_trend or 'error' in weekly_trend or 'error' in range_analysis or 
+                'error' in medium_term_trend or 'error' in long_term_trend):
                 return {'error': 'Грешка в един от тренд анализите'}
             
-            # Определяме основния тренд
-            if daily_trend['direction'] == weekly_trend['direction']:
-                primary_trend = daily_trend['direction']
+            # НОВА ЛОГИКА: Приоритизираме дългосрочния тренд
+            long_direction = long_term_trend['direction']
+            medium_direction = medium_term_trend['direction'] 
+            daily_direction = daily_trend['direction']
+            
+            # Определяме основния тренд базирано на дългосрочен анализ
+            if long_direction == medium_direction == daily_direction:
+                primary_trend = long_direction
+                trend_confidence = 'VERY_HIGH'
+            elif long_direction == medium_direction:
+                primary_trend = long_direction  # Дългосрочният и средносрочният са по-важни
                 trend_confidence = 'HIGH'
-            elif daily_trend['strength'] == 'STRONG' and weekly_trend['strength'] == 'STRONG':
-                primary_trend = daily_trend['direction']  # Дневният има приоритет
+            elif long_direction == daily_direction:
+                primary_trend = long_direction  # Дългосрочният е най-важен
+                trend_confidence = 'HIGH'
+            elif medium_direction == daily_direction:
+                primary_trend = medium_direction  # Краткосрочна доминация
                 trend_confidence = 'MEDIUM'
             else:
                 primary_trend = 'MIXED'
                 trend_confidence = 'LOW'
             
-            # Изчисляваме общата сила на тренда
-            daily_strength_score = self._strength_to_score(daily_trend['strength'])
-            weekly_strength_score = self._strength_to_score(weekly_trend['strength'])
-            combined_strength = (daily_strength_score + weekly_strength_score) / 2
+            # ENHANCED: Включваме market regime в анализа
+            regime_adjusted_trend = primary_trend
+            if market_regime['regime'] == 'STRONG_BULL':
+                # В STRONG_BULL, дори MIXED става UPTREND
+                if primary_trend in ['MIXED', 'NEUTRAL']:
+                    regime_adjusted_trend = 'UPTREND (STRONG)'
+                elif primary_trend == 'UPTREND':
+                    regime_adjusted_trend = 'UPTREND (STRONG)'
+                # DOWNTREND остава, но с предупреждение
+                elif primary_trend == 'DOWNTREND':
+                    regime_adjusted_trend = 'DOWNTREND (AGAINST_REGIME)'
             
-            # Определяме дали тренда е приключил
-            trend_completed = self._is_trend_completed(daily_trend, weekly_trend, range_analysis)
+            # Изчисляваме общата сила на тренда (обновено)
+            daily_strength = self._strength_to_score(daily_trend['strength'])
+            weekly_strength = self._strength_to_score(weekly_trend['strength'])
+            medium_strength = self._strength_to_score(medium_term_trend['strength'])
+            long_strength = self._strength_to_score(long_term_trend['strength'])
+            
+            # Тегловен average с приоритет на дългосрочния
+            combined_strength = (
+                daily_strength * 0.1 + 
+                weekly_strength * 0.2 + 
+                medium_strength * 0.3 + 
+                long_strength * 0.4
+            )
+            
+            # Определяме дали тренда е приключил (обновено)
+            trend_completed = self._is_trend_completed_enhanced(daily_trend, weekly_trend, medium_term_trend, long_term_trend, range_analysis, market_regime)
             
             combined_trend = {
                 'primary_trend': primary_trend,
+                'regime_adjusted_trend': regime_adjusted_trend,
                 'trend_confidence': trend_confidence,
                 'combined_strength': combined_strength,
                 'trend_completed': trend_completed,
+                'market_regime': market_regime['regime'],
+                'regime_confidence': market_regime['confidence'],
                 'daily_trend_summary': {
                     'direction': daily_trend['direction'],
                     'strength': daily_trend['strength'],
@@ -457,13 +512,24 @@ class TrendAnalyzer:
                     'strength': weekly_trend['strength'],
                     'change_pct': weekly_trend['price_change_pct']
                 },
+                'medium_term_summary': {
+                    'direction': medium_term_trend['direction'],
+                    'strength': medium_term_trend['strength'],
+                    'change_pct': medium_term_trend['price_change_pct']
+                },
+                'long_term_summary': {
+                    'direction': long_term_trend['direction'],
+                    'strength': long_term_trend['strength'],
+                    'change_pct': long_term_trend['price_change_pct']
+                },
                 'range_summary': {
                     'status': range_analysis['range_status'],
                     'position': range_analysis['range_position']
                 }
             }
             
-            logger.info(f"Комбиниран тренд: {primary_trend} (увереност: {trend_confidence}, приключил: {trend_completed})")
+            logger.info(f"Комбиниран тренд: {regime_adjusted_trend} (увереност: {trend_confidence}, приключил: {trend_completed})")
+            logger.info(f"Market Regime: {market_regime['regime']} ({market_regime['confidence']:.2f})")
             return combined_trend
             
         except Exception as e:
@@ -475,6 +541,45 @@ class TrendAnalyzer:
         strength_map = {'WEAK': 0.3, 'MODERATE': 0.6, 'STRONG': 1.0}
         return strength_map.get(strength, 0.5)
     
+    def _is_trend_completed_enhanced(self, daily_trend: Dict, weekly_trend: Dict, medium_term_trend: Dict, long_term_trend: Dict, range_analysis: Dict, market_regime: Dict) -> bool:
+        """Определя дали тренда е приключил (enhanced version)"""
+        try:
+            # В STRONG_BULL режим, тренда почти никога не е "приключил"
+            if market_regime['regime'] == 'STRONG_BULL' and market_regime['confidence'] > 0.7:
+                # STRONG_BULL продължава освен при екстремни условия
+                if range_analysis['range_position'] > 0.95:  # Много близо до ATH
+                    return daily_trend['strength'] == 'WEAK' and weekly_trend['strength'] == 'WEAK'
+                else:
+                    return False  # STRONG_BULL продължава
+            
+            # За другите режими използваме стандартна логика
+            if long_term_trend['direction'] == 'UPTREND':
+                # За uptrend, проверяваме дали има признаци на изчерпване
+                if range_analysis['range_position'] > 0.8:
+                    # Трите timeframe-а показват слабост?
+                    weak_signals = 0
+                    if daily_trend['strength'] == 'WEAK': weak_signals += 1
+                    if weekly_trend['strength'] == 'WEAK': weak_signals += 1  
+                    if medium_term_trend['strength'] == 'WEAK': weak_signals += 1
+                    
+                    return weak_signals >= 2  # Поне 2 от 3 timeframe-а са слаби
+                    
+            elif long_term_trend['direction'] == 'DOWNTREND':
+                # За downtrend, проверяваме за bottom сигнали
+                if range_analysis['range_position'] < 0.2:
+                    weak_signals = 0
+                    if daily_trend['strength'] == 'WEAK': weak_signals += 1
+                    if weekly_trend['strength'] == 'WEAK': weak_signals += 1
+                    if medium_term_trend['strength'] == 'WEAK': weak_signals += 1
+                    
+                    return weak_signals >= 2
+            
+            return False
+            
+        except Exception as e:
+            logger.error(f"Грешка при определяне дали тренда е приключил: {e}")
+            return False
+
     def _is_trend_completed(self, daily_trend: Dict, weekly_trend: Dict, range_analysis: Dict) -> bool:
         """Определя дали тренда е приключил"""
         try:
@@ -609,6 +714,220 @@ class TrendAnalyzer:
         except Exception as e:
             logger.error(f"Грешка при генериране на адаптивна стратегия: {e}")
             return {'error': f'Грешка: {e}'}
+
+    def _analyze_medium_term_trend(self, df: pd.DataFrame) -> Dict:
+        """Анализира средносрочния тренд (90 дни)"""
+        try:
+            if len(df) < self.medium_term_lookback_days:
+                return {'error': f'Недостатъчно данни за средносрочен анализ (нужни: {self.medium_term_lookback_days})'}
+            
+            # Взимаме последните 90 дни
+            recent_data = df.tail(self.medium_term_lookback_days)
+            
+            # Линейна регресия
+            x = np.arange(len(recent_data))
+            y = recent_data['Close'].values
+            
+            slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
+            
+            # Изчисляваме промяната в цената
+            start_price = y[0]
+            end_price = y[-1]
+            price_change = end_price - start_price
+            price_change_pct = (price_change / start_price) * 100
+            
+            # Определяме силата на тренда (по-високи прагове за по-дълъг период)
+            if abs(price_change_pct) < 15:
+                trend_strength = 'WEAK'
+            elif abs(price_change_pct) < 35:
+                trend_strength = 'MODERATE'
+            elif abs(price_change_pct) < 60:
+                trend_strength = 'STRONG'
+            else:
+                trend_strength = 'EXTREME'
+            
+            # Определяме посоката на тренда (по-голям threshold за по-дълъг период)
+            threshold = self.trend_threshold * 3  # 3x по-голям threshold за 90 дни
+            if slope > threshold:
+                trend_direction = 'UPTREND'
+            elif slope < -threshold:
+                trend_direction = 'DOWNTREND'
+            else:
+                trend_direction = 'NEUTRAL'
+            
+            medium_trend = {
+                'direction': trend_direction,
+                'strength': trend_strength,
+                'slope': slope,
+                'r_squared': r_value ** 2,
+                'price_change': price_change,
+                'price_change_pct': price_change_pct,
+                'start_price': start_price,
+                'end_price': end_price,
+                'lookback_days': self.medium_term_lookback_days,
+                'significance': 'HIGH' if p_value < 0.01 else 'MEDIUM' if p_value < 0.05 else 'LOW'
+            }
+            
+            logger.info(f"Средносрочен тренд (90d): {trend_direction} ({trend_strength}) - {price_change_pct:+.2f}%")
+            return medium_trend
+            
+        except Exception as e:
+            logger.error(f"Грешка при анализ на средносрочния тренд: {e}")
+            return {'error': f'Грешка: {e}'}
+
+    def _analyze_long_term_trend(self, df: pd.DataFrame) -> Dict:
+        """Анализира дългосрочния тренд (180 дни)"""
+        try:
+            if len(df) < self.long_term_lookback_days:
+                return {'error': f'Недостатъчно данни за дългосрочен анализ (нужни: {self.long_term_lookback_days})'}
+            
+            # Взимаме последните 180 дни
+            recent_data = df.tail(self.long_term_lookback_days)
+            
+            # Линейна регресия
+            x = np.arange(len(recent_data))
+            y = recent_data['Close'].values
+            
+            slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
+            
+            # Изчисляваме промяната в цената
+            start_price = y[0]
+            end_price = y[-1]
+            price_change = end_price - start_price
+            price_change_pct = (price_change / start_price) * 100
+            
+            # Определяме силата на тренда (още по-високи прагове за 180 дни)
+            if abs(price_change_pct) < 25:
+                trend_strength = 'WEAK'
+            elif abs(price_change_pct) < 50:
+                trend_strength = 'MODERATE'
+            elif abs(price_change_pct) < 100:
+                trend_strength = 'STRONG'
+            else:
+                trend_strength = 'EXTREME'
+            
+            # Определяме посоката на тренда (още по-голям threshold за 180 дни)
+            threshold = self.trend_threshold * 5  # 5x по-голям threshold за 180 дни
+            if slope > threshold:
+                trend_direction = 'UPTREND'
+            elif slope < -threshold:
+                trend_direction = 'DOWNTREND'
+            else:
+                trend_direction = 'NEUTRAL'
+            
+            long_trend = {
+                'direction': trend_direction,
+                'strength': trend_strength,
+                'slope': slope,
+                'r_squared': r_value ** 2,
+                'price_change': price_change,
+                'price_change_pct': price_change_pct,
+                'start_price': start_price,
+                'end_price': end_price,
+                'lookback_days': self.long_term_lookback_days,
+                'significance': 'HIGH' if p_value < 0.001 else 'MEDIUM' if p_value < 0.01 else 'LOW'
+            }
+            
+            logger.info(f"Дългосрочен тренд (180d): {trend_direction} ({trend_strength}) - {price_change_pct:+.2f}%")
+            return long_trend
+            
+        except Exception as e:
+            logger.error(f"Грешка при анализ на дългосрочния тренд: {e}")
+            return {'error': f'Грешка: {e}'}
+
+    def _detect_market_regime(self, df: pd.DataFrame, medium_trend: Dict, long_trend: Dict) -> Dict:
+        """Определя market regime базирано на дългосрочния анализ"""
+        try:
+            if 'error' in medium_trend or 'error' in long_trend:
+                return {'regime': 'UNKNOWN', 'confidence': 0.0, 'reason': 'Недостатъчни данни'}
+            
+            # Анализираме 12-месечен период за sustained bull detection
+            yearly_data = df.tail(365) if len(df) >= 365 else df
+            yearly_change_pct = ((yearly_data['Close'].iloc[-1] / yearly_data['Close'].iloc[0]) - 1) * 100
+            
+            medium_change = medium_trend['price_change_pct']
+            long_change = long_trend['price_change_pct']
+            
+            # STRONG_BULL критерии - ключово за SHORT блокиране
+            if (long_change > self.bull_market_threshold and 
+                medium_change > 20 and 
+                yearly_change_pct > 60):
+                regime = 'STRONG_BULL'
+                confidence = min(0.9, (long_change / 100) + (yearly_change_pct / 200))
+                reason = f'Sustained bull run: 6м {long_change:+.1f}%, 3м {medium_change:+.1f}%, 12м {yearly_change_pct:+.1f}%'
+                
+            # MODERATE_BULL
+            elif (long_change > 25 and medium_change > 10):
+                regime = 'MODERATE_BULL'
+                confidence = min(0.8, (long_change / 60) + (medium_change / 40))
+                reason = f'Moderate bull: 6м {long_change:+.1f}%, 3м {medium_change:+.1f}%'
+                
+            # WEAK_BULL
+            elif (long_change > 10 and medium_change > 5):
+                regime = 'WEAK_BULL'
+                confidence = 0.6
+                reason = f'Weak bull: 6м {long_change:+.1f}%, 3м {medium_change:+.1f}%'
+                
+            # BEAR MARKET
+            elif (long_change < -20 and medium_change < -10):
+                regime = 'BEAR'
+                confidence = min(0.9, abs(long_change / 50) + abs(medium_change / 30))
+                reason = f'Bear market: 6м {long_change:+.1f}%, 3м {medium_change:+.1f}%'
+                
+            # CORRECTION
+            elif (long_change > 0 and medium_change < -10):
+                regime = 'CORRECTION'
+                confidence = 0.7
+                reason = f'Correction phase: 6м {long_change:+.1f}%, но 3м {medium_change:+.1f}%'
+                
+            # NEUTRAL/RANGE
+            else:
+                regime = 'NEUTRAL'
+                confidence = 0.5
+                reason = f'Neutral range: 6м {long_change:+.1f}%, 3м {medium_change:+.1f}%'
+            
+            market_regime = {
+                'regime': regime,
+                'confidence': confidence,
+                'reason': reason,
+                'yearly_change_pct': yearly_change_pct,
+                'long_term_change_pct': long_change,
+                'medium_term_change_pct': medium_change,
+                'bull_market_duration_months': self._estimate_bull_duration(df) if 'BULL' in regime else 0
+            }
+            
+            logger.info(f"Market Regime: {regime} (confidence: {confidence:.2f}) - {reason}")
+            return market_regime
+            
+        except Exception as e:
+            logger.error(f"Грешка при определяне на market regime: {e}")
+            return {'regime': 'UNKNOWN', 'confidence': 0.0, 'reason': f'Грешка: {e}'}
+
+    def _estimate_bull_duration(self, df: pd.DataFrame) -> int:
+        """Оценява продължителността на bull market в месеци"""
+        try:
+            # Търсим последния значителен bottom (20%+ спад от предишен връх)
+            if len(df) < 60:  # Минимум 2 месеца данни
+                return 0
+                
+            # Работим назад във времето
+            current_price = df['Close'].iloc[-1]
+            months_back = 0
+            
+            for i in range(30, min(len(df), 547)):  # До 18 месеца назад
+                past_price = df['Close'].iloc[-(i)]
+                price_increase = ((current_price / past_price) - 1) * 100
+                
+                if price_increase < 20:  # Не е значителен bull run
+                    break
+                    
+                months_back = i // 30  # Конвертираме дни в месеци
+                
+            return months_back
+            
+        except Exception as e:
+            logger.error(f"Грешка при оценка на bull duration: {e}")
+            return 0
 
 if __name__ == "__main__":
     print("Trend Analyzer модул за BNB Trading System")
