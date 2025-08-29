@@ -275,7 +275,6 @@ class ElliottWaveAnalyzer:
         # Phase 2.3: Trend momentum filter configuration
         self.trend_momentum_filter = config.get('elliott_wave', {}).get('trend_momentum_filter', True)
         self.momentum_threshold = config.get('elliott_wave', {}).get('momentum_threshold', 0.7)
-        self.bull_market_threshold = config.get('elliott_wave', {}).get('bull_market_threshold', 0.15)
         
         # Initialize TrendAnalyzer for momentum confirmation
         self.trend_analyzer = TrendAnalyzer(config) if TrendAnalyzer else None
@@ -323,7 +322,7 @@ class ElliottWaveAnalyzer:
             weekly_analysis = self._analyze_timeframe(weekly_df, 'weekly')
             
             # Комбинираме анализа
-            combined_analysis = self._combine_analyses(daily_analysis, weekly_analysis)
+            combined_analysis = self._combine_analyses(daily_analysis, weekly_analysis, daily_df, weekly_df)
             
             return combined_analysis
             
@@ -599,7 +598,7 @@ class ElliottWaveAnalyzer:
             "all_levels": {k: round(v, 2) for k, v in projections.items()}
         }
     
-    def _combine_analyses(self, daily_analysis: Dict, weekly_analysis: Dict) -> Dict:
+    def _combine_analyses(self, daily_analysis: Dict, weekly_analysis: Dict, daily_df: pd.DataFrame = None, weekly_df: pd.DataFrame = None) -> Dict:
         """Комбинира daily и weekly анализа"""
         try:
             # Проверяваме за грешки
@@ -626,7 +625,7 @@ class ElliottWaveAnalyzer:
                 primary_wave = daily_analysis.get('wave', 'UNKNOWN')
             
             # Генерираме trading сигнали with DataFrames for momentum analysis
-            trading_signals = self._generate_trading_signals(daily_analysis, weekly_analysis)
+            trading_signals = self._generate_trading_signals(daily_analysis, weekly_analysis, daily_df, weekly_df)
             
             return {
                 'combined_analysis': {
@@ -721,10 +720,7 @@ class ElliottWaveAnalyzer:
         # Ако няма ясен сигнал, използваме confidence
         if signals['action'] == 'WAIT':
             combined_conf = (daily_analysis.get('confidence', 0) + weekly_analysis.get('confidence', 0)) / 2
-            if combined_conf > 70:
-                signals['confidence'] = combined_conf
-            else:
-                signals['confidence'] = combined_conf
+            signals['confidence'] = combined_conf
         
         # Add trend momentum information to signals
         signals['trend_momentum'] = trend_momentum
@@ -749,9 +745,10 @@ class ElliottWaveAnalyzer:
                 logger.warning(f"Trend analysis error: {trend_analysis['error']}")
                 return {'momentum': 'NEUTRAL', 'strength': 0.5, 'confidence': 0.3}
             
-            # Extract market regime information
-            market_regime = trend_analysis.get('market_regime', 'NEUTRAL')
-            regime_confidence = trend_analysis.get('regime_confidence', 0.5)
+            # Extract market regime information from nested structure
+            market_regime_data = trend_analysis.get('market_regime', {})
+            market_regime = market_regime_data.get('regime', 'NEUTRAL')
+            regime_confidence = market_regime_data.get('confidence', 0.5)
             
             # Calculate momentum strength based on regime
             if market_regime == 'STRONG_BULL':
@@ -781,9 +778,9 @@ class ElliottWaveAnalyzer:
                 'filter_active': momentum_type == 'STRONG_BULL' and momentum_strength > self.momentum_threshold
             }
             
-        except Exception as e:
-            logger.error(f"Error in trend momentum analysis: {e}")
-            return {'momentum': 'NEUTRAL', 'strength': 0.5, 'confidence': 0.3, 'error': str(e)}
+        except Exception:
+            logger.exception("Error in trend momentum analysis")
+            return {'momentum': 'NEUTRAL', 'strength': 0.5, 'confidence': 0.3, 'error': 'Analysis failed'}
 
 if __name__ == "__main__":
     print("Elliott Wave Analyzer модул за BNB Trading System")

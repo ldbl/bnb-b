@@ -205,18 +205,18 @@ class DivergenceDetector:
         self.bull_market_threshold = config.get('divergence', {}).get('bull_market_threshold', 0.1)  # 10% gain over lookback
         self.bear_market_threshold = config.get('divergence', {}).get('bear_market_threshold', -0.05)  # 5% loss over lookback
         
-        logger.info("Divergence Detector инициализиран с trend-strength filter")
+        logger.info("Divergence Detector инициализиран с trend-strength filter")  # noqa: RUF001
     
     def detect_all_divergences(self, price_data: pd.DataFrame, indicators_data: Dict) -> Dict:
         """
-        Открива всички видове divergence с trend-strength filtering
+        Открива всички видове divergence с trend-strength filtering  # noqa: RUF001
         
         Args:
-            price_data: DataFrame с OHLCV данни
-            indicators_data: Dict с RSI, MACD, и други индикатори
+            price_data: DataFrame с OHLCV данни  # noqa: RUF001
+            indicators_data: Dict с RSI, MACD, и други индикатори  # noqa: RUF001
             
         Returns:
-            Dict с откритите divergence
+            Dict с откритите divergence  # noqa: RUF001
         """
         try:
             # PHASE 1: Analyze market regime for trend-strength filtering
@@ -349,7 +349,7 @@ class DivergenceDetector:
                     'confidence': bullish_div['confidence'],
                     'reason': 'Цена прави ново дъно, но MACD не (bullish divergence)',
                     'price_trough': bullish_div['price_trough'],
-                    'macd_trough': bullish_div['indicator_trough']
+                    'macd_trough': bullish_div.get('macd_trough', bullish_div.get('indicator_trough'))
                 }
             else:
                 return {'type': 'NONE', 'confidence': 0, 'reason': 'Няма divergence'}
@@ -636,8 +636,8 @@ class DivergenceDetector:
             else:
                 return 'NEUTRAL'
                 
-        except Exception as e:
-            logger.error(f"Error analyzing market regime: {e}")
+        except Exception:
+            logger.exception("Error analyzing market regime")
             return 'NEUTRAL'
     
     def _apply_trend_filter(self, divergence_result: Dict, market_regime: str, divergence_type: str) -> Dict:
@@ -657,7 +657,7 @@ class DivergenceDetector:
                 return divergence_result
             
             original_type = divergence_result.get('type')
-            original_confidence = divergence_result.get('confidence', 0)
+            original_confidence = float(divergence_result.get('confidence', 0))
             
             # Apply filtering logic based on market regime
             if market_regime in ['STRONG_BULL', 'VOLATILE_BULL']:
@@ -667,13 +667,13 @@ class DivergenceDetector:
                         **divergence_result,
                         'type': 'NONE',
                         'confidence': 0,
-                        'reason': f'Filtered: Bearish divergence blocked in {market_regime} market',
+                        'reason': f'Filtered: Bearish {divergence_type.upper()} divergence blocked in {market_regime} market',
                         'original_signal': original_type,
                         'filter_applied': 'BULL_MARKET_FILTER'
                     }
                 elif original_type == 'BULLISH':
                     # Amplify bullish divergence signals in bull markets
-                    enhanced_confidence = min(original_confidence * 1.2, 1.0)
+                    enhanced_confidence = min(int(original_confidence * 1.2), 95)
                     return {
                         **divergence_result,
                         'confidence': enhanced_confidence,
@@ -684,8 +684,8 @@ class DivergenceDetector:
             elif market_regime == 'BEAR':
                 if original_type == 'BULLISH':
                     # Reduce confidence in bullish divergence in bear markets
-                    reduced_confidence = original_confidence * 0.7
-                    if reduced_confidence < 0.3:
+                    reduced_confidence = int(original_confidence * 0.7)
+                    if reduced_confidence < 30:
                         return {
                             **divergence_result,
                             'type': 'NONE',
@@ -703,7 +703,7 @@ class DivergenceDetector:
                         }
                 elif original_type == 'BEARISH':
                     # Enhance bearish divergence in bear markets
-                    enhanced_confidence = min(original_confidence * 1.3, 1.0)
+                    enhanced_confidence = min(int(original_confidence * 1.3), 95)
                     return {
                         **divergence_result,
                         'confidence': enhanced_confidence,
@@ -717,8 +717,8 @@ class DivergenceDetector:
                 'filter_applied': 'NO_FILTER'
             }
                 
-        except Exception as e:
-            logger.error(f"Error applying trend filter: {e}")
+        except Exception:
+            logger.exception("Error applying trend filter")
             return divergence_result
 
 if __name__ == "__main__":

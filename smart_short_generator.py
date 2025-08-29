@@ -163,10 +163,11 @@ class MarketRegimeDetector:
     def _analyze_volume_trend(self, df: pd.DataFrame, lookback: int) -> str:
         """Анализира тренда на обема"""
         try:
-            if 'volume' not in df.columns:
+            if 'Volume' not in df.columns and 'volume' not in df.columns:
                 return 'unknown'
 
-            volumes = df['Volume'].tail(lookback)
+            volume_col = 'Volume' if 'Volume' in df.columns else 'volume'
+            volumes = df[volume_col].tail(lookback)
             if len(volumes) < lookback:
                 return 'unknown'
 
@@ -467,11 +468,9 @@ class SmartShortSignalGenerator:
             confluence_score += 1
 
             # Layer 2: Basic Technical Check (RSI overbought only)
-            rsi_overbought = False
             if 'RSI' in daily_df.columns and daily_df['RSI'].iloc[setup['index']] > 70:
                 reasons.append("RSI overbought")
                 confluence_score += 1
-                rsi_overbought = True
 
             # Layer 3: Risk/Reward Assessment (minimum 1:1.5)
             risk_reward = self._calculate_risk_reward(setup['price'], daily_df, setup['index'])
@@ -515,14 +514,20 @@ class SmartShortSignalGenerator:
             if index < lookback:
                 return False
 
+            # Check if volume column exists
+            if 'Volume' not in df.columns and 'volume' not in df.columns:
+                return False
+            
+            volume_col = 'Volume' if 'Volume' in df.columns else 'volume'
+
             # Price trend (should be up for bearish divergence)
             price_start = df['Close'].iloc[index-lookback]
             price_end = df['Close'].iloc[index]
             price_trend = (price_end - price_start) / price_start
 
             # Volume trend (should be down for bearish divergence)
-            volume_start = df['Volume'].iloc[index-lookback:index-lookback+5].mean()
-            volume_end = df['Volume'].iloc[index-5:index].mean()
+            volume_start = df[volume_col].iloc[index-lookback:index-lookback+5].mean()
+            volume_end = df[volume_col].iloc[index-5:index].mean()
             volume_trend = (volume_end - volume_start) / volume_start if volume_start > 0 else 0
 
             # Bearish divergence: price up, volume down
@@ -652,8 +657,19 @@ class SmartShortSignalGenerator:
                     logger.info(f"✅ WEAK_BULL позволен: {ath_distance:.1f}% от ATH")
                     return True
             
+            # VOLATILE_BULL - обработване на волатилен бик пазар
+            if regime == 'VOLATILE_BULL':
+                # Подобно на MODERATE_BULL но с по-малки ограничения заради волатилността
+                min_ath_correction = 12.0
+                if ath_distance < min_ath_correction:
+                    logger.info(f"🛡️ VOLATILE_BULL блокиране: само {ath_distance:.1f}% от ATH (минимум: {min_ath_correction}%)")
+                    return False
+                else:
+                    logger.info(f"✅ VOLATILE_BULL позволен: {ath_distance:.1f}% от ATH")
+                    return True
+            
             # NEUTRAL, CORRECTION, BEAR - винаги позволени
-            if regime in ['NEUTRAL', 'CORRECTION', 'BEAR']:
+            if regime in ['NEUTRAL', 'CORRECTION', 'BEAR', 'MODERATE_BEAR', 'STRONG_BEAR']:
                 logger.info(f"✅ {regime} режим: SHORT сигнали позволени")
                 return True
                 
