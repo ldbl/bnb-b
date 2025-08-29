@@ -48,10 +48,11 @@ Thumbs.db
 *.log
 logs/
 
-# Data files
+# Data files (keep sample data)
 *.csv
-*.json
+!tests/fixtures/*.csv
 data/
+!data/sample_*
 results/
 
 # ML models
@@ -59,6 +60,12 @@ ml_models/
 *.pkl
 *.h5
 *.model
+
+# Development tools
+.mypy_cache/
+.bandit
+.pre-commit-config.yaml.backup
+.coverage.*
 
 # Environment variables
 .env

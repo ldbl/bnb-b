@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3:*)",
+      "Bash(git checkout:*)",
+      "Bash(git add:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(gh pr create:*)",
+      "Bash(git commit:*)",
+      "Bash(git reset:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(git cherry-pick:*)",
+      "Bash(git merge:*)",
+      "Bash(grep:*)",
+      "Bash(git rm:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

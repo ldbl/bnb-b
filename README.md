@@ -1,257 +1,264 @@
-# BNB Trading System - Сигнали и Анализ
+# 🚀 BNB Trading System v2.1.0
 
-## 🎯 Общ Преглед
+Advanced Technical Analysis System for BNB/USDT Trading with 22+ Specialized Analysis Modules
 
-Системата за търговия с BNB е модулна архитектура за генериране на висококачествени trading сигнали. Основният фокус е върху **технически анализ** с множество индикатори и защитни филтри.
+[![CI/CD Pipeline](https://github.com/ldbl/bnb-b/actions/workflows/ci.yml/badge.svg)](https://github.com/ldbl/bnb-b/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/ldbl/bnb-b/branch/main/graph/badge.svg)](https://codecov.io/gh/ldbl/bnb-b)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-### 📊 Архитектура
+## 📈 Current Performance
+
+- **Overall Accuracy**: 59.7% (37/62 signals) - Latest 18-month backtest
+- **LONG Accuracy**: 63.3% (49 signals) - Enhanced performance 
+- **SHORT Accuracy**: 46.2% (13 signals) - Market regime filtering active
+- **Average P&L**: +2.21% per signal
+- **Backtest Period**: 540 days (2024-03-07 to 2025-08-29)
+
+## 🏗️ Architecture
+
+### Modern Project Structure
 
 ```
-bnb_trading/
-├── main.py              # Основен entry point
-├── config.toml          # Всички параметри и тегла
-├── data_fetcher.py      # Binance API интеграция
-├── signal_generator.py  # Генериране на сигнали
-├── backtester.py        # Тестване на стратегии
-├── weekly_tails.py      # Анализ на weekly tails
-├── fibonacci.py         # Fibonacci нива
-└── indicators.py        # Технически индикатори
+bnb-b/
+├── src/bnb_trading/          # Main package source code
+│   ├── __init__.py           # Package initialization
+│   ├── main.py               # Primary entry point
+│   ├── signal_generator.py   # Core signal generation
+│   ├── data_fetcher.py       # Binance API integration
+│   ├── backtester.py         # Historical validation
+│   └── ...                   # 22+ analysis modules
+├── tests/                    # Comprehensive test suite
+│   ├── __init__.py
+│   ├── conftest.py           # Shared test fixtures
+│   ├── test_signal_generator.py
+│   └── ...                   # Module-specific tests
+├── data/                     # Analysis results and backtests
+├── .github/workflows/        # CI/CD automation
+├── config.toml               # System configuration
+├── pyproject.toml            # Modern Python packaging
+├── requirements.txt          # Production dependencies
+├── requirements-dev.txt      # Development dependencies
+└── Makefile                  # Development commands
 ```
 
-## 🔍 Как Засичаме Сигналите
+## 🚀 Quick Start
 
-### 1. **Fibonacci Анализ** (Тегло: 25%)
-```python
-# Основни нива: 0.382, 0.618
-# Анализираме подкрепа/съпротива
-fib_signal = analyze_fibonacci_levels(price, levels)
-```
+### Installation
 
-**Кога дава сигнал:**
-- Цена близо до 38.2% или 61.8% ниво
-- Силен bounce от нивото
-- Конфлуенция с други индикатори
-
-### 2. **Weekly Tails Анализ** (Тегло: 30%)
-```python
-# Анализираме формацията на свещи
-# Търсим големи upper/lower tails
-tails_signal = analyze_weekly_tails(candles, strength_threshold=0.8)
-```
-
-**Кога дава SHORT сигнал:**
-- Доминантни SHORT опашки (сила > 0.99)
-- Цена в горната част на диапазона
-- Bearish momentum
-
-**Кога дава LONG сигнал:**
-- Доминантни LONG опашки
-- Цена в долната част на диапазона
-- Bullish momentum
-
-### 3. **Moving Averages** (Тегло: 20%)
-```python
-# Анализираме crossovers на EMA20/EMA50
-ma_signal = analyze_ma_crossovers(price, ema20, ema50)
-```
-
-**Динамично тегло:**
-- **Нормално тегло:** 20%
-- **Намалено тегло:** 12% (когато Weekly Tails дават силен SHORT)
-
-### 4. **Технически Индикатори** (Тегло: 15%)
-```python
-rsi_signal = analyze_rsi(price, period=14)
-macd_signal = analyze_macd(price, fast=8, slow=17, signal=9)
-bb_signal = analyze_bollinger(price, period=20, std=2.0)
-```
-
-## 🎲 Логика за Комбиниране на Сигнали
-
-### Система на Тегла
-```python
-signal_scores = {'LONG': 0.0, 'SHORT': 0.0, 'HOLD': 0.0}
-
-# 1. Fibonacci сигнал
-fib_score = fib_strength * 0.25
-signal_scores[fib_signal] += fib_score
-
-# 2. Weekly Tails сигнал
-tails_score = tails_strength * 0.30
-signal_scores[tails_signal] += tails_score
-
-# 3. Moving Averages (динамично тегло)
-ma_weight = 0.20 if no_conflict else 0.12
-ma_score = ma_confidence * ma_weight
-signal_scores[ma_signal] += ma_score
-
-# 4. Финален сигнал
-final_signal = max(signal_scores, key=signal_scores.get)
-```
-
-### Конфликт Резолюция
-```python
-# Ако Weekly Tails показват силен SHORT (>0.8 сила)
-# намаляваме теглото на Moving Averages с 40%
-if weekly_tails_signal == 'SHORT' and tails_strength > 0.8:
-    ma_weight *= 0.6  # 20% → 12%
-```
-
-## 🛡️ Защитни Филтри
-
-### ATH Proximity Филтър
-```python
-# SHORT само ако сме близо до ATH (< 5% под ATH)
-if ath_distance_pct > 5.0:
-    signal_scores['SHORT'] = 0.0  # Блокираме SHORT
-```
-
-### Trend Strength Филтри
-```python
-# SHORT само при силни downtrends
-if trend_direction == 'STRONG_UPTREND':
-    short_score *= 0.3  # Намаляваме с 70%
-```
-
-### Signal Quality Филтри
-```python
-# Конвертираме слаб SHORT в HOLD
-if final_signal == 'SHORT' and confidence < 0.3:
-    final_signal = 'HOLD'
-```
-
-## 📈 Примери за Сигнали
-
-### Пример 1: SHORT Сигнал (Януари 2025)
-```
-Дата: 2025-01-13
-Цена: $688.64
-
-📊 Анализ:
-- Weekly Tails: SHORT опашки (сила: 0.99) → тегло: 30%
-- Moving Averages: BEARISH_BELOW → тегло: 12% (намалено!)
-- RSI: 47.1 (нейтрален)
-- MACD: Bearish cross
-
-🎯 Финален сигнал: SHORT (увереност: 0.85)
-💰 Потенциална печалба: +10.7% до $618.65
-```
-
-### Пример 2: LONG Сигнал (Декември 2024)
-```
-Дата: 2024-12-02
-Цена: $647.82
-
-📊 Анализ:
-- Fibonacci: 78.6% подкрепа (разстояние: 0.99%)
-- Weekly Tails: LONG опашки (сила: 0.99)
-- MACD: Bullish cross
-- RSI: 56.9 (нейтрален)
-
-🎯 Финален сигнал: LONG (увереност: 0.96)
-💰 Резултат: УСПЕХ (+34.33%)
-```
-
-## 🧪 Тестване и Валидация
-
-### Backtesting Процес
 ```bash
-# Стартираме backtest за 18 месеца
-python3 backtester.py
+# Clone the repository
+git clone https://github.com/ldbl/bnb-b.git
+cd bnb-b
 
-# Резултати:
-📅 Период: 2024-03-06 до 2025-08-28
-📊 Общо сигнали: 65
-✅ Успешни сигнали: 65
-🎯 Точност: 100.0%
-📈 Среден P&L: +42.14%
+# Set up development environment
+make dev-setup
+
+# Or manual installation
+pip install -r requirements-dev.txt
+pip install -e .
 ```
 
-### Качество на Сигналите
-- **Confidence levels:** 0.5-5.0 (с емотикони)
-- **Валидация:** 14-дневен holding period
-- **Risk management:** Stop-loss стратегии
-- **Market regime:** Адаптация към bull/bear пазари
+### Basic Usage
 
-## 🎛️ Конфигурация
+```bash
+# Generate current trading signal
+make signal
 
-### Основни Параметри (config.toml)
+# Run comprehensive analysis
+make analyze
+
+# Execute 18-month backtest
+make backtest
+
+# Run all tests
+make test
+```
+
+### Python API
+
+```python
+from bnb_trading import SignalGenerator, BNBDataFetcher
+import toml
+
+# Load configuration
+config = toml.load('config.toml')
+
+# Initialize components
+data_fetcher = BNBDataFetcher(config)
+signal_gen = SignalGenerator(config)
+
+# Fetch data and generate signals
+daily_data, weekly_data = data_fetcher.get_current_data()
+signal = signal_gen.generate_signal(daily_data, weekly_data)
+
+print(f"Signal: {signal['signal']}")
+print(f"Confidence: {signal['confidence']:.1%}")
+print(f"Reasoning: {signal['reason']}")
+```
+
+## 🔧 Development
+
+### Prerequisites
+
+- Python 3.8+
+- TA-Lib technical analysis library
+- Make (for development commands)
+
+### Development Workflow
+
+```bash
+# Format code
+make format
+
+# Run linting
+make lint
+
+# Run tests with coverage
+make test
+
+# Run specific test categories
+make test-unit        # Unit tests only
+make test-integration # Integration tests
+make test-slow        # Tests requiring market data
+```
+
+### Pre-commit Hooks
+
+Automatic code quality checks on every commit:
+
+```bash
+# Install hooks
+make pre-commit
+
+# Manual run
+pre-commit run --all-files
+```
+
+## 📊 Core Modules
+
+### 🎯 Signal Generation Engine
+- **SignalGenerator**: Orchestrates 22+ analysis modules with weighted scoring
+- **Multi-timeframe Analysis**: Daily and weekly data correlation
+- **Market Regime Intelligence**: STRONG_BULL detection and SHORT blocking
+
+### 📈 Technical Analysis Modules
+- **Fibonacci Analysis** (35% weight): Support/resistance levels
+- **Weekly Tails Analysis** (40% weight): Wick pattern analysis
+- **Technical Indicators** (15% weight): RSI, MACD, Bollinger Bands
+- **Moving Averages** (10% weight): Trend confirmation
+- **Elliott Wave Analysis**: Wave structure and completion signals
+- **Divergence Detection**: Price-momentum divergence analysis
+- **Smart SHORT Generator**: Market regime-aware SHORT signals
+
+### 🛡️ Risk Management
+- **Market Regime Detection**: Bull/Bear/Neutral classification
+- **ATH Proximity Filtering**: Prevents risky SHORT signals
+- **Volume Confirmation**: Enhanced signal validation
+- **Time-based Validation**: Realistic holding periods
+
+## 🧪 Testing
+
+### Test Categories
+
+- **Unit Tests**: Individual module testing
+- **Integration Tests**: Multi-module interaction testing
+- **Slow Tests**: Full market data validation
+- **API Tests**: External data source testing
+
+### Running Tests
+
+```bash
+# All tests with coverage
+pytest tests/ --cov=src/bnb_trading --cov-report=html
+
+# Specific markers
+pytest -m "unit"           # Unit tests only
+pytest -m "integration"    # Integration tests only  
+pytest -m "slow"          # Market data tests
+```
+
+## 📈 Configuration
+
+The system is fully configurable via `config.toml`:
+
 ```toml
+[data]
+symbol = "BNB/USDT"
+lookback_days = 500
+timeframes = ["1d", "1w"]
+
 [signals]
-fibonacci_weight = 0.25
-weekly_tails_weight = 0.30
-ma_weight = 0.20
-rsi_weight = 0.15
-macd_weight = 0.10
+fibonacci_weight = 0.35      # Primary analysis weight
+weekly_tails_weight = 0.40   # Enhanced for LONG accuracy
+confidence_threshold = 0.8   # Quality control
 
-[short_signals]
+[smart_short]
 enabled = true
-min_short_score = 70
-confidence_threshold = 0.8
+bull_market_block = true     # Safety in bull markets
+min_ath_distance_pct = 5.0   # Risk management
 ```
 
-## 🚀 Как да Стартираме
+## 🔄 CI/CD Pipeline
 
-### 1. Бърз Старт
-```bash
-# Инициализираме системата
-python3 main.py
+Automated testing and quality checks:
 
-# Генерираме сигнал за текущата седмица
-python3 signal_generator.py
-```
+- **Multi-Python Testing**: 3.8, 3.9, 3.10, 3.11
+- **Code Quality**: Black, isort, flake8, mypy
+- **Security Scanning**: Bandit security analysis
+- **Test Coverage**: Comprehensive coverage reporting
+- **Integration Testing**: Full system validation
 
-### 2. Backtesting
-```bash
-# Тестване на стратегията
-python3 backtester.py
+## 📚 Documentation
 
-# Анализ на резултатите
-cat data/backtest_results.txt
-```
+- **[CLAUDE.md](CLAUDE.md)**: Development guide and system overview
+- **[MODULES.md](MODULES.md)**: Detailed technical documentation
+- **[TODO.md](TODO.md)**: Development roadmap and priorities
 
-### 3. Debug Mode
-```bash
-# Детайлно логване
-python3 debug_short_detailed.py
-```
+## 🎯 Performance Targets
 
-## 📊 Метрики за Успех
+### Current vs Target Performance
 
-### Текущи Резултати
-- **Точност:** 100% (65/65 сигнала)
-- **Среден P&L:** +42.14%
-- **SHORT сигнали:** 0 (филтрирани за качество)
-- **LONG сигнали:** 65 (всички успешни)
+| Metric | Current | Target | Status |
+|--------|---------|---------|---------|
+| LONG Accuracy | 63.3% | 85%+ | 🚧 In Progress |
+| SHORT Accuracy | 46.2% | 75%+ | 🚧 In Progress |
+| Overall Accuracy | 59.7% | 80%+ | 🚧 In Progress |
+| Risk/Reward Ratio | 1:2.1 | 1:4 (LONG) | 🚧 Improving |
 
-### Цели
-- 🎯 **75%+ обща точност**
-- 📈 **25%+ среден P&L**
-- ⚡ **<2 секунди** за анализ
-- 🛡️ **100% защитни филтри**
+## 🤝 Contributing
 
-## 🔧 Подобрения и Фичи
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make your changes with tests
+4. Run quality checks: `make ci-test`
+5. Commit changes: `git commit -m 'Add amazing feature'`
+6. Push to branch: `git push origin feature/amazing-feature`
+7. Open a Pull Request
 
-### ✅ Имплементирани
-- [x] ATH proximity филтри
-- [x] Dynamic тегла базирани на конфликти
-- [x] Weekly Tails приоритет за SHORT
-- [x] Moving Averages интеграция
-- [x] Confidence scoring система
+### Development Standards
 
-### 🚧 В Разработка
-- [ ] Machine Learning модели
-- [ ] Sentiment анализ
-- [ ] Whale tracking интеграция
-- [ ] Risk management системи
+- **Code Quality**: Black formatting, flake8 linting, mypy type checking
+- **Testing**: Minimum 80% test coverage required
+- **Documentation**: Comprehensive docstrings and examples
+- **Type Safety**: Full type hints for all public APIs
 
-## 📚 Допълнителна Документация
+## 📄 License
 
-- `config.toml` - Всички параметри
-- `data/backtest_results.txt` - Детайлни резултати
-- `weekly_tails.py` - Weekly Tails алгоритъм
-- `signal_generator.py` - Логика за сигнали
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## ⚠️ Disclaimer
+
+This software is for educational and research purposes only. Cryptocurrency trading involves substantial risk of loss. Never trade with money you cannot afford to lose. Past performance does not guarantee future results.
+
+## 🙏 Acknowledgments
+
+- **TA-Lib**: Technical Analysis Library
+- **CCXT**: Cryptocurrency Exchange Trading Library  
+- **Pandas**: Data analysis and manipulation
+- **NumPy**: Numerical computing
 
 ---
 
-**🎯 Системата е оптимизирана за качество, не за количество!**
+*For detailed technical documentation, see [MODULES.md](MODULES.md)*
+*For development guidance, see [CLAUDE.md](CLAUDE.md)*
