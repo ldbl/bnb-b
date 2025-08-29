@@ -667,7 +667,7 @@ class WeeklyTailsAnalyzer:
             for tail in tails_analysis:
                 weighted_tail = tail.copy()
                 original_strength = tail.get('strength', 0)
-                tail_type = tail.get('type', 'NONE')
+                tail_type = tail.get('signal', 'NONE')
                 
                 # Apply trend-based weighting logic
                 if market_trend == 'BULL':
@@ -681,7 +681,7 @@ class WeeklyTailsAnalyzer:
                         # Suppress SHORT tail signals in bull markets
                         new_strength = original_strength * self.short_tail_suppression
                         if new_strength < self.min_tail_size:
-                            weighted_tail['type'] = 'NONE'
+                            weighted_tail['signal'] = 'NONE'
                             weighted_tail['strength'] = 0
                             weighted_tail['trend_adjustment'] = 'BULL_SUPPRESSED'
                             weighted_tail['reason'] = 'SHORT tail suppressed in bull market'

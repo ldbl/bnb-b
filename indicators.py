@@ -694,6 +694,9 @@ class TechnicalIndicators:
                     volume_spike = True
                     strength = min(strength + 0.2, 1.0)  # Bonus for volume spike
                     reason += " + Volume spike detected"
+            else:
+                # Explicit else block for clarity when insufficient data for spike detection
+                logger.debug("Insufficient data for volume spike detection (need at least 5 periods)")
             
             return {
                 'signal': signal,
@@ -708,7 +711,7 @@ class TechnicalIndicators:
             }
             
         except Exception as e:
-            logger.error(f"Error in volume signal analysis: {e}")
+            logger.exception(f"Error in volume signal analysis: {e}")  # Use logging.exception for full traceback
             return {'signal': 'HOLD', 'reason': f'Volume analysis error: {e}', 'volume_ratio': 0.0}
 
 if __name__ == "__main__":
