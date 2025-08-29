@@ -462,8 +462,7 @@ class WeeklyTailsAnalyzer:
                 )
                 for point in confluence_info["confluence_points"][:3]:  # Показваме топ 3
                     logger.info(
-                        f"  {point['tail_date'].strftime('%Y-%m-%d')}: Fib {point['fib_level'] *
-                                                                                    100:.1f}% + {point['tail_signal']} (сила: {point['confluence_score']:.2f})"
+                        f"  {point['tail_date'].strftime('%Y-%m-%d')}: Fib {point['fib_level'] * 100:.1f}% + {point['tail_signal']} (сила: {point['confluence_score']:.2f})"
                     )
 
             return confluence_info

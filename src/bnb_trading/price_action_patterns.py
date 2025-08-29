@@ -316,12 +316,12 @@ class PriceActionPatternsAnalyzer:
                 if "high" in price_data.columns
                 else price_data["High"].values
             )
-            lows = (
+            lows = (  # noqa: F841
                 price_data["low"].values
                 if "low" in price_data.columns
                 else price_data["Low"].values
             )
-            closes = (
+            closes = (  # noqa: F841
                 price_data["close"].values
                 if "close" in price_data.columns
                 else price_data["Close"].values
@@ -399,7 +399,7 @@ class PriceActionPatternsAnalyzer:
             if len(price_data) < 20:
                 return {"detected": False, "confidence": 0, "reason": "Недостатъчно данни"}
 
-            highs = (
+            highs = (  # noqa: F841
                 price_data["high"].values
                 if "high" in price_data.columns
                 else price_data["High"].values
@@ -409,7 +409,7 @@ class PriceActionPatternsAnalyzer:
                 if "low" in price_data.columns
                 else price_data["Low"].values
             )
-            closes = (
+            closes = (  # noqa: F841
                 price_data["close"].values
                 if "close" in price_data.columns
                 else price_data["Close"].values
