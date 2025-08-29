@@ -491,21 +491,35 @@ class Backtester:
             if future_data.empty:
                 return None
             
-            # ФИКС: Взимаме най-близката дата до 14 дни напред (не по-далеч в бъдещето)
-            # Ограничаваме търсенето до максимум 21 дни напред за гъвкавост
-            max_validation_date = signal_date + pd.Timedelta(days=21)
-            target_data = future_data[
+            # ENHANCED: Improved validation window selection with priority-based approach
+            # Priority 1: Exact 14-day window (preferred)
+            exact_validation_window = future_data[
                 (future_data.index >= validation_date) & 
-                (future_data.index <= max_validation_date)
+                (future_data.index <= validation_date + pd.Timedelta(days=1))
             ]
             
-            if target_data.empty:
-                # Ако няма данни в 14-21 дневния прозорец, търсим най-близката в рамките на 30 дни
-                extended_window = future_data[future_data.index <= signal_date + pd.Timedelta(days=30)]
-                if extended_window.empty:
-                    logger.warning(f"Няма данни за валидация в разумен период след {signal_date.strftime('%Y-%m-%d')}")
-                    return None
-                target_data = extended_window.tail(1)  # Вземаме последната в 30-дневния прозорец
+            if not exact_validation_window.empty:
+                # Found data exactly at 14-day mark - use this
+                target_data = exact_validation_window.head(1)  # Take earliest bar in window
+            else:
+                # Priority 2: 14-21 day flexible window (maintain minimum 14-day holding period)
+                flexible_window = future_data[
+                    (future_data.index >= validation_date) & 
+                    (future_data.index <= signal_date + pd.Timedelta(days=21))
+                ]
+                
+                if not flexible_window.empty:
+                    # Select earliest available bar in 14-21 day window to maintain minimum holding period
+                    target_data = flexible_window.head(1)
+                else:
+                    # Priority 3: Fallback to nearest available bar (still maintain 14-day minimum)
+                    fallback_window = future_data[future_data.index >= validation_date]
+                    if not fallback_window.empty:
+                        target_data = fallback_window.head(1)
+                        logger.info(f"Using fallback validation at {target_data.index[0].strftime('%Y-%m-%d')} for signal on {signal_date.strftime('%Y-%m-%d')}")
+                    else:
+                        logger.warning(f"Insufficient data for 14-day minimum validation period after {signal_date.strftime('%Y-%m-%d')}")
+                        return None
             
             validation_price = target_data.iloc[-1]['Close']
             validation_date_actual = target_data.index[-1]

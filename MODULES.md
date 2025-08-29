@@ -40,7 +40,7 @@ class BNBTradingSystem:
 
 **Dependencies**: All 22+ analysis modules, data_fetcher, signal_generator
 
-**Current Performance**: 55.3% overall accuracy (21/38 signals) over 18-month backtest
+**Current Performance**: 59.7% overall accuracy (37/62 signals) over 18-month backtest
 
 ---
 

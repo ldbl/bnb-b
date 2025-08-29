@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a modular BNB/USDT swing trading system that uses advanced technical analysis to generate high-confidence trading signals. The system combines 22+ specialized analysis modules with weighted scoring to achieve current performance of 55.3% overall accuracy, with 60.0% LONG accuracy and 46.2% SHORT accuracy over an 18-month backtest period.
+This is a modular BNB/USDT swing trading system that uses advanced technical analysis to generate high-confidence trading signals. The system combines 22+ specialized analysis modules with weighted scoring to achieve current performance of 59.7% overall accuracy, with 63.3% LONG accuracy and 46.2% SHORT accuracy over an 18-month backtest period.
 
 ### Key Architecture Principles
 - **Modular design**: Each indicator/analysis in separate Python files
@@ -197,7 +197,7 @@ confidence_threshold_high = 5.0
 - **Long Tail Reversal Pattern**: Documented in TODO.md:81-100 for implementation
 
 ### Development Priorities
-1. **LONG Signal Enhancement**: **CRITICAL** - Improve from 60.0% to **85%+ target accuracy**
+1. **LONG Signal Enhancement**: **CRITICAL** - Improve from 63.3% to **85%+ target accuracy**
 2. **SHORT Signal Quality**: **CRITICAL** - Improve from 46.2% to **75%+ target accuracy**
 3. ✅ **Divergence Detection Enhanced**: **COMPLETED** - Added trend-strength filter to prevent false signals in bull markets
 4. ✅ **Weekly Tails Enhancement**: **COMPLETED** - Added trend-based weighting (1.5x LONG/0.3x SHORT in bull markets)
@@ -207,7 +207,7 @@ confidence_threshold_high = 5.0
 8. **Time-based Exit Strategy**: Implement realistic correction targets (10-20%)
 
 > **⚠️ Performance Gap Alert**: Current accuracy is significantly below target requirements
-> - LONG: 60.0% vs 85%+ target (25 percentage point gap)
+> - LONG: 63.3% vs 85%+ target (21.7 percentage point gap)
 > - SHORT: 46.2% vs 75%+ target (29 percentage point gap)
 
 ## Trading Signal Success Philosophy
@@ -306,12 +306,12 @@ This system represents a sophisticated trading system with:
 - **18-month backtesting validation** (540 days of market data)
 - **22+ specialized analysis modules** with weighted scoring  
 - **Market regime intelligence** preventing inappropriate SHORT signals in bull markets
-- **Current accuracy**: 55.3% overall (60.0% LONG, 46.2% SHORT)
+- **Current accuracy**: 59.7% overall (63.3% LONG, 46.2% SHORT)
 - **Active development**: Multi-timeframe error fix and LONG signal enhancement priority
 - **Production-ready**: Comprehensive error handling and real-time Binance API integration
 
 **Next Development Phase**: **Critical accuracy improvement required**
-- **LONG signals**: From 60.0% to 85%+ (minimum 1:4 risk/reward ratio)  
+- **LONG signals**: From 63.3% to 85%+ (minimum 1:4 risk/reward ratio)  
 - **SHORT signals**: From 46.2% to 75%+ (minimum 1:3 risk/reward ratio)
 - **Focus**: Enhanced filtering, confluence requirements, and signal quality over quantity
 - Винаги обновявай @MODULES.md и @CLAUDE.md ако е необходимо. Винаги тествай с 18 след имплементация на нова функционалност . Сремим се към над 85% точнос на сигналите.
