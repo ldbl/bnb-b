@@ -56,9 +56,9 @@ where = ["src"]
 [tool.setuptools.package-data]
 "bnb_trading" = ["*.toml", "*.txt"]
 
-# Black configuration
+# Black configuration - Default 88 characters for better compatibility
 [tool.black]
-line-length = 100
+line-length = 88
 target-version = ['py313']
 include = '\.pyi?$'
 extend-exclude = '''
@@ -70,6 +70,7 @@ extend-exclude = '''
   | \.mypy_cache
   | \.tox
   | \.venv
+  | strict_lint
   | build
   | dist
 )/
