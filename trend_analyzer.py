@@ -198,13 +198,36 @@ class TrendAnalyzer:
             ... }
             >>> analyzer = TrendAnalyzer(config)
         """
-        self.trend_lookback_days = config.get('trend', {}).get('trend_lookback_days', 30)
-        self.trend_threshold = config.get('trend', {}).get('trend_threshold', 0.015)
-        self.range_analysis_periods = 20  # Периоди за range анализ
+        # Centralized configuration loading with fallback defaults
+        trend_config = config.get('trend_analysis', {})
+        self.trend_lookback_days = trend_config.get('trend_lookback_days', 30)
+        self.trend_threshold = trend_config.get('trend_threshold', 0.015)
+        self.range_analysis_periods = trend_config.get('range_analysis_periods', 20)
+        
+        # Market regime detection thresholds
+        self.strong_bull_threshold = trend_config.get('strong_bull_threshold', 0.50)
+        self.moderate_bull_threshold = trend_config.get('moderate_bull_threshold', 0.25)
+        self.weak_bull_threshold = trend_config.get('weak_bull_threshold', 0.10)
+        self.bear_threshold = trend_config.get('bear_threshold', -0.10)
+        
+        # Trend strength classification thresholds
+        self.trend_strength_weak = trend_config.get('trend_strength_weak', 0.05)
+        self.trend_strength_moderate = trend_config.get('trend_strength_moderate', 0.10)
+        self.trend_strength_strong = trend_config.get('trend_strength_strong', 0.20)
+        self.trend_strength_extreme = trend_config.get('trend_strength_extreme', 0.30)
+        
+        # Range detection parameters
+        self.range_threshold_factor = trend_config.get('range_threshold_factor', 0.8)
+        self.range_breakout_factor = trend_config.get('range_breakout_factor', 0.5)
+        self.range_upper_threshold = trend_config.get('range_upper_threshold', 0.8)
+        self.range_lower_threshold = trend_config.get('range_lower_threshold', 0.2)
         
         logger.info("Trend анализатор инициализиран")
         logger.info(f"Trend lookback: {self.trend_lookback_days} дни")
         logger.info(f"Trend threshold: {self.trend_threshold:.1%}")
+        logger.info(f"Market regime thresholds - Strong Bull: {self.strong_bull_threshold:.1%}, Moderate Bull: {self.moderate_bull_threshold:.1%}")
+        logger.info(f"Trend strength categories - Weak: <{self.trend_strength_weak:.1%}, Moderate: <{self.trend_strength_moderate:.1%}, Strong: <{self.trend_strength_strong:.1%}, Extreme: >{self.trend_strength_strong:.1%}")
+        logger.info(f"Range thresholds - Upper: {self.range_upper_threshold}, Lower: {self.range_lower_threshold}")
     
     def analyze_trend(self, daily_df: pd.DataFrame, weekly_df: pd.DataFrame) -> Dict:
         """
@@ -272,13 +295,16 @@ class TrendAnalyzer:
             price_change = end_price - start_price
             price_change_pct = (price_change / start_price) * 100
             
-            # Определяме силата на тренда
-            if abs(price_change_pct) < 5:
+            # Определяме силата на тренда използвайки конфигурационните параметри
+            abs_change_pct = abs(price_change_pct) / 100  # Convert to decimal for comparison
+            if abs_change_pct < self.trend_strength_weak:
                 trend_strength = 'WEAK'
-            elif abs(price_change_pct) < 15:
+            elif abs_change_pct < self.trend_strength_moderate:
                 trend_strength = 'MODERATE'
-            else:
+            elif abs_change_pct < self.trend_strength_strong:
                 trend_strength = 'STRONG'
+            else:
+                trend_strength = 'EXTREME'
             
             # Определяме посоката на тренда
             if slope > self.trend_threshold:
@@ -385,9 +411,9 @@ class TrendAnalyzer:
             historical_range_pct = (historical_range / historical_low) * 100
             
             # Определяме дали range се разширява или свива
-            if current_range_pct > historical_range_pct * 0.8:
+            if current_range_pct > historical_range_pct * self.range_threshold_factor:
                 range_status = 'EXPANDING'
-            elif current_range_pct < historical_range_pct * 0.5:
+            elif current_range_pct < historical_range_pct * self.range_breakout_factor:
                 range_status = 'CONTRACTING'
             else:
                 range_status = 'STABLE'
@@ -423,20 +449,25 @@ class TrendAnalyzer:
             if 'error' in daily_trend or 'error' in weekly_trend or 'error' in range_analysis:
                 return {'error': 'Грешка в един от тренд анализите'}
             
-            # Определяме основния тренд
-            if daily_trend['direction'] == weekly_trend['direction']:
-                primary_trend = daily_trend['direction']
+            # Определяме основния тренд с robust error handling
+            daily_direction = daily_trend.get('direction', 'NEUTRAL')
+            weekly_direction = weekly_trend.get('direction', 'NEUTRAL')
+            daily_strength = daily_trend.get('strength', 'WEAK')
+            weekly_strength = weekly_trend.get('strength', 'WEAK')
+            
+            if daily_direction == weekly_direction:
+                primary_trend = daily_direction
                 trend_confidence = 'HIGH'
-            elif daily_trend['strength'] == 'STRONG' and weekly_trend['strength'] == 'STRONG':
-                primary_trend = daily_trend['direction']  # Дневният има приоритет
+            elif daily_strength == 'STRONG' and weekly_strength == 'STRONG':
+                primary_trend = daily_direction  # Дневният има приоритет
                 trend_confidence = 'MEDIUM'
             else:
                 primary_trend = 'MIXED'
                 trend_confidence = 'LOW'
             
             # Изчисляваме общата сила на тренда
-            daily_strength_score = self._strength_to_score(daily_trend['strength'])
-            weekly_strength_score = self._strength_to_score(weekly_trend['strength'])
+            daily_strength_score = self._strength_to_score(daily_strength)
+            weekly_strength_score = self._strength_to_score(weekly_strength)
             combined_strength = (daily_strength_score + weekly_strength_score) / 2
             
             # Определяме дали тренда е приключил
@@ -448,18 +479,18 @@ class TrendAnalyzer:
                 'combined_strength': combined_strength,
                 'trend_completed': trend_completed,
                 'daily_trend_summary': {
-                    'direction': daily_trend['direction'],
-                    'strength': daily_trend['strength'],
-                    'change_pct': daily_trend['price_change_pct']
+                    'direction': daily_direction,
+                    'strength': daily_strength,
+                    'change_pct': daily_trend.get('price_change_pct', 0.0)
                 },
                 'weekly_trend_summary': {
-                    'direction': weekly_trend['direction'],
-                    'strength': weekly_trend['strength'],
-                    'change_pct': weekly_trend['price_change_pct']
+                    'direction': weekly_direction,
+                    'strength': weekly_strength,
+                    'change_pct': weekly_trend.get('price_change_pct', 0.0)
                 },
                 'range_summary': {
-                    'status': range_analysis['range_status'],
-                    'position': range_analysis['range_position']
+                    'status': range_analysis.get('range_status', 'UNKNOWN'),
+                    'position': range_analysis.get('range_position', 0.5)
                 }
             }
             
@@ -472,26 +503,37 @@ class TrendAnalyzer:
     
     def _strength_to_score(self, strength: str) -> float:
         """Конвертира силата на тренда в числов score"""
-        strength_map = {'WEAK': 0.3, 'MODERATE': 0.6, 'STRONG': 1.0}
+        strength_map = {
+            'WEAK': 0.3, 
+            'MODERATE': 0.6, 
+            'STRONG': 1.0,
+            'EXTREME': 1.2  # Added EXTREME category as requested in review
+        }
         return strength_map.get(strength, 0.5)
     
     def _is_trend_completed(self, daily_trend: Dict, weekly_trend: Dict, range_analysis: Dict) -> bool:
         """Определя дали тренда е приключил"""
         try:
             # Проверяваме за reversal сигнали
-            if daily_trend['direction'] == 'UPTREND':
+            # Extract values with safe defaults
+            daily_direction = daily_trend.get('direction', 'NEUTRAL')
+            daily_strength = daily_trend.get('strength', 'WEAK')
+            weekly_strength = weekly_trend.get('strength', 'WEAK')
+            range_position = range_analysis.get('range_position', 0.5)
+            
+            if daily_direction == 'UPTREND':
                 # За uptrend, проверяваме дали цената е близо до горната граница на range
-                if range_analysis['range_position'] > 0.8:
+                if range_position > self.range_upper_threshold:
                     return True
                 # Проверяваме дали дневният тренд се забавя
-                if daily_trend['strength'] == 'WEAK' and weekly_trend['strength'] == 'WEAK':
+                if daily_strength == 'WEAK' and weekly_strength == 'WEAK':
                     return True
-            elif daily_trend['direction'] == 'DOWNTREND':
+            elif daily_direction == 'DOWNTREND':
                 # За downtrend, проверяваме дали цената е близо до долната граница
-                if range_analysis['range_position'] < 0.2:
+                if range_position < self.range_lower_threshold:
                     return True
                 # Проверяваме дали дневният тренд се забавя
-                if daily_trend['strength'] == 'WEAK' and weekly_trend['strength'] == 'WEAK':
+                if daily_strength == 'WEAK' and weekly_strength == 'WEAK':
                     return True
             
             return False
