@@ -55,6 +55,9 @@ data/
 !data/sample_*
 results/
 
+# Archive directory (old project files)
+archive/
+
 # ML models
 ml_models/
 *.pkl
