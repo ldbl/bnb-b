@@ -49,6 +49,14 @@ volume_multiplier = 1.5
 fibonacci_resistance_check = true
 fibonacci_proximity_threshold = 0.02  # Колко близо трябва да е опашката до Fib resistance
 
+# Phase 2.2: Trend-based Weighting Parameters
+trend_based_weighting = true         # Enable trend-based signal weighting
+bull_market_threshold = 0.15         # 15% gain over lookback = bull market
+bear_market_threshold = -0.10        # 10% loss over lookback = bear market
+long_tail_amplification = 1.5        # Amplify LONG tails in bull markets
+short_tail_suppression = 0.3         # Suppress SHORT tails in bull markets
+trend_lookback_weeks = 12            # Weeks for market trend analysis
+
 # Phase 1.4: Volume confirmation за SHORT сигнали
 volume_confirmation_for_short = false  # Изключен за по-малко агресивни филтри
 volume_lookback_periods = 14  # Периоди за изчисляване на среден обем
@@ -101,14 +109,14 @@ weekly_tails_confirmation = true    # Weekly tails потвърждение за
 trend_consistency_threshold = 0.7   # Минимална консистентност за бонус
 
 [signals]
-fibonacci_weight = 0.25
-weekly_tails_weight = 0.20  # Намалено за да се балансира с MACD
-ma_weight = 0.20  # Moving Averages тегло
-rsi_weight = 0.15
-macd_weight = 0.20  # Увеличено за по-добро тренд потвърждение
-bb_weight = 0.05
+fibonacci_weight = 0.35  # Намалено за баланс  
+weekly_tails_weight = 0.40  # УВЕЛИЧЕНО значително за по-силни LONG сигнали от долни опашки
+ma_weight = 0.10  # Намалено
+rsi_weight = 0.08  # Намалено
+macd_weight = 0.07  # Намалено
+bb_weight = 0.00  # Премахнато - ще се използва само като филтър
 min_confirmations = 1
-confidence_threshold = 0.6
+confidence_threshold = 0.8  # Увеличено за по-висока LONG точност
 fib_tail_required = true
 ath_weight = 0.15  # Нов ATH proximity бонус за SHORT сигнали
 
@@ -123,17 +131,22 @@ short_min_fib_level = 0.1  # Намален още повече за теств�
 short_min_tail_strength = 0.2  # Намален още повече за тестване
 short_trend_confirmation = false  # Изключен за по-малко агресивни SHORT филтри
 
-# Балансирани изисквания за LONG сигнали
+# Балансирани изисквания за LONG сигнали - ПО-СТРОГИ ЗА 100% ТОЧНОСТ
 long_signal_requirements = true
-long_min_fib_level = 0.5
-long_min_tail_strength = 0.4
-long_trend_confirmation = false
+long_min_fib_level = 0.7  # Увеличено за по-висока точност
+long_min_tail_strength = 0.6  # Увеличено за по-висока точност
+long_trend_confirmation = true  # Активирано за допълнително потвърждение
 
 [elliott_wave]
 enabled = true
 lookback_periods = 50
 min_wave_strength = 0.02
 confidence_threshold = 60
+
+# Phase 2.3: Trend Momentum Filter Parameters
+trend_momentum_filter = true       # Enable trend momentum filter
+momentum_threshold = 0.7           # Minimum momentum strength to block signals
+bull_market_threshold = 0.15       # Bull market detection threshold (15% gain)
 
 [whale_tracker]
 enabled = true
@@ -165,6 +178,10 @@ enabled = true
 min_peak_distance = 5
 min_peak_prominence = 0.02
 lookback_periods = 20
+# Phase 2.1: Enhanced Trend-Strength Filter for Bull Market Protection
+trend_filter_enabled = true         # Enable trend-strength filtering
+bull_market_threshold = 0.1         # 10% gain over lookback = bull market
+bear_market_threshold = -0.05       # 5% loss over lookback = bear market
 
 [moving_averages]
 enabled = true
@@ -203,6 +220,15 @@ ema_confirmation = true   # ✅ АКТИВИРАНО - EMA crossover потвъ�
 min_risk_reward = 2.0
 burn_enhancement = true   # ✅ АКТИВИРАНО - BNB burn enhancement за LONG
 ema_fast_period = 10      # Fast EMA период за crossover
+
+# Enhanced LONG Signal Requirements для 85%+ accuracy
+long_confidence_threshold = 0.9  # Increased from 0.8 to 0.9 for higher quality
+min_confluence_requirements = 3  # Minimum 3 confirmations for LONG
+required_confirmations = ["fibonacci", "weekly_tails", "volume"]  # Core requirements
+bonus_confirmations = ["multi_timeframe", "trend_alignment", "rsi_oversold"]  # Additional boost
+volume_multiplier_min = 1.5  # Minimum 1.5x average volume for LONG signals
+fib_proximity_max = 0.02  # Must be within 2% of Fibonacci level
+long_tail_reversal_bonus = 0.15  # +15% confidence for Long Tail Reversal Pattern
 ema_slow_period = 50      # Slow EMA период за crossover
 ema_confidence_bonus = 0.1  # Допълнителна увереност при EMA потвърждение
 burn_confidence_bonus = 0.15  # Допълнителна увереност преди burn
@@ -219,8 +245,8 @@ market_regime_filter_long = true  # Market regime awareness за LONG сигна
 prefer_long_in_bull_regime = true  # Предпочитай LONG в bull market
 avoid_long_in_bear_regime = false  # Не блокирай LONG в bear market
 
-confidence_threshold_high = 4.0  # Високо ниво на увереност за най-добрите LONG сигнали
-confidence_threshold_medium = 3.0  # Средно ниво на увереност
+confidence_threshold_high = 5.0  # Увеличено за 100% точност
+confidence_threshold_medium = 4.0  # Увеличено за по-строга селекция
 
 # Phase 3: Advanced LONG Signal Confirmations
 ichimoku_confirmation_enabled = true  # Ichimoku Cloud confirmation за LONG сигнали

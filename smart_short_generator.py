@@ -270,6 +270,17 @@ class SmartShortSignalGenerator:
         """
         self.config = config
         self.market_detector = MarketRegimeDetector()
+        
+        # НОВИ: Интеграция с Enhanced Trend Analyzer
+        try:
+            from trend_analyzer import TrendAnalyzer
+            self.trend_analyzer = TrendAnalyzer(config)
+            self.use_enhanced_regime_detection = True
+            logger.info("✅ Enhanced TrendAnalyzer интегриран успешно")
+        except ImportError as e:
+            logger.warning(f"⚠️ Enhanced TrendAnalyzer не може да се зареди: {e}")
+            self.trend_analyzer = None
+            self.use_enhanced_regime_detection = False
 
         # SHORT specific thresholds from config
         short_config = config.get('smart_short', {})
@@ -309,19 +320,34 @@ class SmartShortSignalGenerator:
         candidates = []
 
         try:
-            # Step 1: Market Regime Detection
-            market_regime = self.market_detector.detect_market_regime(daily_df, weekly_df)
+            # Step 1: Enhanced Market Regime Detection
+            if self.use_enhanced_regime_detection and self.trend_analyzer:
+                # Използваме новия enhanced trend analyzer
+                trend_analysis = self.trend_analyzer.analyze_trend(daily_df, weekly_df)
+                
+                # Извличаме market regime данни
+                enhanced_regime = trend_analysis.get('market_regime', {})
+                market_regime = {
+                    'regime': enhanced_regime.get('regime', 'UNKNOWN'),
+                    'confidence': enhanced_regime.get('confidence', 0.0),
+                    'ath_distance_pct': daily_df['ATH_Distance_Pct'].iloc[-1] if 'ATH_Distance_Pct' in daily_df.columns else 10.0,
+                    'enhanced': True
+                }
+                
+                logger.info(f"📊 Enhanced Market Regime: {market_regime['regime']} (confidence: {market_regime['confidence']:.2f})")
+                
+            else:
+                # Fallback към старата система
+                market_regime = self.market_detector.detect_market_regime(daily_df, weekly_df)
+                market_regime['enhanced'] = False
+                logger.info(f"📊 Basic Market Regime: {market_regime['regime']} (confidence: {market_regime['confidence']:.2f})")
 
-            # Update regime with SHORT-specific logic
-            market_regime['short_signals_allowed'] = self.market_detector._are_short_signals_allowed(
-                market_regime['regime'], market_regime['ath_distance_pct'], self.short_thresholds
-            )
+            # КРИТИЧНА ЛОГИКА: Блокиране на SHORT в STRONG_BULL
+            market_regime['short_signals_allowed'] = self._should_allow_short_signals(market_regime)
 
             if not market_regime['short_signals_allowed']:
-                logger.info(f"🚫 SHORT сигнали блокирани: {market_regime['regime']} regime")
+                logger.info(f"🚫 SHORT сигнали блокирани: {market_regime['regime']} regime (confidence: {market_regime['confidence']:.2f})")
                 return []
-
-            logger.info(f"📊 Market Regime: {market_regime['regime']} (confidence: {market_regime['confidence']:.2f})")
 
             # Step 2: Scan for potential SHORT setups
             potential_setups = self._scan_for_short_setups(daily_df)
@@ -584,6 +610,60 @@ class SmartShortSignalGenerator:
         except Exception as e:
             logger.error(f"Грешка при risk/reward calculation: {e}")
             return 0
+
+    def _should_allow_short_signals(self, market_regime: Dict[str, Any]) -> bool:
+        """
+        КРИТИЧНА ЛОГИКА: Определя дали SHORT сигнали са позволени
+        
+        Базирано на новия enhanced market regime detection:
+        - STRONG_BULL с висока confidence -> Блокира SHORT
+        - MODERATE_BULL -> Позволява SHORT с ограничения  
+        - NEUTRAL/BEAR -> Позволява SHORT
+        """
+        try:
+            regime = market_regime.get('regime', 'UNKNOWN')
+            confidence = market_regime.get('confidence', 0.0)
+            ath_distance = market_regime.get('ath_distance_pct', 0.0)
+            
+            # STRONG_BULL блокиране - ключовата логика от TODO
+            if regime == 'STRONG_BULL' and confidence > 0.7:
+                logger.info(f"🛡️ STRONG_BULL блокиране: {regime} с confidence {confidence:.2f}")
+                return False
+                
+            # MODERATE_BULL с ограничения
+            if regime == 'MODERATE_BULL':
+                # Позволяваме SHORT само ако сме поне 15% от ATH
+                min_ath_correction = 15.0
+                if ath_distance < min_ath_correction:
+                    logger.info(f"🛡️ MODERATE_BULL блокиране: само {ath_distance:.1f}% от ATH (минимум: {min_ath_correction}%)")
+                    return False
+                else:
+                    logger.info(f"✅ MODERATE_BULL позволен: {ath_distance:.1f}% от ATH")
+                    return True
+            
+            # WEAK_BULL с ограничения
+            if regime == 'WEAK_BULL':
+                # По-малки ограничения за WEAK_BULL
+                min_ath_correction = 8.0
+                if ath_distance < min_ath_correction:
+                    logger.info(f"🛡️ WEAK_BULL блокиране: само {ath_distance:.1f}% от ATH (минимум: {min_ath_correction}%)")
+                    return False
+                else:
+                    logger.info(f"✅ WEAK_BULL позволен: {ath_distance:.1f}% от ATH")
+                    return True
+            
+            # NEUTRAL, CORRECTION, BEAR - винаги позволени
+            if regime in ['NEUTRAL', 'CORRECTION', 'BEAR']:
+                logger.info(f"✅ {regime} режим: SHORT сигнали позволени")
+                return True
+                
+            # UNKNOWN или други - консервативен подход
+            logger.info(f"⚠️ Неизвестен режим {regime}: SHORT блокиран за сигурност")
+            return False
+            
+        except Exception as e:
+            logger.error(f"Грешка при SHORT signal decision: {e}")
+            return False  # Консервативен fallback
 
 
 # Utility functions for integration

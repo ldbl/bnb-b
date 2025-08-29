@@ -200,11 +200,16 @@ class DivergenceDetector:
         self.min_peak_prominence = config.get('divergence', {}).get('min_peak_prominence', 0.02)
         self.lookback_periods = config.get('divergence', {}).get('lookback_periods', 20)
         
-        logger.info("Divergence Detector инициализиран")
+        # NEW: Trend-strength filter parameters
+        self.trend_filter_enabled = config.get('divergence', {}).get('trend_filter_enabled', True)
+        self.bull_market_threshold = config.get('divergence', {}).get('bull_market_threshold', 0.1)  # 10% gain over lookback
+        self.bear_market_threshold = config.get('divergence', {}).get('bear_market_threshold', -0.05)  # 5% loss over lookback
+        
+        logger.info("Divergence Detector инициализиран с trend-strength filter")
     
     def detect_all_divergences(self, price_data: pd.DataFrame, indicators_data: Dict) -> Dict:
         """
-        Открива всички видове divergence
+        Открива всички видове divergence с trend-strength filtering
         
         Args:
             price_data: DataFrame с OHLCV данни
@@ -214,28 +219,35 @@ class DivergenceDetector:
             Dict с откритите divergence
         """
         try:
+            # PHASE 1: Analyze market regime for trend-strength filtering
+            market_regime = self._analyze_market_regime(price_data) if self.trend_filter_enabled else 'NEUTRAL'
+            
             divergences = {
                 'rsi_divergence': None,
                 'macd_divergence': None,
                 'price_volume_divergence': None,
-                'overall_divergence': 'NONE'
+                'overall_divergence': 'NONE',
+                'market_regime': market_regime,
+                'trend_filter_applied': self.trend_filter_enabled
             }
             
             # 1. RSI Divergence
             if 'rsi' in indicators_data:
                 rsi_values = indicators_data['rsi'].get('rsi_values', [])
                 if len(rsi_values) > 0:
-                    divergences['rsi_divergence'] = self._detect_rsi_divergence(
-                        price_data, rsi_values
-                    )
+                    raw_rsi_div = self._detect_rsi_divergence(price_data, rsi_values)
+                    divergences['rsi_divergence'] = self._apply_trend_filter(
+                        raw_rsi_div, market_regime, 'rsi'
+                    ) if self.trend_filter_enabled else raw_rsi_div
             
             # 2. MACD Divergence
             if 'macd' in indicators_data:
                 macd_values = indicators_data['macd'].get('macd_values', [])
                 if len(macd_values) > 0:
-                    divergences['macd_divergence'] = self._detect_macd_divergence(
-                        price_data, macd_values
-                    )
+                    raw_macd_div = self._detect_macd_divergence(price_data, macd_values)
+                    divergences['macd_divergence'] = self._apply_trend_filter(
+                        raw_macd_div, market_regime, 'macd'
+                    ) if self.trend_filter_enabled else raw_macd_div
             
             # 3. Price vs Volume Divergence
             if 'volume' in price_data.columns:
@@ -592,6 +604,122 @@ class DivergenceDetector:
                 'reason': f'Грешка: {e}',
                 'risk_level': 'UNKNOWN'
             }
+    
+    def _analyze_market_regime(self, price_data: pd.DataFrame) -> str:
+        """
+        Analyzes market regime to filter inappropriate divergence signals
+        
+        Returns:
+            str: Market regime classification
+        """
+        try:
+            if len(price_data) < self.lookback_periods:
+                return 'NEUTRAL'
+            
+            close_col = 'close' if 'close' in price_data.columns else 'Close'
+            recent_prices = price_data[close_col].tail(self.lookback_periods)
+            
+            # Calculate trend strength over lookback period
+            price_change = (recent_prices.iloc[-1] - recent_prices.iloc[0]) / recent_prices.iloc[0]
+            
+            # Calculate volatility (standard deviation)
+            price_volatility = recent_prices.pct_change().std()
+            
+            # Determine market regime
+            if price_change >= self.bull_market_threshold:
+                if price_volatility > 0.05:  # High volatility bull market
+                    return 'VOLATILE_BULL'
+                else:
+                    return 'STRONG_BULL'
+            elif price_change <= self.bear_market_threshold:
+                return 'BEAR'
+            else:
+                return 'NEUTRAL'
+                
+        except Exception as e:
+            logger.error(f"Error analyzing market regime: {e}")
+            return 'NEUTRAL'
+    
+    def _apply_trend_filter(self, divergence_result: Dict, market_regime: str, divergence_type: str) -> Dict:
+        """
+        Apply trend-strength filter to divergence signals
+        
+        Args:
+            divergence_result: Original divergence detection result
+            market_regime: Current market regime
+            divergence_type: Type of divergence being filtered
+            
+        Returns:
+            Filtered divergence result
+        """
+        try:
+            if not self.trend_filter_enabled or divergence_result.get('type') == 'NONE':
+                return divergence_result
+            
+            original_type = divergence_result.get('type')
+            original_confidence = divergence_result.get('confidence', 0)
+            
+            # Apply filtering logic based on market regime
+            if market_regime in ['STRONG_BULL', 'VOLATILE_BULL']:
+                if original_type == 'BEARISH':
+                    # Reduce bearish divergence signals in bull markets
+                    return {
+                        **divergence_result,
+                        'type': 'NONE',
+                        'confidence': 0,
+                        'reason': f'Filtered: Bearish divergence blocked in {market_regime} market',
+                        'original_signal': original_type,
+                        'filter_applied': 'BULL_MARKET_FILTER'
+                    }
+                elif original_type == 'BULLISH':
+                    # Amplify bullish divergence signals in bull markets
+                    enhanced_confidence = min(original_confidence * 1.2, 1.0)
+                    return {
+                        **divergence_result,
+                        'confidence': enhanced_confidence,
+                        'reason': f'{divergence_result.get("reason", "")} (Enhanced in {market_regime})',
+                        'filter_applied': 'BULL_MARKET_ENHANCEMENT'
+                    }
+            
+            elif market_regime == 'BEAR':
+                if original_type == 'BULLISH':
+                    # Reduce confidence in bullish divergence in bear markets
+                    reduced_confidence = original_confidence * 0.7
+                    if reduced_confidence < 0.3:
+                        return {
+                            **divergence_result,
+                            'type': 'NONE',
+                            'confidence': 0,
+                            'reason': f'Filtered: Low confidence bullish divergence in {market_regime} market',
+                            'original_signal': original_type,
+                            'filter_applied': 'BEAR_MARKET_FILTER'
+                        }
+                    else:
+                        return {
+                            **divergence_result,
+                            'confidence': reduced_confidence,
+                            'reason': f'{divergence_result.get("reason", "")} (Reduced confidence in bear market)',
+                            'filter_applied': 'BEAR_MARKET_REDUCTION'
+                        }
+                elif original_type == 'BEARISH':
+                    # Enhance bearish divergence in bear markets
+                    enhanced_confidence = min(original_confidence * 1.3, 1.0)
+                    return {
+                        **divergence_result,
+                        'confidence': enhanced_confidence,
+                        'reason': f'{divergence_result.get("reason", "")} (Enhanced in bear market)',
+                        'filter_applied': 'BEAR_MARKET_ENHANCEMENT'
+                    }
+            
+            # Default: neutral market or no filtering needed
+            return {
+                **divergence_result,
+                'filter_applied': 'NO_FILTER'
+            }
+                
+        except Exception as e:
+            logger.error(f"Error applying trend filter: {e}")
+            return divergence_result
 
 if __name__ == "__main__":
     print("Divergence Detector модул за BNB Trading System")

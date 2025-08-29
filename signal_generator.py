@@ -855,6 +855,212 @@ class SignalGenerator:
                 final_signal = max(signal_scores, key=signal_scores.get)
                 confidence = signal_scores[final_signal]
 
+                # ENHANCED LONG CONFIDENCE SCORING FOR 85%+ ACCURACY
+                if final_signal == 'LONG':
+                    # Base confidence from signal weights - no blocking, only scoring
+                    enhanced_confidence = confidence
+                    quality_factors = []
+                    warning_factors = []
+                    
+                    # PHASE 1: STRICT CONFLUENCE REQUIREMENTS CHECK
+                    confluence_count = 0
+                    confluence_bonus = 0.0
+                    
+                    # Core requirement: Fibonacci confluence
+                    if fib_analysis and fib_analysis.get('fibonacci_signal', {}).get('signal') == 'LONG':
+                        confluence_count += 1
+                        fib_proximity = fib_analysis.get('proximity_to_key_level', 1.0)
+                        if fib_proximity <= 0.02:  # Within 2% of Fib level
+                            confluence_bonus += 0.1
+                            quality_factors.append(f"Fib precise confluence ({fib_proximity:.1%})")
+                    
+                    # Core requirement: Weekly Tails confluence
+                    if tails_analysis and tails_analysis.get('tails_signal', {}).get('signal') == 'LONG':
+                        confluence_count += 1
+                        tail_strength = tails_analysis.get('tails_signal', {}).get('strength', 0.0)
+                        # Long Tail Reversal Pattern detection
+                        if tail_strength > 0.8:  # Strong tail = potential reversal
+                            confluence_bonus += 0.15  # Long tail reversal bonus
+                            quality_factors.append(f"Long Tail Reversal Pattern ({tail_strength:.2f})")
+                    
+                    # Core requirement: Volume confirmation
+                    volume_confirmed = False
+                    if indicators_signals and 'volume' in indicators_signals:
+                        vol_data = indicators_signals['volume']
+                        vol_ratio = vol_data.get('volume_ratio', 0.0)
+                        if vol_ratio >= 1.5:  # 1.5x average volume minimum
+                            confluence_count += 1
+                            volume_confirmed = True
+                            confluence_bonus += 0.05
+                            quality_factors.append(f"Volume confirmation ({vol_ratio:.1f}x avg)")
+                        else:
+                            warning_factors.append(f"Low volume ({vol_ratio:.1f}x avg)")
+                    
+                    # Bonus confirmations for additional quality
+                    # Multi-timeframe alignment confirmation
+                    if 'multi_timeframe_analysis' in locals() and multi_timeframe_analysis:
+                        alignment_score = multi_timeframe_analysis.get('alignment_score', 0.5)
+                        overall_alignment = multi_timeframe_analysis.get('overall_alignment', 'NEUTRAL')
+                        
+                        # Strong multi-timeframe alignment bonus
+                        if overall_alignment == 'STRONG' and alignment_score >= 0.8:
+                            confluence_bonus += 0.15
+                            quality_factors.append(f"Strong multi-timeframe alignment ({alignment_score:.1%})")
+                        elif overall_alignment in ['MODERATE', 'GOOD'] and alignment_score >= 0.6:
+                            confluence_bonus += 0.08
+                            quality_factors.append(f"Good multi-timeframe alignment ({alignment_score:.1%})")
+                        elif alignment_score < 0.4:
+                            enhanced_confidence *= 0.8  # Penalty for poor alignment
+                            warning_factors.append(f"Poor timeframe alignment ({alignment_score:.1%})")
+                    
+                    # Trend alignment check
+                    if trend_analysis and trend_analysis.get('trend_direction') == 'UPTREND':
+                        confluence_bonus += 0.05
+                        quality_factors.append("Trend alignment")
+                    
+                    # RSI oversold bonus
+                    if indicators_signals and 'rsi' in indicators_signals:
+                        rsi_val = indicators_signals['rsi'].get('current_rsi', 50)
+                        if rsi_val < 30:  # Oversold condition
+                            confluence_bonus += 0.1
+                            quality_factors.append(f"RSI oversold ({rsi_val:.1f})")
+                    
+                    # Apply strict confluence requirements
+                    if confluence_count < 3:  # Must have minimum 3 core confirmations
+                        enhanced_confidence *= 0.6  # Severe penalty for low confluence
+                        warning_factors.append(f"Low confluence ({confluence_count}/3 required)")
+                    else:
+                        enhanced_confidence += confluence_bonus
+                        quality_factors.append(f"Strong confluence ({confluence_count} factors)")
+                    
+                    # FINAL ENHANCED CONFIDENCE THRESHOLD FOR 85%+ ACCURACY
+                    long_confidence_threshold = 0.9  # From config.toml
+                    
+                    # Apply enhanced confidence threshold check
+                    if enhanced_confidence < long_confidence_threshold:
+                        # Downgrade LONG to HOLD if confidence too low
+                        final_signal = 'HOLD'
+                        confidence = enhanced_confidence
+                        reason = f"HOLD: LONG confidence {enhanced_confidence:.2f} below threshold {long_confidence_threshold:.2f}"
+                        if quality_factors:
+                            reason += f" | Quality: {', '.join(quality_factors[:3])}"
+                        if warning_factors:
+                            reason += f" | Warnings: {', '.join(warning_factors[:2])}"
+                    else:
+                        # High quality LONG signal approved
+                        confidence = enhanced_confidence
+                        quality_summary = f"HIGH QUALITY LONG (confidence: {enhanced_confidence:.2f})"
+                        if quality_factors:
+                            quality_summary += f" | {', '.join(quality_factors[:4])}"
+                        reason = quality_summary
+                    
+                    # Factor 1: RSI timing quality (0.8x to 1.3x multiplier)
+                    if indicators_signals and 'rsi' in indicators_signals:
+                        rsi_data = indicators_signals['rsi']
+                        if 'current_rsi' in rsi_data:
+                            rsi_val = rsi_data['current_rsi']
+                            if 40 <= rsi_val <= 60:  # Sweet spot
+                                enhanced_confidence *= 1.3
+                                quality_factors.append(f"RSI optimal zone ({rsi_val:.1f})")
+                            elif 35 <= rsi_val <= 65:  # Good zone
+                                enhanced_confidence *= 1.1
+                                quality_factors.append(f"RSI good zone ({rsi_val:.1f})")
+                            elif rsi_val > 70:  # Overbought warning
+                                enhanced_confidence *= 0.7
+                                warning_factors.append(f"RSI overbought ({rsi_val:.1f})")
+                            elif rsi_val < 30:  # Oversold bonus
+                                enhanced_confidence *= 1.2
+                                quality_factors.append(f"RSI oversold bounce ({rsi_val:.1f})")
+                    
+                    # Factor 2: Bollinger position quality (0.8x to 1.2x multiplier)
+                    if indicators_signals and 'bollinger' in indicators_signals:
+                        bb_data = indicators_signals['bollinger']
+                        if 'band_position' in bb_data:
+                            bb_pos = bb_data['band_position']
+                            if 0.3 <= bb_pos <= 0.6:  # Optimal entry zone
+                                enhanced_confidence *= 1.2
+                                quality_factors.append(f"BB optimal position ({bb_pos:.1%})")
+                            elif bb_pos > 0.8:  # Too high warning
+                                enhanced_confidence *= 0.8
+                                warning_factors.append(f"BB high position ({bb_pos:.1%})")
+                    
+                    # Factor 3: MACD alignment bonus (1.0x to 1.4x multiplier)
+                    if indicators_signals and 'macd' in indicators_signals:
+                        macd_data = indicators_signals['macd']
+                        if macd_data.get('signal') == 'LONG':
+                            macd_strength = macd_data.get('strength', 0.5)
+                            enhanced_confidence *= (1.0 + 0.4 * macd_strength)
+                            quality_factors.append(f"MACD bullish alignment ({macd_strength:.2f})")
+                        else:
+                            # Penalty for MACD conflict but don't block
+                            enhanced_confidence *= 0.85
+                            warning_factors.append("MACD not aligned")
+                    
+                    # Factor 4: Divergence quality (0.7x to 1.3x multiplier)
+                    if divergence_analysis:
+                        div_signal = divergence_analysis.get('divergence_signal', {})
+                        if div_signal.get('signal') == 'LONG':
+                            div_strength = div_signal.get('strength', 0.5)
+                            enhanced_confidence *= (1.0 + 0.3 * div_strength)
+                            quality_factors.append(f"Bullish divergence ({div_strength:.2f})")
+                        elif div_signal.get('signal') == 'SHORT':
+                            div_strength = div_signal.get('strength', 0.5)
+                            # Reduce penalty - only minor confidence reduction
+                            enhanced_confidence *= (1.0 - 0.3 * div_strength)
+                            warning_factors.append(f"Bearish divergence ({div_strength:.2f})")
+                    
+                    # Factor 5: Fibonacci confluence (0.9x to 1.3x multiplier)
+                    if fib_analysis:
+                        fib_signal = fib_analysis.get('fibonacci_signal', {})
+                        if fib_signal.get('signal') == 'LONG':
+                            fib_strength = fib_signal.get('strength', 0.5)
+                            enhanced_confidence *= (1.0 + 0.3 * fib_strength)
+                            quality_factors.append(f"Fibonacci support ({fib_strength:.2f})")
+                        elif fib_signal.get('signal') == 'SHORT':
+                            fib_strength = fib_signal.get('strength', 0.5)
+                            enhanced_confidence *= (1.0 - 0.1 * fib_strength)  # Minor penalty
+                            warning_factors.append(f"Fibonacci resistance ({fib_strength:.2f})")
+                    
+                    # Factor 6: Weekly Tails primary signal (1.0x to 1.5x multiplier)
+                    if tails_analysis:
+                        tails_signal = tails_analysis.get('tails_signal', {})
+                        if tails_signal.get('signal') == 'LONG':
+                            tails_strength = tails_signal.get('strength', 0.5)
+                            enhanced_confidence *= (1.0 + 0.5 * tails_strength)
+                            quality_factors.append(f"Weekly Tails support ({tails_strength:.2f})")
+                        else:
+                            # Penalty for lack of Weekly Tails support
+                            enhanced_confidence *= 0.9
+                            warning_factors.append("Weekly Tails not supporting")
+                    
+                    # Factor 7: Trend alignment (0.7x to 1.4x multiplier)
+                    if trend_analysis:
+                        trend_direction = trend_analysis.get('trend_direction', 'UNKNOWN')
+                        if trend_direction in ['STRONG_UPTREND', 'UPTREND']:
+                            enhanced_confidence *= 1.4
+                            quality_factors.append(f"Strong trend alignment ({trend_direction})")
+                        elif trend_direction == 'SIDEWAYS':
+                            enhanced_confidence *= 1.0  # Neutral
+                        elif trend_direction in ['DOWNTREND', 'STRONG_DOWNTREND']:
+                            enhanced_confidence *= 0.7  # Penalty but don't block
+                            warning_factors.append(f"Counter-trend signal ({trend_direction})")
+                    
+                    # Update confidence with enhancements
+                    confidence = enhanced_confidence
+                    
+                    # Add quality and warning factors to reasons
+                    if quality_factors:
+                        signal_reasons.append(f"Quality factors: {', '.join(quality_factors)}")
+                    if warning_factors:
+                        signal_reasons.append(f"Warning factors: {', '.join(warning_factors)}")
+                    
+                    # Final confidence threshold - much more permissive
+                    if confidence < 0.15:  # Only block extremely weak signals
+                        final_signal = 'HOLD'
+                        confidence = 0.0
+                        signal_reasons.append(f'Confidence too low: {confidence:.3f} < 0.15')
+                        logger.info(f"LONG signal blocked for low confidence: {confidence:.3f}")
+
                 # Ако SHORT сигнала е твърде слаб след филтрите - конвертираме в HOLD
                 if final_signal == 'SHORT' and confidence < 0.15:
                     final_signal = 'HOLD'

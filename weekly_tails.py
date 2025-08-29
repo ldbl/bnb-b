@@ -177,7 +177,14 @@ class WeeklyTailsAnalyzer:
         self.strong_tail_size = config['weekly_tails']['strong_tail_size']
         self.confluence_bonus = config['weekly_tails']['confluence_bonus']
         
-        logger.info("Weekly Tails анализатор инициализиран")
+        # Phase 2.2: Trend-based Weighting Parameters
+        self.trend_based_weighting = config.get('weekly_tails', {}).get('trend_based_weighting', True)
+        self.bull_market_threshold = config.get('weekly_tails', {}).get('bull_market_threshold', 0.15)  # 15% gain
+        self.bear_market_threshold = config.get('weekly_tails', {}).get('bear_market_threshold', -0.10)  # 10% loss
+        self.long_tail_amplification = config.get('weekly_tails', {}).get('long_tail_amplification', 1.5)
+        self.short_tail_suppression = config.get('weekly_tails', {}).get('short_tail_suppression', 0.3)
+        
+        logger.info("Weekly Tails анализатор инициализиран с trend-based weighting")
         logger.info(f"Lookback седмици: {self.lookback_weeks}")
         logger.info(f"Минимален размер на опашката: {self.min_tail_size:.1%}")
         logger.info(f"Силен размер на опашката: {self.strong_tail_size:.1%}")
@@ -568,43 +575,169 @@ class WeeklyTailsAnalyzer:
     
     def analyze_weekly_tails_trend(self, weekly_df: pd.DataFrame) -> Dict[str, any]:
         """
-        Анализира тренда на седмични опашки
+        Анализира тренда на седмични опашки с trend-based weighting
         
         Args:
             weekly_df: DataFrame с седмични данни
             
         Returns:
-            Dict с анализ на тренда на опашките
+            Dict с анализ на тренда на опашките (с trend filtering)
         """
         try:
-            # Анализираме седмичните опашки
-            tails_analysis = self.analyze_weekly_tails(weekly_df)
+            # PHASE 1: Analyze market trend for weighting
+            market_trend = self._analyze_market_trend(weekly_df) if self.trend_based_weighting else 'NEUTRAL'
             
-            # Генерираме сигнал
-            tails_signal = self.get_weekly_tails_signal(tails_analysis)
+            # Анализираме седмичните опашки
+            raw_tails_analysis = self.analyze_weekly_tails(weekly_df)
+            
+            # PHASE 2: Apply trend-based weighting to tail signals
+            weighted_tails_analysis = self._apply_trend_weighting(
+                raw_tails_analysis, market_trend
+            ) if self.trend_based_weighting else raw_tails_analysis
+            
+            # Генерираме сигнал от weighted анализа
+            tails_signal = self.get_weekly_tails_signal(weighted_tails_analysis)
             
             # Статистика за опашките
-            total_tails = len(tails_analysis)
-            strong_tails = len([t for t in tails_analysis if t['strength_category'] == 'STRONG'])
-            moderate_tails = len([t for t in tails_analysis if t['strength_category'] == 'MODERATE'])
+            total_tails = len(weighted_tails_analysis)
+            strong_tails = len([t for t in weighted_tails_analysis if t['strength_category'] == 'STRONG'])
+            moderate_tails = len([t for t in weighted_tails_analysis if t['strength_category'] == 'MODERATE'])
             
             trend_analysis = {
                 'total_tails': total_tails,
                 'strong_tails': strong_tails,
                 'moderate_tails': moderate_tails,
-                'tails_analysis': tails_analysis,
+                'tails_analysis': weighted_tails_analysis,
                 'tails_signal': tails_signal,
+                'market_trend': market_trend,
+                'trend_weighting_applied': self.trend_based_weighting,
                 'analysis_date': pd.Timestamp.now()
             }
             
-            logger.info("Weekly Tails тренд анализ завършен")
+            logger.info(f"Weekly Tails тренд анализ завършен - Market trend: {market_trend}")
             return trend_analysis
             
         except Exception as e:
             logger.error(f"Грешка при Weekly Tails тренд анализ: {e}")
             return {'error': f'Грешка: {e}'}
+    
+    def _analyze_market_trend(self, weekly_df: pd.DataFrame) -> str:
+        """
+        Analyze market trend to determine appropriate tail weighting
+        
+        Returns:
+            str: Market trend classification (BULL, BEAR, NEUTRAL)
+        """
+        try:
+            if len(weekly_df) < self.lookback_weeks:
+                return 'NEUTRAL'
+            
+            close_col = 'close' if 'close' in weekly_df.columns else 'Close'
+            recent_weeks = weekly_df[close_col].tail(self.lookback_weeks)
+            
+            # Calculate trend strength over lookback period
+            trend_change = (recent_weeks.iloc[-1] - recent_weeks.iloc[0]) / recent_weeks.iloc[0]
+            
+            # Determine trend classification
+            if trend_change >= self.bull_market_threshold:
+                return 'BULL'
+            elif trend_change <= self.bear_market_threshold:
+                return 'BEAR'
+            else:
+                return 'NEUTRAL'
+                
+        except Exception as e:
+            logger.error(f"Error analyzing market trend: {e}")
+            return 'NEUTRAL'
+    
+    def _apply_trend_weighting(self, tails_analysis: List[Dict], market_trend: str) -> List[Dict]:
+        """
+        Apply trend-based weighting to tail signals
+        
+        Args:
+            tails_analysis: Original tails analysis results
+            market_trend: Current market trend classification
+            
+        Returns:
+            Weighted tails analysis with trend-appropriate adjustments
+        """
+        try:
+            weighted_tails = []
+            
+            for tail in tails_analysis:
+                weighted_tail = tail.copy()
+                original_strength = tail.get('strength', 0)
+                tail_type = tail.get('type', 'NONE')
+                
+                # Apply trend-based weighting logic
+                if market_trend == 'BULL':
+                    if tail_type == 'LONG':
+                        # Amplify LONG tail signals in bull markets
+                        new_strength = min(original_strength * self.long_tail_amplification, 1.0)
+                        weighted_tail['strength'] = new_strength
+                        weighted_tail['trend_adjustment'] = 'BULL_AMPLIFIED'
+                        weighted_tail['reason'] = f"{tail.get('reason', '')} (Amplified in bull market)"
+                    elif tail_type == 'SHORT':
+                        # Suppress SHORT tail signals in bull markets
+                        new_strength = original_strength * self.short_tail_suppression
+                        if new_strength < self.min_tail_size:
+                            weighted_tail['type'] = 'NONE'
+                            weighted_tail['strength'] = 0
+                            weighted_tail['trend_adjustment'] = 'BULL_SUPPRESSED'
+                            weighted_tail['reason'] = 'SHORT tail suppressed in bull market'
+                        else:
+                            weighted_tail['strength'] = new_strength
+                            weighted_tail['trend_adjustment'] = 'BULL_REDUCED'
+                            weighted_tail['reason'] = f"{tail.get('reason', '')} (Reduced in bull market)"
+                
+                elif market_trend == 'BEAR':
+                    if tail_type == 'SHORT':
+                        # Amplify SHORT tail signals in bear markets
+                        new_strength = min(original_strength * self.long_tail_amplification, 1.0)
+                        weighted_tail['strength'] = new_strength
+                        weighted_tail['trend_adjustment'] = 'BEAR_AMPLIFIED'
+                        weighted_tail['reason'] = f"{tail.get('reason', '')} (Amplified in bear market)"
+                    elif tail_type == 'LONG':
+                        # Reduce LONG tail signals in bear markets
+                        new_strength = original_strength * 0.7
+                        weighted_tail['strength'] = new_strength
+                        weighted_tail['trend_adjustment'] = 'BEAR_REDUCED'
+                        weighted_tail['reason'] = f"{tail.get('reason', '')} (Reduced confidence in bear market)"
+                
+                else:  # NEUTRAL
+                    weighted_tail['trend_adjustment'] = 'NO_ADJUSTMENT'
+                
+                # Update strength category after weighting
+                weighted_tail['strength_category'] = self._categorize_strength(weighted_tail['strength'])
+                weighted_tails.append(weighted_tail)
+            
+            logger.info(f"Applied trend weighting: {market_trend} market")
+            return weighted_tails
+            
+        except Exception as e:
+            logger.error(f"Error applying trend weighting: {e}")
+            return tails_analysis
+    
+    def _categorize_strength(self, strength: float) -> str:
+        """
+        Categorize tail strength after trend weighting
+        
+        Args:
+            strength: Numerical strength value
+            
+        Returns:
+            str: Strength category
+        """
+        if strength >= 0.8:
+            return 'EXTREME'
+        elif strength >= 0.6:
+            return 'STRONG'
+        elif strength >= 0.3:
+            return 'MODERATE'
+        else:
+            return 'WEAK'
 
 if __name__ == "__main__":
-    # Тест на Weekly Tails модула
-    print("Weekly Tails модул за BNB Trading System")
+    # Тест на Weekly Tails модула с trend-based weighting
+    print("Weekly Tails модул за BNB Trading System - Enhanced with trend-based weighting")
     print("Използвайте main.py за пълен анализ")

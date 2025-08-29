@@ -94,8 +94,8 @@ class ValidationProtocol:
                 description="LONG сигнали точността трябва да остане 100%",
                 critical=True,
                 validator_func=self._validate_long_accuracy,
-                expected_result=">= 95.0%",
-                failure_message="LONG accuracy падна под критичния праг от 95%"
+                expected_result=">= 100.0%",
+                failure_message="LONG accuracy падна под критичния праг от 100%"
             ),
 
             ValidationPoint(
@@ -260,8 +260,8 @@ class ValidationProtocol:
         avg_long_accuracy = sum(long_accuracies) / len(long_accuracies)
         min_long_accuracy = min(long_accuracies)
 
-        # LONG accuracy трябва да е >= 95%
-        passed = min_long_accuracy >= 95.0
+        # LONG accuracy трябва да е >= 100% (перфектна точност)
+        passed = min_long_accuracy >= 100.0
 
         return {
             'passed': passed,
@@ -271,7 +271,7 @@ class ValidationProtocol:
                 'min_accuracy': min_long_accuracy,
                 'all_accuracies': long_accuracies
             },
-            'message': f"LONG accuracy: {min_long_accuracy:.1f}% (min required: 95%)"
+            'message': f"LONG accuracy: {min_long_accuracy:.1f}% (min required: 100%)"
         }
 
     def _validate_pnl_stability(self, feature_name: str, test_results: Dict[str, TestResult],
