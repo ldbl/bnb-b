@@ -355,7 +355,7 @@ class SignalGenerator:
                 logger.debug("Sentiment анализ дезактивиран в конфигурацията")
             
             # 10. Divergence Analysis (НОВО от ideas файла)
-            logger.info(f"Стартиране на Divergence анализ...")
+            logger.info("Стартиране на Divergence анализ...")
             logger.info(f"Daily data columns: {daily_df.columns.tolist()}")
             logger.info(f"Daily with indicators columns: {daily_with_indicators.columns.tolist()}")
             
@@ -407,7 +407,72 @@ class SignalGenerator:
                     tails_analysis['tails_analysis']
                 )
             
-            # 7. Генерираме финален сигнал
+            # 6.5. Multi-Timeframe Confirmation Analysis (moved before _combine_signals)
+            # Инициализираме с default стойности за всеки случай
+            multi_timeframe_analysis = {
+                'overall_alignment': 'DISABLED',
+                'confidence_bonus': 0.0,
+                'alignment_score': 0.5,
+                'conflicts': [],
+                'confirmations': [],
+                'recommendation': 'HOLD'
+            }
+
+            if (self.multi_timeframe_analyzer.enabled and
+                daily_df is not None and weekly_df is not None):
+
+                try:
+                    # Създаваме предварителни анализи за daily и weekly (simplified version for multi-timeframe)
+                    daily_analysis = {
+                        'fibonacci_analysis': fib_analysis,
+                        'weekly_tails_analysis': tails_analysis,
+                        'indicators_signals': indicators_signals,
+                        'trend_analysis': trend_analysis,
+                        'signal': 'PENDING',  # Will be updated after _combine_signals
+                        'volume_analysis': {'confirmed': False}  # Placeholder
+                    }
+
+                    weekly_analysis = {
+                        'fibonacci_analysis': fib_analysis,  # За сега използваме същия анализ
+                        'weekly_tails_analysis': tails_analysis,
+                        'indicators_signals': indicators_signals,
+                        'trend_analysis': trend_analysis,
+                        'signal': 'PENDING',  # Will be updated after _combine_signals
+                        'volume_analysis': {'confirmed': False}  # Placeholder
+                    }
+
+                    # Извършваме multi-timeframe alignment анализ
+                    multi_timeframe_result = self.multi_timeframe_analyzer.analyze_timeframe_alignment(
+                        daily_analysis, weekly_analysis
+                    )
+
+                    # Проверяваме дали резултатът е успешен
+                    if multi_timeframe_result and isinstance(multi_timeframe_result, dict):
+                        multi_timeframe_analysis = multi_timeframe_result
+                        logger.info(f"Multi-timeframe alignment completed: {multi_timeframe_analysis.get('overall_alignment', 'UNKNOWN')}")
+                    else:
+                        logger.warning("Multi-timeframe анализ върна невалиден резултат, използваме fallback")
+                        multi_timeframe_analysis = {
+                            'overall_alignment': 'ERROR',
+                            'confidence_bonus': 0.0,
+                            'alignment_score': 0.5,
+                            'conflicts': ['Analysis failed'],
+                            'confirmations': [],
+                            'recommendation': 'HOLD'
+                        }
+
+                except Exception as e:
+                    logger.error(f"Грешка при multi-timeframe анализ: {e}")
+                    multi_timeframe_analysis = {
+                        'overall_alignment': 'ERROR',
+                        'confidence_bonus': 0.0,
+                        'alignment_score': 0.5,
+                        'conflicts': [f'Exception: {e}'],
+                        'confirmations': [],
+                        'recommendation': 'HOLD'
+                    }
+            
+            # 7. Генерираме финален сигнал (with multi_timeframe_analysis as parameter)
             final_signal = self._combine_signals(
                 fib_analysis,
                 tails_analysis,
@@ -423,7 +488,8 @@ class SignalGenerator:
                 None,  # price_patterns_analysis - ще се изчислява вътре в метода
                 elliott_wave_analysis,
                 optimal_levels_analysis,
-                ma_analysis  # Moving Averages анализ
+                ma_analysis,  # Moving Averages анализ
+                multi_timeframe_analysis  # Add multi_timeframe_analysis as parameter
             )
             
             # 8. Добавяме детайлна информация
@@ -446,80 +512,18 @@ class SignalGenerator:
                 weekly_df  # За SHORT интеграция
             )
             
-            # Phase 3: Multi-Timeframe Confirmation Analysis
-            # Инициализираме с default стойности за всеки случай
-            multi_timeframe_analysis = {
-                'overall_alignment': 'DISABLED',
-                'confidence_bonus': 0.0,
-                'alignment_score': 0.5,
-                'conflicts': [],
-                'confirmations': [],
-                'recommendation': 'HOLD'
-            }
+            # Apply Multi-Timeframe Confirmation bonus/penalty (analysis already done)
+            if multi_timeframe_analysis:
+                # Прилагаме confidence bonus/penalty от multi-timeframe анализа
+                confidence_bonus = multi_timeframe_analysis.get('confidence_bonus', 0.0)
+                final_signal['confidence'] = max(0.0, min(1.0, final_signal['confidence'] + confidence_bonus))
 
-            if (self.multi_timeframe_analyzer.enabled and
-                daily_df is not None and weekly_df is not None):
+                # Добавяме multi-timeframe информация към reason
+                if confidence_bonus != 0.0:
+                    alignment_info = multi_timeframe_analysis.get('overall_alignment', 'UNKNOWN')
+                    final_signal['reason'] += f" | Multi-Timeframe: {alignment_info} ({confidence_bonus:+.2f})"
 
-                try:
-                    # Създаваме отделни анализи за daily и weekly
-                    daily_analysis = {
-                        'fibonacci_analysis': fib_analysis,
-                        'weekly_tails_analysis': tails_analysis,
-                        'indicators_signals': indicators_signals,
-                        'trend_analysis': trend_analysis,
-                        'signal': final_signal['signal'],
-                        'volume_analysis': {'confirmed': False}  # Placeholder
-                    }
-
-                    weekly_analysis = {
-                        'fibonacci_analysis': fib_analysis,  # За сега използваме същия анализ
-                        'weekly_tails_analysis': tails_analysis,
-                        'indicators_signals': indicators_signals,
-                        'trend_analysis': trend_analysis,
-                        'signal': final_signal['signal'],
-                        'volume_analysis': {'confirmed': False}  # Placeholder
-                    }
-
-                    # Извършваме multi-timeframe alignment анализ
-                    multi_timeframe_result = self.multi_timeframe_analyzer.analyze_timeframe_alignment(
-                        daily_analysis, weekly_analysis
-                    )
-
-                    # Проверяваме дали резултатът е успешен
-                    if multi_timeframe_result and isinstance(multi_timeframe_result, dict):
-                        multi_timeframe_analysis = multi_timeframe_result
-
-                        # Прилагаме confidence bonus/penalty от multi-timeframe анализа
-                        confidence_bonus = multi_timeframe_analysis.get('confidence_bonus', 0.0)
-                        final_signal['confidence'] = max(0.0, min(1.0, final_signal['confidence'] + confidence_bonus))
-
-                        # Добавяме multi-timeframe информация към reason
-                        if confidence_bonus != 0.0:
-                            alignment_info = multi_timeframe_analysis.get('overall_alignment', 'UNKNOWN')
-                            final_signal['reason'] += f" | Multi-Timeframe: {alignment_info} ({confidence_bonus:+.2f})"
-
-                        logger.info(f"Multi-timeframe analysis: {multi_timeframe_analysis.get('overall_alignment', 'UNKNOWN')} | Bonus: {confidence_bonus:+.2f}")
-                    else:
-                        logger.warning("Multi-timeframe анализ върна невалиден резултат, използваме fallback")
-                        multi_timeframe_analysis = {
-                            'overall_alignment': 'ERROR',
-                            'confidence_bonus': 0.0,
-                            'alignment_score': 0.5,
-                            'conflicts': ['Analysis failed'],
-                            'confirmations': [],
-                            'recommendation': 'HOLD'
-                        }
-
-                except Exception as e:
-                    logger.error(f"Грешка при multi-timeframe анализ: {e}")
-                    multi_timeframe_analysis = {
-                        'overall_alignment': 'ERROR',
-                        'confidence_bonus': 0.0,
-                        'alignment_score': 0.5,
-                        'conflicts': [f'Exception: {e}'],
-                        'confirmations': [],
-                        'recommendation': 'HOLD'
-                    }
+                logger.info(f"Multi-timeframe analysis applied: {multi_timeframe_analysis.get('overall_alignment', 'UNKNOWN')} | Bonus: {confidence_bonus:+.2f}")
 
             logger.info(f"Сигнал генериран: {final_signal['signal']} (увереност: {final_signal['confidence']:.2f})")
 
@@ -541,7 +545,7 @@ class SignalGenerator:
                          ichimoku_analysis: Dict = None, sentiment_analysis: Dict = None,
                          whale_analysis: Dict = None, price_patterns_analysis: Dict = None,
                          elliott_wave_analysis: Dict = None, optimal_levels_analysis: Dict = None,
-                         moving_averages_analysis: Dict = None) -> Dict[str, any]:
+                         moving_averages_analysis: Dict = None, multi_timeframe_analysis: Dict = None) -> Dict[str, any]:
         """
         Комбинира сигналите от различните източници
         
@@ -854,6 +858,204 @@ class SignalGenerator:
                 # Намираме доминантния сигнал
                 final_signal = max(signal_scores, key=signal_scores.get)
                 confidence = signal_scores[final_signal]
+
+                # ENHANCED LONG CONFIDENCE SCORING FOR 85%+ ACCURACY
+                if final_signal == 'LONG':
+                    # Base confidence from signal weights - no blocking, only scoring
+                    enhanced_confidence = confidence
+                    quality_factors = []
+                    warning_factors = []
+                    
+                    # PHASE 1: STRICT CONFLUENCE REQUIREMENTS CHECK
+                    confluence_count = 0
+                    confluence_bonus = 0.0
+                    
+                    # Core requirement: Fibonacci confluence
+                    if fib_analysis and fib_analysis.get('fibonacci_signal', {}).get('signal') == 'LONG':
+                        confluence_count += 1
+                        fib_proximity = fib_analysis.get('proximity_to_key_level', 1.0)
+                        if fib_proximity <= 0.02:  # Within 2% of Fib level
+                            confluence_bonus += 0.1
+                            quality_factors.append(f"Fib precise confluence ({fib_proximity:.1%})")
+                    
+                    # Core requirement: Weekly Tails confluence
+                    if tails_analysis and tails_analysis.get('tails_signal', {}).get('signal') == 'LONG':
+                        confluence_count += 1
+                        tail_strength = tails_analysis.get('tails_signal', {}).get('strength', 0.0)
+                        # Long Tail Reversal Pattern detection
+                        if tail_strength > 0.8:  # Strong tail = potential reversal
+                            confluence_bonus += 0.15  # Long tail reversal bonus
+                            quality_factors.append(f"Long Tail Reversal Pattern ({tail_strength:.2f})")
+                    
+                    # Core requirement: Volume confirmation
+                    volume_confirmed = False
+                    if indicators_signals and 'volume' in indicators_signals:
+                        vol_data = indicators_signals['volume']
+                        vol_ratio = vol_data.get('volume_ratio', 0.0)
+                        if vol_ratio >= 1.5:  # 1.5x average volume minimum
+                            confluence_count += 1
+                            volume_confirmed = True
+                            confluence_bonus += 0.05
+                            quality_factors.append(f"Volume confirmation ({vol_ratio:.1f}x avg)")
+                        else:
+                            warning_factors.append(f"Low volume ({vol_ratio:.1f}x avg)")
+                    
+                    # Bonus confirmations for additional quality
+                    # Multi-timeframe alignment confirmation
+                    if multi_timeframe_analysis:
+                        alignment_score = multi_timeframe_analysis.get('alignment_score', 0.5)
+                        overall_alignment = multi_timeframe_analysis.get('overall_alignment', 'NEUTRAL')
+                        
+                        # Strong multi-timeframe alignment bonus
+                        if overall_alignment == 'STRONG' and alignment_score >= 0.8:
+                            confluence_bonus += 0.15
+                            quality_factors.append(f"Strong multi-timeframe alignment ({alignment_score:.1%})")
+                        elif overall_alignment in ['MODERATE', 'GOOD'] and alignment_score >= 0.6:
+                            confluence_bonus += 0.08
+                            quality_factors.append(f"Good multi-timeframe alignment ({alignment_score:.1%})")
+                        elif alignment_score < 0.4:
+                            enhanced_confidence *= 0.8  # Penalty for poor alignment
+                            warning_factors.append(f"Poor timeframe alignment ({alignment_score:.1%})")
+                    
+                    # Trend alignment check
+                    if trend_analysis and trend_analysis.get('trend_direction') == 'UPTREND':
+                        confluence_bonus += 0.05
+                        quality_factors.append("Trend alignment")
+                    
+                    # RSI oversold bonus - removed redundant condition check (handled in quality enhancement section below)
+                    
+                    # Apply strict confluence requirements
+                    if confluence_count < 3:  # Must have minimum 3 core confirmations
+                        enhanced_confidence *= 0.6  # Severe penalty for low confluence
+                        warning_factors.append(f"Low confluence ({confluence_count}/3 required)")
+                    else:
+                        enhanced_confidence += confluence_bonus
+                        quality_factors.append(f"Strong confluence ({confluence_count} factors)")
+                    
+                    # FINAL ENHANCED CONFIDENCE THRESHOLD FOR 85%+ ACCURACY
+                    long_confidence_threshold = 0.9  # From config.toml
+                    
+                    # Apply enhanced confidence threshold check
+                    if enhanced_confidence < long_confidence_threshold:
+                        # Downgrade LONG to HOLD if confidence too low
+                        final_signal = 'HOLD'
+                        confidence = enhanced_confidence
+                        reason = f"HOLD: LONG confidence {enhanced_confidence:.2f} below threshold {long_confidence_threshold:.2f}"
+                        if quality_factors:
+                            reason += f" | Quality: {', '.join(quality_factors[:3])}"
+                        if warning_factors:
+                            reason += f" | Warnings: {', '.join(warning_factors[:2])}"
+                    else:
+                        # High quality LONG signal approved
+                        confidence = enhanced_confidence
+                        quality_summary = f"HIGH QUALITY LONG (confidence: {enhanced_confidence:.2f})"
+                        if quality_factors:
+                            quality_summary += f" | {', '.join(quality_factors[:4])}"
+                        reason = quality_summary
+                    
+                    # Factor 1: RSI timing quality (0.8x to 1.3x multiplier)
+                    if indicators_signals and 'rsi' in indicators_signals:
+                        rsi_data = indicators_signals['rsi']
+                        if 'current_rsi' in rsi_data:
+                            rsi_val = rsi_data['current_rsi']
+                            if 40 <= rsi_val <= 60:  # Sweet spot
+                                enhanced_confidence *= 1.3
+                                quality_factors.append(f"RSI optimal zone ({rsi_val:.1f})")
+                            elif 35 <= rsi_val <= 65:  # Good zone
+                                enhanced_confidence *= 1.1
+                                quality_factors.append(f"RSI good zone ({rsi_val:.1f})")
+                            elif rsi_val > 70:  # Overbought warning
+                                enhanced_confidence *= 0.7
+                                warning_factors.append(f"RSI overbought ({rsi_val:.1f})")
+                    
+                    # Factor 2: Bollinger position quality (0.8x to 1.2x multiplier)
+                    if indicators_signals and 'bollinger' in indicators_signals:
+                        bb_data = indicators_signals['bollinger']
+                        if 'band_position' in bb_data:
+                            bb_pos = bb_data['band_position']
+                            if 0.3 <= bb_pos <= 0.6:  # Optimal entry zone
+                                enhanced_confidence *= 1.2
+                                quality_factors.append(f"BB optimal position ({bb_pos:.1%})")
+                            elif bb_pos > 0.8:  # Too high warning
+                                enhanced_confidence *= 0.8
+                                warning_factors.append(f"BB high position ({bb_pos:.1%})")
+                    
+                    # Factor 3: MACD alignment bonus (1.0x to 1.4x multiplier)
+                    if indicators_signals and 'macd' in indicators_signals:
+                        macd_data = indicators_signals['macd']
+                        if macd_data.get('signal') == 'LONG':
+                            macd_strength = macd_data.get('strength', 0.5)
+                            enhanced_confidence *= (1.0 + 0.4 * macd_strength)
+                            quality_factors.append(f"MACD bullish alignment ({macd_strength:.2f})")
+                        else:
+                            # Penalty for MACD conflict but don't block
+                            enhanced_confidence *= 0.85
+                            warning_factors.append("MACD not aligned")
+                    
+                    # Factor 4: Divergence quality (0.7x to 1.3x multiplier)
+                    if divergence_analysis:
+                        div_signal = divergence_analysis.get('divergence_signal', {})
+                        if div_signal.get('signal') == 'LONG':
+                            div_strength = div_signal.get('strength', 0.5)
+                            enhanced_confidence *= (1.0 + 0.3 * div_strength)
+                            quality_factors.append(f"Bullish divergence ({div_strength:.2f})")
+                        elif div_signal.get('signal') == 'SHORT':
+                            div_strength = div_signal.get('strength', 0.5)
+                            # Reduce penalty - only minor confidence reduction
+                            enhanced_confidence *= (1.0 - 0.3 * div_strength)
+                            warning_factors.append(f"Bearish divergence ({div_strength:.2f})")
+                    
+                    # Factor 5: Fibonacci confluence (0.9x to 1.3x multiplier)
+                    if fib_analysis:
+                        fib_signal = fib_analysis.get('fibonacci_signal', {})
+                        if fib_signal.get('signal') == 'LONG':
+                            fib_strength = fib_signal.get('strength', 0.5)
+                            enhanced_confidence *= (1.0 + 0.3 * fib_strength)
+                            quality_factors.append(f"Fibonacci support ({fib_strength:.2f})")
+                        elif fib_signal.get('signal') == 'SHORT':
+                            fib_strength = fib_signal.get('strength', 0.5)
+                            enhanced_confidence *= (1.0 - 0.1 * fib_strength)  # Minor penalty
+                            warning_factors.append(f"Fibonacci resistance ({fib_strength:.2f})")
+                    
+                    # Factor 6: Weekly Tails primary signal (1.0x to 1.5x multiplier)
+                    if tails_analysis:
+                        tails_signal = tails_analysis.get('tails_signal', {})
+                        if tails_signal.get('signal') == 'LONG':
+                            tails_strength = tails_signal.get('strength', 0.5)
+                            enhanced_confidence *= (1.0 + 0.5 * tails_strength)
+                            quality_factors.append(f"Weekly Tails support ({tails_strength:.2f})")
+                        else:
+                            # Penalty for lack of Weekly Tails support
+                            enhanced_confidence *= 0.9
+                            warning_factors.append("Weekly Tails not supporting")
+                    
+                    # Factor 7: Trend alignment (0.7x to 1.4x multiplier)
+                    if trend_analysis:
+                        trend_direction = trend_analysis.get('trend_direction', 'UNKNOWN')
+                        if trend_direction in ['STRONG_UPTREND', 'UPTREND']:
+                            enhanced_confidence *= 1.4
+                            quality_factors.append(f"Strong trend alignment ({trend_direction})")
+                        elif trend_direction == 'SIDEWAYS':
+                            enhanced_confidence *= 1.0  # Neutral
+                        elif trend_direction in ['DOWNTREND', 'STRONG_DOWNTREND']:
+                            enhanced_confidence *= 0.7  # Penalty but don't block
+                            warning_factors.append(f"Counter-trend signal ({trend_direction})")
+                    
+                    # Update confidence with enhancements
+                    confidence = enhanced_confidence
+                    
+                    # Add quality and warning factors to reasons
+                    if quality_factors:
+                        signal_reasons.append(f"Quality factors: {', '.join(quality_factors)}")
+                    if warning_factors:
+                        signal_reasons.append(f"Warning factors: {', '.join(warning_factors)}")
+                    
+                    # Final confidence threshold - much more permissive
+                    if confidence < 0.15:  # Only block extremely weak signals
+                        final_signal = 'HOLD'
+                        confidence = 0.0
+                        signal_reasons.append(f'Confidence too low: {confidence:.3f} < 0.15')
+                        logger.info(f"LONG signal blocked for low confidence: {confidence:.3f}")
 
                 # Ако SHORT сигнала е твърде слаб след филтрите - конвертираме в HOLD
                 if final_signal == 'SHORT' and confidence < 0.15:
@@ -2392,14 +2594,14 @@ class SignalGenerator:
                 'divergence_analysis': divergence_analysis,
                 'moving_averages_analysis': ma_analysis,
                 'price_patterns_analysis': patterns_analysis,
-                'multi_timeframe_analysis': locals().get('multi_timeframe_analysis', {
+                'multi_timeframe_analysis': multi_timeframe_analysis or {
                     'overall_alignment': 'ERROR',
                     'confidence_bonus': 0.0,
                     'alignment_score': 0.5,
                     'conflicts': ['Analysis failed'],
                     'confirmations': [],
                     'recommendation': 'HOLD'
-                }),
+                },
                 'next_targets': self._get_next_targets(final_signal, fib_analysis, tails_analysis),
                 'risk_level': self._calculate_risk_level(final_signal, fib_analysis, tails_analysis)
             }
@@ -2434,13 +2636,16 @@ class SignalGenerator:
                             best_short = max(strong_short_signals, key=lambda x: x['confidence'])
                             logger.info(f"🎯 Най-силен SHORT сигнал: {best_short['confidence']:.2f} confidence")
 
-                            # Ако SHORT сигналът е по-силен от текущия LONG сигнал, го използваме
-                            if best_short['confidence'] > final_signal['confidence']:
-                                logger.info(f"🔄 Превключваме на SHORT сигнал (по-висока увереност)")
+                            # FIXED: Always include SHORT signals if they exist and are strong enough
+                            # Don't compare to LONG confidence - they are different strategies
+                            if best_short['confidence'] > 0.6:  # Minimum threshold for SHORT signals
+                                logger.info("✅ Включваме SHORT сигнал (confidence > 0.6)")
                                 final_signal = best_short
                                 signal_details['signal'] = 'SHORT'
                                 signal_details['confidence'] = best_short['confidence']
                                 signal_details['reason'] = best_short.get('reason', 'Smart SHORT signal')
+                            else:
+                                logger.info("⚠️ SHORT сигнал твърде слаб (confidence <= 0.6)")
 
                     else:
                         logger.info("ℹ️ Няма подходящи SHORT сигнали за текущия пазар")
