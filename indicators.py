@@ -711,7 +711,7 @@ class TechnicalIndicators:
             }
             
         except Exception as e:
-            logger.exception(f"Error in volume signal analysis: {e}")  # Use logging.exception for full traceback
+            logger.exception("Error in volume signal analysis")  # Use logging.exception for full traceback
             return {'signal': 'HOLD', 'reason': f'Volume analysis error: {e}', 'volume_ratio': 0.0}
 
 if __name__ == "__main__":

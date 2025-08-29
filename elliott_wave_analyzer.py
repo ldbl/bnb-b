@@ -308,7 +308,7 @@ class ElliottWaveAnalyzer:
             weekly_analysis = self._analyze_timeframe(weekly_df, 'weekly')
             
             # Комбинираме анализа
-            combined_analysis = self._combine_analyses(daily_analysis, weekly_analysis)
+            combined_analysis = self._combine_analyses(daily_analysis, weekly_analysis, daily_df, weekly_df)
             
             return combined_analysis
             
@@ -584,7 +584,7 @@ class ElliottWaveAnalyzer:
             "all_levels": {k: round(v, 2) for k, v in projections.items()}
         }
     
-    def _combine_analyses(self, daily_analysis: Dict, weekly_analysis: Dict) -> Dict:
+    def _combine_analyses(self, daily_analysis: Dict, weekly_analysis: Dict, daily_df: pd.DataFrame = None, weekly_df: pd.DataFrame = None) -> Dict:
         """Комбинира daily и weekly анализа"""
         try:
             # Проверяваме за грешки
@@ -611,7 +611,7 @@ class ElliottWaveAnalyzer:
                 primary_wave = daily_analysis.get('wave', 'UNKNOWN')
             
             # Генерираме trading сигнали
-            trading_signals = self._generate_trading_signals(daily_analysis, weekly_analysis)
+            trading_signals = self._generate_trading_signals(daily_analysis, weekly_analysis, daily_df, weekly_df)
             
             return {
                 'combined_analysis': {
@@ -633,7 +633,7 @@ class ElliottWaveAnalyzer:
             logger.error(f"Грешка при комбиниране на анализите: {e}")
             return {'error': f'Грешка при комбиниране: {e}'}
     
-    def _generate_trading_signals(self, daily_analysis: Dict, weekly_analysis: Dict) -> Dict:
+    def _generate_trading_signals(self, daily_analysis: Dict, weekly_analysis: Dict, daily_df: pd.DataFrame = None, weekly_df: pd.DataFrame = None) -> Dict:
         """Генерира trading сигнали базирани на Elliott Wave анализа"""
         signals = {
             'action': 'WAIT',

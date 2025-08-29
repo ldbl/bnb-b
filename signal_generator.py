@@ -2604,7 +2604,7 @@ class SignalGenerator:
                     'conflicts': ['Analysis failed'],
                     'confirmations': [],
                     'recommendation': 'HOLD'
-                }),
+                },
                 'next_targets': self._get_next_targets(final_signal, fib_analysis, tails_analysis),
                 'risk_level': self._calculate_risk_level(final_signal, fib_analysis, tails_analysis)
             }
