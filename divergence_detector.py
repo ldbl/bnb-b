@@ -250,7 +250,8 @@ class DivergenceDetector:
                     ) if self.trend_filter_enabled else raw_macd_div
             
             # 3. Price vs Volume Divergence
-            if 'volume' in price_data.columns:
+            vol_col = 'volume' if 'volume' in price_data.columns else ('Volume' if 'Volume' in price_data.columns else None)
+            if vol_col:
                 divergences['price_volume_divergence'] = self._detect_price_volume_divergence(
                     price_data
                 )

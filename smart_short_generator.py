@@ -93,7 +93,8 @@ class MarketRegimeDetector:
 
             # ATH proximity
             current_price = daily_df['Close'].iloc[-1]
-            ath_price = daily_df['ATH'].max()
+            ath_col = 'ATH' if 'ATH' in daily_df.columns else ('High' if 'High' in daily_df.columns else 'Close')
+            ath_price = daily_df[ath_col].max()
             ath_distance_pct = ((ath_price - current_price) / ath_price) * 100
 
             # RSI levels
@@ -355,7 +356,7 @@ class SmartShortSignalGenerator:
 
             logger.info(f"🔍 Намерени {len(potential_setups)} потенциални SHORT setups")
 
-            # Step 3: Validate each setup through 7-layer validation
+            # Step 3: Validate each setup through 3-layer validation
             for setup in potential_setups:
                 candidate = self._validate_short_setup(setup, daily_df, weekly_df, market_regime)
                 if candidate:
@@ -678,7 +679,7 @@ class SmartShortSignalGenerator:
             return False
             
         except Exception as e:
-            logger.error(f"Грешка при SHORT signal decision: {e}")
+            logger.exception("Грешка при SHORT signal decision")
             return False  # Консервативен fallback
 
 
