@@ -3,6 +3,27 @@ symbol = "BNB/USDT"
 lookback_days = 500
 timeframes = ["1d", "1w"]
 
+[trend_analysis]
+# Centralized trend analysis configuration (addresses PR #6 review)
+trend_lookback_days = 30
+trend_threshold = 0.015
+range_analysis_periods = 20
+# Market regime detection thresholds
+strong_bull_threshold = 0.50    # 50%+ returns = STRONG_BULL
+moderate_bull_threshold = 0.25  # 25%+ returns = MODERATE_BULL
+weak_bull_threshold = 0.10      # 10%+ returns = WEAK_BULL
+bear_threshold = -0.10          # -10% returns = BEAR
+# Trend strength classification thresholds
+trend_strength_weak = 0.05      # < 5% = WEAK
+trend_strength_moderate = 0.10  # 5-10% = MODERATE  
+trend_strength_strong = 0.20    # 10-20% = STRONG
+trend_strength_extreme = 0.30   # > 20% = EXTREME
+# Range detection parameters  
+range_threshold_factor = 0.8    # Range detection sensitivity
+range_breakout_factor = 0.5     # Breakout detection sensitivity
+range_upper_threshold = 0.8     # Upper range position threshold
+range_lower_threshold = 0.2     # Lower range position threshold
+
 [smart_short]
 # Phase 2.2: Smart SHORT Signal Generator Configuration
 enabled = true

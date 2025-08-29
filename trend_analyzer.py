@@ -175,15 +175,21 @@ class TrendAnalyzer:
 
     def __init__(self, config: Dict[str, Any]) -> None:
         """
-        Initialize the Trend Analyzer with configuration parameters.
+        Initialize the Trend Analyzer with centralized configuration parameters.
 
         Sets up the trend analysis engine with all necessary parameters for
         detecting market direction and generating adaptive trading strategies.
+        Now uses centralized [trend_analysis] configuration section.
 
         Args:
             config (Dict[str, Any]): Complete configuration dictionary containing:
-                - trend.trend_lookback_days (int): Historical lookback period
-                - trend.trend_threshold (float): Minimum trend strength threshold
+                - trend_analysis.trend_lookback_days (int): Historical lookback period
+                - trend_analysis.trend_threshold (float): Minimum trend strength threshold
+                - trend_analysis.range_analysis_periods (int): Range analysis periods
+                - trend_analysis.strong_bull_threshold (float): STRONG_BULL threshold
+                - trend_analysis.moderate_bull_threshold (float): MODERATE_BULL threshold
+                - trend_analysis.weak_bull_threshold (float): WEAK_BULL threshold
+                - trend_analysis.bear_threshold (float): BEAR market threshold
 
         Raises:
             KeyError: If required configuration keys are missing
@@ -191,29 +197,54 @@ class TrendAnalyzer:
 
         Example:
             >>> config = {
-            ...     'trend': {
+            ...     'trend_analysis': {
             ...         'trend_lookback_days': 30,
-            ...         'trend_threshold': 0.015
+            ...         'trend_threshold': 0.015,
+            ...         'strong_bull_threshold': 0.50
             ...     }
             ... }
             >>> analyzer = TrendAnalyzer(config)
         """
-        self.trend_lookback_days = config.get('trend', {}).get('trend_lookback_days', 30)
-        self.trend_threshold = config.get('trend', {}).get('trend_threshold', 0.015)
-        self.range_analysis_periods = 20  # Периоди за range анализ
+        # Load centralized trend analysis configuration with fallbacks
+        trend_config = config.get('trend_analysis', {})
         
-        # НОВИ ПАРАМЕТРИ ЗА ДЪЛГОСРОЧЕН АНАЛИЗ
+        # Basic trend parameters with .get() method for safe access
+        self.trend_lookback_days = trend_config.get('trend_lookback_days', 30)
+        self.trend_threshold = trend_config.get('trend_threshold', 0.015)
+        self.range_analysis_periods = trend_config.get('range_analysis_periods', 20)
+        
+        # Market regime detection thresholds (addresses PR #6 review)
+        self.strong_bull_threshold = trend_config.get('strong_bull_threshold', 0.50) * 100  # Convert to percentage
+        self.moderate_bull_threshold = trend_config.get('moderate_bull_threshold', 0.25) * 100
+        self.weak_bull_threshold = trend_config.get('weak_bull_threshold', 0.10) * 100
+        self.bear_threshold = trend_config.get('bear_threshold', -0.10) * 100
+        
+        # Trend strength classification thresholds
+        self.trend_strength_weak = trend_config.get('trend_strength_weak', 0.05) * 100
+        self.trend_strength_moderate = trend_config.get('trend_strength_moderate', 0.10) * 100
+        self.trend_strength_strong = trend_config.get('trend_strength_strong', 0.20) * 100
+        self.trend_strength_extreme = trend_config.get('trend_strength_extreme', 0.30) * 100
+        
+        # Range detection parameters
+        self.range_threshold_factor = trend_config.get('range_threshold_factor', 0.8)
+        self.range_breakout_factor = trend_config.get('range_breakout_factor', 0.5)
+        self.range_upper_threshold = trend_config.get('range_upper_threshold', 0.8)
+        self.range_lower_threshold = trend_config.get('range_lower_threshold', 0.2)
+        
+        # Fixed analysis periods for multi-timeframe analysis
         self.long_term_lookback_days = 180  # 6 месеца дългосрочен анализ
         self.medium_term_lookback_days = 90  # 3 месеца средносрочен анализ
-        self.bull_market_threshold = 50.0   # 50%+ за STRONG_BULL
         self.sustained_bull_months = 12     # 12 месеца за sustained bull
         
-        logger.info("Trend анализатор инициализиран")
+        # Enhanced logging with centralized configuration parameters
+        logger.info("Trend анализатор инициализиран с централизирана конфигурация")
         logger.info(f"Short-term lookback: {self.trend_lookback_days} дни")
         logger.info(f"Medium-term lookback: {self.medium_term_lookback_days} дни") 
         logger.info(f"Long-term lookback: {self.long_term_lookback_days} дни")
         logger.info(f"Trend threshold: {self.trend_threshold:.1%}")
-        logger.info(f"Bull market threshold: {self.bull_market_threshold:.1f}%")
+        logger.info(f"Market regime thresholds - STRONG_BULL: {self.strong_bull_threshold:.1f}%, MODERATE_BULL: {self.moderate_bull_threshold:.1f}%, WEAK_BULL: {self.weak_bull_threshold:.1f}%")
+        logger.info(f"Trend strength thresholds - WEAK: {self.trend_strength_weak:.1f}%, MODERATE: {self.trend_strength_moderate:.1f}%, STRONG: {self.trend_strength_strong:.1f}%, EXTREME: {self.trend_strength_extreme:.1f}%")
+        logger.info(f"Range analysis parameters - periods: {self.range_analysis_periods}, threshold_factor: {self.range_threshold_factor}")
     
     def analyze_trend(self, daily_df: pd.DataFrame, weekly_df: pd.DataFrame) -> Dict:
         """
@@ -291,13 +322,18 @@ class TrendAnalyzer:
             price_change = end_price - start_price
             price_change_pct = (price_change / start_price) * 100
             
-            # Определяме силата на тренда
-            if abs(price_change_pct) < 5:
+            # Определяме силата на тренда с конфигурабилни параметри
+            abs_change = abs(price_change_pct)
+            if abs_change < self.trend_strength_weak:
                 trend_strength = 'WEAK'
-            elif abs(price_change_pct) < 15:
+            elif abs_change < self.trend_strength_moderate:
                 trend_strength = 'MODERATE'
-            else:
+            elif abs_change < self.trend_strength_strong:
                 trend_strength = 'STRONG'
+            elif abs_change < self.trend_strength_extreme:
+                trend_strength = 'STRONG'  # Keep as STRONG until EXTREME category is fully implemented
+            else:
+                trend_strength = 'EXTREME'  # Added EXTREME category (addresses PR #6 review)
             
             # Определяме посоката на тренда
             if slope > self.trend_threshold:
@@ -347,13 +383,21 @@ class TrendAnalyzer:
             price_change = end_price - start_price
             price_change_pct = (price_change / start_price) * 100
             
-            # Определяме силата
-            if abs(price_change_pct) < 10:
+            # Определяме силата с адаптирани прагове за седмични данни
+            abs_change = abs(price_change_pct)
+            weekly_weak_threshold = self.trend_strength_weak * 2  # 2x за седмични данни
+            weekly_moderate_threshold = self.trend_strength_moderate * 2.5  # 2.5x за седмични данни
+            weekly_strong_threshold = self.trend_strength_strong * 1.25  # 1.25x за седмични данни
+            weekly_extreme_threshold = self.trend_strength_extreme * 1.0  # Same для седмични данни
+            
+            if abs_change < weekly_weak_threshold:
                 trend_strength = 'WEAK'
-            elif abs(price_change_pct) < 25:
+            elif abs_change < weekly_moderate_threshold:
                 trend_strength = 'MODERATE'
-            else:
+            elif abs_change < weekly_strong_threshold:
                 trend_strength = 'STRONG'
+            else:
+                trend_strength = 'EXTREME'  # Added EXTREME category for weekly analysis
             
             # Определяме посоката
             if slope > self.trend_threshold * 2:  # По-голям threshold за седмици
@@ -537,8 +581,13 @@ class TrendAnalyzer:
             return {'error': f'Грешка: {e}'}
     
     def _strength_to_score(self, strength: str) -> float:
-        """Конвертира силата на тренда в числов score"""
-        strength_map = {'WEAK': 0.3, 'MODERATE': 0.6, 'STRONG': 1.0}
+        """Конвертира силата на тренда в числов score с EXTREME категория"""
+        strength_map = {
+            'WEAK': 0.3, 
+            'MODERATE': 0.6, 
+            'STRONG': 1.0,
+            'EXTREME': 1.2  # Added EXTREME category support (addresses PR #6 review)
+        }
         return strength_map.get(strength, 0.5)
     
     def _is_trend_completed_enhanced(self, daily_trend: Dict, weekly_trend: Dict, medium_term_trend: Dict, long_term_trend: Dict, range_analysis: Dict, market_regime: Dict) -> bool:
@@ -583,17 +632,17 @@ class TrendAnalyzer:
     def _is_trend_completed(self, daily_trend: Dict, weekly_trend: Dict, range_analysis: Dict) -> bool:
         """Определя дали тренда е приключил"""
         try:
-            # Проверяваме за reversal сигнали
+            # Проверяваме за reversal сигнали с конфигурабилни прагове
             if daily_trend['direction'] == 'UPTREND':
                 # За uptrend, проверяваме дали цената е близо до горната граница на range
-                if range_analysis['range_position'] > 0.8:
+                if range_analysis['range_position'] > self.range_upper_threshold:
                     return True
                 # Проверяваме дали дневният тренд се забавя
                 if daily_trend['strength'] == 'WEAK' and weekly_trend['strength'] == 'WEAK':
                     return True
             elif daily_trend['direction'] == 'DOWNTREND':
                 # За downtrend, проверяваме дали цената е близо до долната граница
-                if range_analysis['range_position'] < 0.2:
+                if range_analysis['range_position'] < self.range_lower_threshold:
                     return True
                 # Проверяваме дали дневният тренд се забавя
                 if daily_trend['strength'] == 'WEAK' and weekly_trend['strength'] == 'WEAK':
@@ -736,15 +785,21 @@ class TrendAnalyzer:
             price_change = end_price - start_price
             price_change_pct = (price_change / start_price) * 100
             
-            # Определяме силата на тренда (по-високи прагове за по-дълъг период)
-            if abs(price_change_pct) < 15:
+            # Определяме силата на тренда с конфигурабилни прагове за средносрочен анализ
+            abs_change = abs(price_change_pct)
+            medium_weak_threshold = self.trend_strength_weak * 3  # 3x за 90-дни период
+            medium_moderate_threshold = self.trend_strength_moderate * 3.5  # 3.5x за 90-дни период
+            medium_strong_threshold = self.trend_strength_strong * 3  # 3x за 90-дни период
+            medium_extreme_threshold = self.trend_strength_extreme * 2  # 2x за 90-дни период
+            
+            if abs_change < medium_weak_threshold:
                 trend_strength = 'WEAK'
-            elif abs(price_change_pct) < 35:
+            elif abs_change < medium_moderate_threshold:
                 trend_strength = 'MODERATE'
-            elif abs(price_change_pct) < 60:
+            elif abs_change < medium_strong_threshold:
                 trend_strength = 'STRONG'
             else:
-                trend_strength = 'EXTREME'
+                trend_strength = 'EXTREME'  # Full EXTREME category support
             
             # Определяме посоката на тренда (по-голям threshold за по-дълъг период)
             threshold = self.trend_threshold * 3  # 3x по-голям threshold за 90 дни
@@ -796,15 +851,21 @@ class TrendAnalyzer:
             price_change = end_price - start_price
             price_change_pct = (price_change / start_price) * 100
             
-            # Определяме силата на тренда (още по-високи прагове за 180 дни)
-            if abs(price_change_pct) < 25:
+            # Определяме силата на тренда с конфигурабилни прагове за дългосрочен анализ
+            abs_change = abs(price_change_pct)
+            long_weak_threshold = self.trend_strength_weak * 5  # 5x за 180-дни период
+            long_moderate_threshold = self.trend_strength_moderate * 5  # 5x за 180-дни период
+            long_strong_threshold = self.trend_strength_strong * 5  # 5x за 180-дни период
+            long_extreme_threshold = self.trend_strength_extreme * 3.33  # 3.33x за 180-дни период
+            
+            if abs_change < long_weak_threshold:
                 trend_strength = 'WEAK'
-            elif abs(price_change_pct) < 50:
+            elif abs_change < long_moderate_threshold:
                 trend_strength = 'MODERATE'
-            elif abs(price_change_pct) < 100:
+            elif abs_change < long_strong_threshold:
                 trend_strength = 'STRONG'
             else:
-                trend_strength = 'EXTREME'
+                trend_strength = 'EXTREME'  # Complete EXTREME category implementation
             
             # Определяме посоката на тренда (още по-голям threshold за 180 дни)
             threshold = self.trend_threshold * 5  # 5x по-голям threshold за 180 дни
@@ -848,28 +909,28 @@ class TrendAnalyzer:
             medium_change = medium_trend['price_change_pct']
             long_change = long_trend['price_change_pct']
             
-            # STRONG_BULL критерии - ключово за SHORT блокиране
-            if (long_change > self.bull_market_threshold and 
-                medium_change > 20 and 
+            # STRONG_BULL критерии с конфигурабилни параметри - ключово за SHORT блокиране
+            if (long_change > self.strong_bull_threshold and 
+                medium_change > self.moderate_bull_threshold and 
                 yearly_change_pct > 60):
                 regime = 'STRONG_BULL'
                 confidence = min(0.9, (long_change / 100) + (yearly_change_pct / 200))
                 reason = f'Sustained bull run: 6м {long_change:+.1f}%, 3м {medium_change:+.1f}%, 12м {yearly_change_pct:+.1f}%'
                 
-            # MODERATE_BULL
-            elif (long_change > 25 and medium_change > 10):
+            # MODERATE_BULL с конфигурабилни прагове
+            elif (long_change > self.moderate_bull_threshold and medium_change > self.weak_bull_threshold):
                 regime = 'MODERATE_BULL'
                 confidence = min(0.8, (long_change / 60) + (medium_change / 40))
                 reason = f'Moderate bull: 6м {long_change:+.1f}%, 3м {medium_change:+.1f}%'
                 
-            # WEAK_BULL
-            elif (long_change > 10 and medium_change > 5):
+            # WEAK_BULL с конфигурабилни прагове
+            elif (long_change > self.weak_bull_threshold and medium_change > (self.weak_bull_threshold / 2)):
                 regime = 'WEAK_BULL'
                 confidence = 0.6
                 reason = f'Weak bull: 6м {long_change:+.1f}%, 3м {medium_change:+.1f}%'
                 
-            # BEAR MARKET
-            elif (long_change < -20 and medium_change < -10):
+            # BEAR MARKET с конфигурабилни прагове
+            elif (long_change < (self.bear_threshold * 2) and medium_change < self.bear_threshold):
                 regime = 'BEAR'
                 confidence = min(0.9, abs(long_change / 50) + abs(medium_change / 30))
                 reason = f'Bear market: 6м {long_change:+.1f}%, 3м {medium_change:+.1f}%'
