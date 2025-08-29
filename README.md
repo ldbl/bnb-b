@@ -4,7 +4,7 @@ Advanced Technical Analysis System for BNB/USDT Trading with 22+ Specialized Ana
 
 [![CI/CD Pipeline](https://github.com/ldbl/bnb-b/actions/workflows/ci.yml/badge.svg)](https://github.com/ldbl/bnb-b/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/ldbl/bnb-b/branch/main/graph/badge.svg)](https://codecov.io/gh/ldbl/bnb-b)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.13](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## 📈 Current Performance
@@ -101,7 +101,7 @@ print(f"Reasoning: {signal['reason']}")
 
 ### Prerequisites
 
-- Python 3.8+
+- Python 3.13+
 - TA-Lib technical analysis library
 - Make (for development commands)
 
@@ -203,7 +203,7 @@ min_ath_distance_pct = 5.0   # Risk management
 
 Automated testing and quality checks:
 
-- **Multi-Python Testing**: 3.8, 3.9, 3.10, 3.11
+- **Python Testing**: 3.13
 - **Code Quality**: Black, isort, flake8, mypy
 - **Security Scanning**: Bandit security analysis
 - **Test Coverage**: Comprehensive coverage reporting
