@@ -216,7 +216,8 @@ class TrendAnalyzer:
         self.range_analysis_periods = int(trend_config.get("range_analysis_periods", 20))
 
         # Market regime detection thresholds with unit conversion (fraction → percent)
-        # Config values are stored as fractions (e.g., 0.50), converted to percentages for internal use
+        # Config values are stored as fractions (e.g., 0.50), converted to
+        # percentages for internal use
         self.strong_bull_threshold = (
             float(trend_config.get("strong_bull_threshold", 0.50)) * 100
         )  # 0.50 → 50%
@@ -260,14 +261,20 @@ class TrendAnalyzer:
         logger.info(f"Long-term lookback: {self.long_term_lookback_days} дни")
         logger.info(f"Trend threshold: {self.trend_threshold:.1%}")
         logger.info(
-            f"Market regime thresholds - STRONG_BULL: {self.strong_bull_threshold:.1f}%, MODERATE_BULL: {self.moderate_bull_threshold:.1f}%, WEAK_BULL: {self.weak_bull_threshold:.1f}%"
-        )
+            f"Market regime thresholds - STRONG_BULL: {
+                self.strong_bull_threshold:.1f}%, MODERATE_BULL: {
+                self.moderate_bull_threshold:.1f}%, WEAK_BULL: {
+                self.weak_bull_threshold:.1f}%")
         logger.info(
-            f"Trend strength thresholds - WEAK: {self.trend_strength_weak:.1f}%, MODERATE: {self.trend_strength_moderate:.1f}%, STRONG: {self.trend_strength_strong:.1f}%, EXTREME: {self.trend_strength_extreme:.1f}%"
-        )
+            f"Trend strength thresholds - WEAK: {
+                self.trend_strength_weak:.1f}%, MODERATE: {
+                self.trend_strength_moderate:.1f}%, STRONG: {
+                self.trend_strength_strong:.1f}%, EXTREME: {
+                    self.trend_strength_extreme:.1f}%")
         logger.info(
-            f"Range analysis parameters - periods: {self.range_analysis_periods}, threshold_factor: {self.range_threshold_factor}"
-        )
+            f"Range analysis parameters - periods: {
+                self.range_analysis_periods}, threshold_factor: {
+                self.range_threshold_factor}")
 
     def analyze_trend(self, daily_df: pd.DataFrame, weekly_df: pd.DataFrame) -> Dict:
         """
@@ -354,7 +361,7 @@ class TrendAnalyzer:
             if start_price != 0:
                 price_change_pct = (price_change / start_price) * 100
             else:
-                logger.warning(f"Start price is zero in daily trend analysis, using 0% change")
+                logger.warning("Start price is zero in daily trend analysis, using 0% change")
                 price_change_pct = 0.0
 
             # Определяме силата на тренда с конфигурабилни параметри
@@ -420,7 +427,7 @@ class TrendAnalyzer:
             if start_price != 0:
                 price_change_pct = (price_change / start_price) * 100
             else:
-                logger.warning(f"Start price is zero in weekly trend analysis, using 0% change")
+                logger.warning("Start price is zero in weekly trend analysis, using 0% change")
                 price_change_pct = 0.0
 
             # Определяме силата с адаптирани прагове за седмични данни
@@ -485,7 +492,7 @@ class TrendAnalyzer:
             if current_low != 0:
                 current_range_pct = (current_range / current_low) * 100
             else:
-                logger.warning(f"Current low price is zero in range analysis, using 0% range")
+                logger.warning("Current low price is zero in range analysis, using 0% range")
                 current_range_pct = 0.0
 
             # Намираме исторически range
@@ -496,7 +503,7 @@ class TrendAnalyzer:
             if historical_low != 0:
                 historical_range_pct = (historical_range / historical_low) * 100
             else:
-                logger.warning(f"Historical low price is zero in range analysis, using 0% range")
+                logger.warning("Historical low price is zero in range analysis, using 0% range")
                 historical_range_pct = 0.0
 
             # Определяме дали range се разширява или свива
@@ -516,8 +523,7 @@ class TrendAnalyzer:
                 # Set to 0.5 (middle) as reasonable default for flat price action
                 range_position = 0.5
                 logger.debug(
-                    f"No price range detected (high={current_high}, low={current_low}), using default range_position=0.5"
-                )
+                    f"No price range detected (high={current_high}, low={current_low}), using default range_position=0.5")
 
             range_analysis = {
                 "current_range": current_range,
@@ -534,8 +540,9 @@ class TrendAnalyzer:
             }
 
             logger.info(
-                f"Range анализ: {range_status} - текущ: {current_range_pct:.1f}%, исторически: {historical_range_pct:.1f}%"
-            )
+                f"Range анализ: {range_status} - текущ: {
+                    current_range_pct:.1f}%, исторически: {
+                    historical_range_pct:.1f}%")
             return range_analysis
 
         except Exception as e:
@@ -655,8 +662,7 @@ class TrendAnalyzer:
             }
 
             logger.info(
-                f"Комбиниран тренд: {regime_adjusted_trend} (увереност: {trend_confidence}, приключил: {trend_completed})"
-            )
+                f"Комбиниран тренд: {regime_adjusted_trend} (увереност: {trend_confidence}, приключил: {trend_completed})")
             logger.info(
                 f"Market Regime: {market_regime['regime']} ({market_regime['confidence']:.2f})"
             )
@@ -895,8 +901,9 @@ class TrendAnalyzer:
         try:
             if len(df) < self.medium_term_lookback_days:
                 return {
-                    "error": f"Недостатъчно данни за средносрочен анализ (нужни: {self.medium_term_lookback_days})"
-                }
+                    "error": (
+                        f"Недостатъчно данни за средносрочен анализ (нужни: {
+                            self.medium_term_lookback_days})")}
 
             # Взимаме последните 90 дни
             recent_data = df.tail(self.medium_term_lookback_days)
@@ -916,7 +923,7 @@ class TrendAnalyzer:
                 price_change_pct = (price_change / start_price) * 100
             else:
                 logger.warning(
-                    f"Start price is zero in medium-term trend analysis, using 0% change"
+                    "Start price is zero in medium-term trend analysis, using 0% change"
                 )
                 price_change_pct = 0.0
 
@@ -972,8 +979,9 @@ class TrendAnalyzer:
         try:
             if len(df) < self.long_term_lookback_days:
                 return {
-                    "error": f"Недостатъчно данни за дългосрочен анализ (нужни: {self.long_term_lookback_days})"
-                }
+                    "error": (
+                        f"Недостатъчно данни за дългосрочен анализ (нужни: {
+                            self.long_term_lookback_days})")}
 
             # Взимаме последните 180 дни
             recent_data = df.tail(self.long_term_lookback_days)
@@ -992,7 +1000,7 @@ class TrendAnalyzer:
             if start_price != 0:
                 price_change_pct = (price_change / start_price) * 100
             else:
-                logger.warning(f"Start price is zero in long-term trend analysis, using 0% change")
+                logger.warning("Start price is zero in long-term trend analysis, using 0% change")
                 price_change_pct = 0.0
 
             # Определяме силата на тренда с конфигурабилни прагове за дългосрочен анализ
@@ -1067,7 +1075,10 @@ class TrendAnalyzer:
             ):
                 regime = "STRONG_BULL"
                 confidence = min(0.9, (long_change / 100) + (yearly_change_pct / 200))
-                reason = f"Sustained bull run: 6м {long_change:+.1f}%, 3м {medium_change:+.1f}%, 12м {yearly_change_pct:+.1f}%"
+                reason = f"Sustained bull run: 6м {
+                    long_change:+.1f}%, 3м {
+                    medium_change:+.1f}%, 12м {
+                    yearly_change_pct:+.1f}%"
 
             # MODERATE_BULL с конфигурабилни прагове
             elif (

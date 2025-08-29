@@ -171,8 +171,10 @@ class MultiTimeframeAnalyzer:
         logger.info("Multi-Timeframe Analyzer инициализиран")
         logger.info(f"Daily/Weekly trend alignment: {self.daily_weekly_trend_alignment}")
         logger.info(
-            f"Confidence bonuses: Fibonacci={self.fibonacci_bonus}, MACD={self.macd_bonus}, Volume={self.volume_bonus}"
-        )
+            f"Confidence bonuses: Fibonacci={
+                self.fibonacci_bonus}, MACD={
+                self.macd_bonus}, Volume={
+                self.volume_bonus}")
 
     def analyze_timeframe_alignment(
         self, daily_analysis: Dict, weekly_analysis: Dict

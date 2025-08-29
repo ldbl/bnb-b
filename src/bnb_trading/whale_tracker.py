@@ -658,7 +658,7 @@ class WhaleTracker:
                     print(f"   Large Signals: {large_signals}")
                     print(f"   Average Volume: {avg_volume:,.0f} BNB")
                     print(f"   Sentiment: {sentiment_level}")
-                    print(f"   Buy/Sell Ratio: {buy_ratio:.1f}%/{100-buy_ratio:.1f}%")
+                    print(f"   Buy/Sell Ratio: {buy_ratio:.1f}%/{100 - buy_ratio:.1f}%")
 
                     results[period_name] = {
                         "signals_count": len(high_vol_periods),
@@ -681,11 +681,12 @@ class WhaleTracker:
                         time_str = biggest["timestamp"].strftime("%m/%d %H:%M")
                         print(f"   Biggest Signal: {biggest['whale_signal']}")
                         print(
-                            f"     📊 {biggest['volume']:,.0f} BNB ({biggest['volume_ratio']:.1f}x) | {time_str}"
-                        )
+                            f"     📊 {
+                                biggest['volume']:,.0f} BNB ({
+                                biggest['volume_ratio']:.1f}x) | {time_str}")
 
                 else:
-                    print(f"   ✅ No significant whale activity detected")
+                    print("   ✅ No significant whale activity detected")
                     results[period_name] = {"signals_count": 0}
 
             except Exception as e:
@@ -693,7 +694,7 @@ class WhaleTracker:
 
         # Summary comparison
         if len(results) > 1:
-            print(f"\n🏆 PERIOD COMPARISON:")
+            print("\n🏆 PERIOD COMPARISON:")
             print("=" * 40)
 
             for period_name, data in results.items():
@@ -722,11 +723,11 @@ class WhaleTracker:
                 volumes = [data.get("average_volume", 0) for data in results.values()]
                 if len(volumes) >= 2 and volumes[0] > 0 and volumes[1] > 0:
                     if volumes[0] > volumes[1] * 1.2:
-                        print(f"   Volume Trend: 📈 Increasing whale activity")
+                        print("   Volume Trend: 📈 Increasing whale activity")
                     elif volumes[0] < volumes[1] * 0.8:
-                        print(f"   Volume Trend: 📉 Decreasing whale activity")
+                        print("   Volume Trend: 📉 Decreasing whale activity")
                     else:
-                        print(f"   Volume Trend: ➡️ Stable whale activity")
+                        print("   Volume Trend: ➡️ Stable whale activity")
 
         print("\n" + "=" * 60)
         return results
@@ -763,7 +764,7 @@ class WhaleTracker:
             # Volume analysis
             vol_analysis = whale_summary.get("volume_analysis", {})
             if vol_analysis:
-                print(f"\n📊 VOLUME ANALYSIS:")
+                print("\n📊 VOLUME ANALYSIS:")
                 print("-" * 40)
                 print(f"   Average Volume: {vol_analysis['average_volume']:,.0f} BNB")
                 print(f"   Max Volume: {vol_analysis['max_volume']:,.0f} BNB")
@@ -772,7 +773,7 @@ class WhaleTracker:
             # High volume periods (whale activity)
             high_vol_periods = whale_summary.get("high_volume_periods", [])
             if high_vol_periods:
-                print(f"\n🐋 WHALE ACTIVITY DETECTED:")
+                print("\n🐋 WHALE ACTIVITY DETECTED:")
                 print("-" * 50)
                 print(f"   Found {len(high_vol_periods)} high volume periods")
 
@@ -782,7 +783,7 @@ class WhaleTracker:
                     price_change = period["price_change"]
                     signal = period["whale_signal"]
 
-                    print(f"{i+1:2}. {signal}")
+                    print(f"{i + 1:2}. {signal}")
                     print(f"    📊 Volume: {period['volume']:,.0f} BNB ({volume_ratio:.1f}x avg)")
                     print(f"    📈 Price Change: {price_change:+.2f}% | ⏰ {time_str}")
                     print()
@@ -796,7 +797,7 @@ class WhaleTracker:
                     buy_ratio = (buy_signals / total_signals) * 100
                     sell_ratio = (sell_signals / total_signals) * 100
 
-                    print(f"\n🧠 WHALE SENTIMENT ANALYSIS:")
+                    print("\n🧠 WHALE SENTIMENT ANALYSIS:")
                     print("-" * 40)
 
                     if buy_ratio > 60:
@@ -820,7 +821,7 @@ class WhaleTracker:
                         "confidence": min(95, 50 + abs(buy_ratio - 50)),
                     }
             else:
-                print(f"\n🐋 WHALE ACTIVITY:")
+                print("\n🐋 WHALE ACTIVITY:")
                 print("-" * 40)
                 print("   ✅ No significant whale activity detected")
                 print("   📊 Volume levels remain within normal ranges")
@@ -829,7 +830,7 @@ class WhaleTracker:
             sentiment = {"sentiment": "🟡 NO DATA", "confidence": 0}
 
         # Order book whale walls
-        print(f"\n📋 WHALE WALLS ANALYSIS:")
+        print("\n📋 WHALE WALLS ANALYSIS:")
         print("-" * 40)
         orderbook_data = self.analyze_order_book_whales()
 
@@ -852,7 +853,7 @@ class WhaleTracker:
                 print(f"⚡ Total Whale Resistance: ${resistance:,.0f}")
 
         # Exchange flows
-        print(f"\n🏦 EXCHANGE FLOWS (24h):")
+        print("\n🏦 EXCHANGE FLOWS (24h):")
         print("-" * 40)
         flows = self.get_exchange_flows()
 
@@ -862,13 +863,13 @@ class WhaleTracker:
         print(f"🎯 Flow Sentiment: {flows['flow_sentiment']}")
 
         if flows.get("outflows_24h"):
-            print(f"\n📤 Recent Large Outflows:")
+            print("\n📤 Recent Large Outflows:")
             for flow in flows["outflows_24h"][:3]:
                 time_str = flow["time"].strftime("%H:%M")
                 print(f"   • {flow['exchange']}: {flow['amount']:,.0f} BNB @ {time_str}")
 
         # Unusual activity detection
-        print(f"\n🚨 UNUSUAL ACTIVITY ALERTS:")
+        print("\n🚨 UNUSUAL ACTIVITY ALERTS:")
         print("-" * 40)
         alerts = self.detect_unusual_activity(
             market_data, whale_summary.get("high_volume_periods", [])
@@ -881,7 +882,7 @@ class WhaleTracker:
             print("   ✅ No unusual activity detected")
 
         # Trading implications
-        print(f"\n💡 WHALE TRADING IMPLICATIONS:")
+        print("\n💡 WHALE TRADING IMPLICATIONS:")
         print("-" * 40)
 
         if sentiment.get("sentiment"):

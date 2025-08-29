@@ -268,8 +268,8 @@ class IchimokuAnalyzer:
             if i < self.tenkan_period - 1:
                 tenkan_values.append(None)
             else:
-                period_highs = highs[i - self.tenkan_period + 1 : i + 1]
-                period_lows = lows[i - self.tenkan_period + 1 : i + 1]
+                period_highs = highs[i - self.tenkan_period + 1: i + 1]
+                period_lows = lows[i - self.tenkan_period + 1: i + 1]
 
                 highest_high = max(period_highs)
                 lowest_low = min(period_lows)
@@ -287,8 +287,8 @@ class IchimokuAnalyzer:
             if i < self.kijun_period - 1:
                 kijun_values.append(None)
             else:
-                period_highs = highs[i - self.kijun_period + 1 : i + 1]
-                period_lows = lows[i - self.kijun_period + 1 : i + 1]
+                period_highs = highs[i - self.kijun_period + 1: i + 1]
+                period_lows = lows[i - self.kijun_period + 1: i + 1]
 
                 highest_high = max(period_highs)
                 lowest_low = min(period_lows)
@@ -323,8 +323,8 @@ class IchimokuAnalyzer:
             if i < self.senkou_span_b_period - 1:
                 senkou_b_values.append(None)
             else:
-                period_highs = highs[i - self.senkou_span_b_period + 1 : i + 1]
-                period_lows = lows[i - self.senkou_span_b_period + 1 : i + 1]
+                period_highs = highs[i - self.senkou_span_b_period + 1: i + 1]
+                period_lows = lows[i - self.senkou_span_b_period + 1: i + 1]
 
                 highest_high = max(period_highs)
                 lowest_low = min(period_lows)
@@ -522,7 +522,7 @@ class IchimokuAnalyzer:
             response = requests.get(f"{self.base_url}/ticker/price", params={"symbol": "BNBUSDT"})
             if response.status_code == 200:
                 return float(response.json()["price"])
-        except:
+        except BaseException:
             pass
         return None
 
@@ -559,7 +559,7 @@ class IchimokuAnalyzer:
         signals = self.analyze_ichimoku_signals(ichimoku_data)
 
         # Display results
-        print(f"\n☁️ ICHIMOKU INDICATORS:")
+        print("\n☁️ ICHIMOKU INDICATORS:")
         print(
             f"   Tenkan Sen (9): ${signals['tenkan_sen']:.2f}"
             if signals["tenkan_sen"]
@@ -586,52 +586,52 @@ class IchimokuAnalyzer:
             else "   Chikou Span: N/A"
         )
 
-        print(f"\n🎯 ICHIMOKU ANALYSIS:")
+        print("\n🎯 ICHIMOKU ANALYSIS:")
         print(f"   Cloud Status: {signals['cloud_status']}")
         print(f"   Overall Trend: {signals['overall_trend']}")
         print(f"   Signal Strength: {signals['strength']}")
         print(f"   Action: {signals['action']}")
 
-        print(f"\n📋 DETAILED SIGNALS:")
+        print("\n📋 DETAILED SIGNALS:")
         for signal in signals["signals"]:
             print(f"   • {signal}")
 
         if signals["support_levels"]:
-            print(f"\n🛡️ SUPPORT LEVELS:")
+            print("\n🛡️ SUPPORT LEVELS:")
             for level in signals["support_levels"]:
                 print(f"   📉 {level}")
 
         if signals["resistance_levels"]:
-            print(f"\n⚡ RESISTANCE LEVELS:")
+            print("\n⚡ RESISTANCE LEVELS:")
             for level in signals["resistance_levels"]:
                 print(f"   📈 {level}")
 
         # Trading implications
-        print(f"\n💡 TRADING IMPLICATIONS:")
+        print("\n💡 TRADING IMPLICATIONS:")
 
         if signals["action"] == "STRONG_BUY":
-            print(f"   🚀 Strong bullish setup - Consider aggressive long positions")
-            print(f"   🎯 Entry: Current levels or pullback to cloud")
-            print(f"   🛑 Stop: Below cloud bottom")
+            print("   🚀 Strong bullish setup - Consider aggressive long positions")
+            print("   🎯 Entry: Current levels or pullback to cloud")
+            print("   🛑 Stop: Below cloud bottom")
 
         elif signals["action"] == "BUY":
-            print(f"   📈 Bullish setup - Consider long positions")
-            print(f"   🎯 Entry: Pullback to Kijun Sen or cloud top")
-            print(f"   🛑 Stop: Below Kijun Sen")
+            print("   📈 Bullish setup - Consider long positions")
+            print("   🎯 Entry: Pullback to Kijun Sen or cloud top")
+            print("   🛑 Stop: Below Kijun Sen")
 
         elif signals["action"] == "STRONG_SELL":
-            print(f"   📉 Strong bearish setup - Consider short positions")
-            print(f"   🎯 Entry: Current levels or bounce to cloud")
-            print(f"   🛑 Stop: Above cloud top")
+            print("   📉 Strong bearish setup - Consider short positions")
+            print("   🎯 Entry: Current levels or bounce to cloud")
+            print("   🛑 Stop: Above cloud top")
 
         elif signals["action"] == "SELL":
-            print(f"   🔻 Bearish setup - Consider short positions")
-            print(f"   🎯 Entry: Bounce to Kijun Sen or cloud bottom")
-            print(f"   🛑 Stop: Above Kijun Sen")
+            print("   🔻 Bearish setup - Consider short positions")
+            print("   🎯 Entry: Bounce to Kijun Sen or cloud bottom")
+            print("   🛑 Stop: Above Kijun Sen")
 
         else:
-            print(f"   ⚖️ Neutral/Consolidation - Wait for clearer signals")
-            print(f"   🎯 Watch for breakout from cloud or TK cross")
+            print("   ⚖️ Neutral/Consolidation - Wait for clearer signals")
+            print("   🎯 Watch for breakout from cloud or TK cross")
 
         print("\n" + "=" * 60)
 
@@ -705,7 +705,7 @@ class IchimokuAnalyzer:
                 if any(keyword in s for keyword in ["Cross", "Cloud", "Strong"])
             ]
             if key_signals:
-                print(f"   Key Signals:")
+                print("   Key Signals:")
                 for signal in key_signals[:2]:  # Show top 2 signals
                     clean_signal = (
                         signal.replace("🔴→🟢", "")
@@ -720,7 +720,7 @@ class IchimokuAnalyzer:
 
         # Multi-period summary
         if results:
-            print(f"\n🏆 MULTI-PERIOD SUMMARY:")
+            print("\n🏆 MULTI-PERIOD SUMMARY:")
             print("=" * 40)
 
             actions = [r["action"] for r in results.values()]
@@ -753,23 +753,23 @@ class IchimokuAnalyzer:
             print(f"   In Cloud: {in_cloud}/{len(results)}")
 
             # Trading recommendation
-            print(f"\n💡 TRADING RECOMMENDATION:")
+            print("\n💡 TRADING RECOMMENDATION:")
             if bullish_count >= 2 and above_cloud >= 2:
-                print(f"   📈 Strong multi-period bullish alignment")
-                print(f"   🎯 Consider long positions on pullbacks")
-                print(f"   🛡️ Use cloud as dynamic support")
+                print("   📈 Strong multi-period bullish alignment")
+                print("   🎯 Consider long positions on pullbacks")
+                print("   🛡️ Use cloud as dynamic support")
             elif bearish_count >= 2 and below_cloud >= 2:
-                print(f"   📉 Strong multi-period bearish alignment")
-                print(f"   🎯 Consider short positions on bounces")
-                print(f"   ⚡ Use cloud as dynamic resistance")
+                print("   📉 Strong multi-period bearish alignment")
+                print("   🎯 Consider short positions on bounces")
+                print("   ⚡ Use cloud as dynamic resistance")
             elif in_cloud >= 2:
-                print(f"   🔄 Multi-period consolidation phase")
-                print(f"   ⚖️ Wait for clear breakout direction")
-                print(f"   🎯 Watch for cloud exits as entry signals")
+                print("   🔄 Multi-period consolidation phase")
+                print("   ⚖️ Wait for clear breakout direction")
+                print("   🎯 Watch for cloud exits as entry signals")
             else:
-                print(f"   🔀 Mixed signals across timeframes")
-                print(f"   ⚠️ Exercise caution - conflicting trends")
-                print(f"   🎯 Focus on shorter timeframes for entries")
+                print("   🔀 Mixed signals across timeframes")
+                print("   ⚠️ Exercise caution - conflicting trends")
+                print("   🎯 Focus on shorter timeframes for entries")
 
         print("\n" + "=" * 60)
         return results
@@ -811,7 +811,7 @@ class IchimokuAnalyzer:
 
         # Summary
         if results:
-            print(f"\n🏆 MULTI-TIMEFRAME SUMMARY:")
+            print("\n🏆 MULTI-TIMEFRAME SUMMARY:")
             print("-" * 30)
 
             actions = [r["action"] for r in results.values()]

@@ -86,7 +86,7 @@ EXAMPLE USAGE:
     >>> analyzer = ElliottWaveAnalyzer(config)
     >>> analysis = analyzer.analyze_elliott_wave(daily_data, weekly_data)
     >>> if analysis.get('current_wave') == 'WAVE_2':
-    ...     print(f"Wave 2 detected - Bullish entry opportunity")
+    ...     print("Wave 2 detected - Bullish entry opportunity")
     ...     print(f"Wave strength: {analysis['wave_strength']:.1f}%")
     ...     print(f"Price target: ${analysis['price_target']:.2f}")
 
@@ -260,7 +260,7 @@ class ElliottWaveAnalyzer:
         >>> analyzer = ElliottWaveAnalyzer(config)
         >>> analysis = analyzer.analyze_elliott_wave(daily_data, weekly_data)
         >>> if analysis.get('current_wave') == 'WAVE_2':
-        ...     print(f"Wave 2 detected - Entry opportunity")
+        ...     print("Wave 2 detected - Entry opportunity")
         ...     print(f"Target: ${analysis['price_target']:.2f}")
         ...     print(f"Confidence: {analysis['confidence_score']:.1f}%")
 
@@ -352,7 +352,7 @@ class ElliottWaveAnalyzer:
                 return {
                     "wave": "FORMING",
                     "confidence": 20,
-                    "description": f"Pattern все още се формира - нужни са повече pivot точки",
+                    "description": "Pattern все още се формира - нужни са повече pivot точки",
                     "timeframe": timeframe,
                 }
 
@@ -390,14 +390,14 @@ class ElliottWaveAnalyzer:
 
         for i in range(lookback, len(prices) - lookback):
             # Проверяваме за local high
-            if prices[i] > max(prices[i - lookback : i]) and prices[i] > max(
-                prices[i + 1 : i + lookback + 1]
+            if prices[i] > max(prices[i - lookback: i]) and prices[i] > max(
+                prices[i + 1: i + lookback + 1]
             ):
                 pivots.append({"type": "HIGH", "price": prices[i], "index": i})
 
             # Проверяваме за local low
-            elif prices[i] < min(prices[i - lookback : i]) and prices[i] < min(
-                prices[i + 1 : i + lookback + 1]
+            elif prices[i] < min(prices[i - lookback: i]) and prices[i] < min(
+                prices[i + 1: i + lookback + 1]
             ):
                 pivots.append({"type": "LOW", "price": prices[i], "index": i})
 
@@ -815,12 +815,13 @@ class ElliottWaveAnalyzer:
                 "strength": momentum_strength,
                 "confidence": regime_confidence,
                 "market_regime": market_regime,
-                "filter_active": momentum_type == "STRONG_BULL"
-                and momentum_strength > self.momentum_threshold,
+                "filter_active": (
+                    momentum_type == "STRONG_BULL" and momentum_strength > self.momentum_threshold
+                ),
             }
 
-        except Exception:
-            logger.exception("Error in trend momentum analysis")
+        except Exception as e:
+            logger.exception(f"Error in trend momentum analysis: {e}")
             return {
                 "momentum": "NEUTRAL",
                 "strength": 0.5,

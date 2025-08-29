@@ -118,11 +118,12 @@ from tqdm import tqdm
 # Add current directory to Python path for module imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from data_fetcher import BNBDataFetcher
-from fibonacci import FibonacciAnalyzer
-from indicators import TechnicalIndicators
-from signal_generator import SignalGenerator
-from weekly_tails import WeeklyTailsAnalyzer
+# Import after path setup to avoid import errors
+from data_fetcher import BNBDataFetcher  # noqa: E402
+from fibonacci import FibonacciAnalyzer  # noqa: E402
+from indicators import TechnicalIndicators  # noqa: E402
+from signal_generator import SignalGenerator  # noqa: E402
+from weekly_tails import WeeklyTailsAnalyzer  # noqa: E402
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -261,7 +262,7 @@ class Backtester:
             # Изчисляваме дни за lookback - ако е None, взимаме всички налични данни
             if months is None:
                 lookback_days = 1000  # Голям брой за да вземем всички налични данни
-                print(f"🔄 Пускаме backtest за ЦЕЛИЯ наличен период...")
+                print("🔄 Пускаме backtest за ЦЕЛИЯ наличен период...")
             else:
                 lookback_days = months * 30
                 print(f"🔄 Пускаме backtest за {months} месеца ({lookback_days} дни)...")
@@ -387,8 +388,9 @@ class Backtester:
                                     {"date": current_date, "signal": signal, "result": result}
                                 )
 
-                    except Exception:
+                    except Exception as e:
                         # Тихо прескачаме грешките за да не спираме прогреса
+                        logging.warning(f"Error processing date {current_date}: {e}")
                         pass
 
                     # Обновяваме прогрес бара с информация
@@ -522,7 +524,8 @@ class Backtester:
                 ]
 
                 if not flexible_window.empty:
-                    # Select earliest available bar in 14-21 day window to maintain minimum holding period
+                    # Select earliest available bar in 14-21 day window
+                    # to maintain minimum holding period
                     target_data = flexible_window.head(1)
                 else:
                     # Priority 3: Fallback to nearest available bar (still maintain 14-day minimum)
@@ -530,8 +533,9 @@ class Backtester:
                     if not fallback_window.empty:
                         target_data = fallback_window.head(1)
                         logger.info(
-                            f"Using fallback validation at {target_data.index[0].strftime('%Y-%m-%d')} for signal on {signal_date.strftime('%Y-%m-%d')}"
-                        )
+                            f"Using fallback validation at {
+                                target_data.index[0].strftime('%Y-%m-%d')} for signal on {
+                                signal_date.strftime('%Y-%m-%d')}")
                     else:
                         logger.warning(
                             f"Insufficient data for 14-day minimum validation period after {signal_date.strftime('%Y-%m-%d')}"
@@ -741,7 +745,7 @@ class Backtester:
 
                 # Период на backtest-а
                 period = results["period"]
-                f.write(f"ПЕРИОД НА BACKTEST:\n")
+                f.write("ПЕРИОД НА BACKTEST:\n")
                 f.write(f"  От: {period['start_date'].strftime('%Y-%m-%d')}\n")
                 f.write(f"  До: {period['end_date'].strftime('%Y-%m-%d')}\n")
                 f.write(f"  Общо дни: {period['total_days']}\n")
@@ -757,11 +761,15 @@ class Backtester:
                 # Статистика по тип сигнал
                 f.write("СТАТИСТИКА ПО ТИП СИГНАЛ:\n")
                 f.write(
-                    f"  LONG сигнали: {analysis['long_signals']['accuracy']:.1f}% ({analysis['long_signals']['success']}/{analysis['long_signals']['total']})\n"
-                )
+                    f"  LONG сигнали: {
+                        analysis['long_signals']['accuracy']:.1f}% ({
+                        analysis['long_signals']['success']}/{
+                        analysis['long_signals']['total']})\n")
                 f.write(
-                    f"  SHORT сигнали: {analysis['short_signals']['accuracy']:.1f}% ({analysis['short_signals']['success']}/{analysis['short_signals']['total']})\n\n"
-                )
+                    f"  SHORT сигнали: {
+                        analysis['short_signals']['accuracy']:.1f}% ({
+                        analysis['short_signals']['success']}/{
+                        analysis['short_signals']['total']})\n\n")
 
                 # P&L статистика по тип сигнал
                 if analysis["long_signals"]["total"] > 0:
@@ -826,8 +834,11 @@ class Backtester:
                     result = signal_data["result"]
                     current_price = signal.get("fibonacci_analysis", {}).get("current_price", 0)
                     f.write(
-                        f"{i}. {signal_data['date'].strftime('%Y-%m-%d')} | {signal['signal']} | ${current_price:,.2f} | {result['profit_loss_pct']:+.2f}%\n"
-                    )
+                        f"{i}. {
+                            signal_data['date'].strftime('%Y-%m-%d')} | {
+                            signal['signal']} | ${
+                            current_price:,.2f} | {
+                            result['profit_loss_pct']:+.2f}%\n")
                 f.write("\n")
 
                 # Най-лоши сигнали
@@ -838,8 +849,11 @@ class Backtester:
                     result = signal_data["result"]
                     current_price = signal.get("fibonacci_analysis", {}).get("current_price", 0)
                     f.write(
-                        f"{i}. {signal_data['date'].strftime('%Y-%m-%d')} | {signal['signal']} | ${current_price:,.2f} | {result['profit_loss_pct']:+.2f}%\n"
-                    )
+                        f"{i}. {
+                            signal_data['date'].strftime('%Y-%m-%d')} | {
+                            signal['signal']} | ${
+                            current_price:,.2f} | {
+                            result['profit_loss_pct']:+.2f}%\n")
                 f.write("\n")
 
                 # Детайлни резултати
@@ -860,8 +874,9 @@ class Backtester:
                     )
                     f.write(f"Дата: {signal_data['date'].strftime('%Y-%m-%d')}\\n")
                     f.write(
-                        f"Сигнал: {signal['signal']} (увереност: {confidence:.2f}) [{confidence_level}]\n"
-                    )
+                        f"Сигнал: {
+                            signal['signal']} (увереност: {
+                            confidence:.2f}) [{confidence_level}]\n")
                     f.write(f"Приоритет: {signal['priority']}\n")
                     current_price = signal.get("fibonacci_analysis", {}).get("current_price", 0)
                     f.write(f"Цена: ${current_price:,.2f}\n")
@@ -876,7 +891,7 @@ class Backtester:
 
                         # Намираме най-близкото Fibonacci ниво
                         closest_level = None
-                        min_distance = float("inf")
+                        min_distance = float("in")
                         for level, price in fib_levels.items():
                             distance = abs(current_price - price)
                             if distance < min_distance:
@@ -888,7 +903,7 @@ class Backtester:
                             distance_pct = (min_distance / current_price) * 100
                             level_type = "поддръжка" if current_price > price else "съпротива"
                             f.write(
-                                f"Fibonacci: {level*100:.1f}% ({level_type}) - ${price:,.2f} (разстояние: {distance_pct:.2f}%)\n"
+                                f"Fibonacci: {level * 100:.1f}% ({level_type}) - ${price:,.2f} (разстояние: {distance_pct:.2f}%)\n"
                             )
 
                     # RSI информация
@@ -919,8 +934,8 @@ class Backtester:
 
                         macd_status = "bullish" if macd_value > 0 else "bearish"
                         f.write(
-                            f"MACD: {macd_value:+.3f} ({macd_status}) - {macd_signal} - {macd_reason}\n"
-                        )
+                            f"MACD: {
+                                macd_value:+.3f} ({macd_status}) - {macd_signal} - {macd_reason}\n")
 
                     # Bollinger Bands информация
                     if (
@@ -941,8 +956,8 @@ class Backtester:
                             bb_status = "централна лента"
 
                         f.write(
-                            f"Bollinger Bands: {bb_position:+.2f} ({bb_status}) - {bb_signal} - {bb_reason}\n"
-                        )
+                            f"Bollinger Bands: {
+                                bb_position:+.2f} ({bb_status}) - {bb_signal} - {bb_reason}\n")
 
                     # Weekly Tails информация
                     if (
@@ -969,8 +984,9 @@ class Backtester:
                             crossover = ma_analysis.get("crossover_signal", {})
                             if crossover.get("signal") != "NONE":
                                 f.write(
-                                    f"📊 MA: {crossover['signal']} ({crossover['confidence']:.0f}%)\n"
-                                )
+                                    f"📊 MA: {
+                                        crossover['signal']} ({
+                                        crossover['confidence']:.0f}%)\n")
 
                     # Price Action Patterns информация (кратко)
                     if "price_patterns_analysis" in signal and signal["price_patterns_analysis"]:
@@ -981,8 +997,9 @@ class Backtester:
                                 f.write(f"📐 Pattern: {overall_pattern}\n")
 
                     f.write(
-                        f"Резултат: {'УСПЕХ' if result['success'] else 'НЕУСПЕХ'} ({result['profit_loss_pct']:+.2f}%)\n"
-                    )
+                        f"Резултат: {
+                            'УСПЕХ' if result['success'] else 'НЕУСПЕХ'} ({
+                            result['profit_loss_pct']:+.2f}%)\n")
                     f.write(
                         f"Валидация: {result['validation_date'].strftime('%Y-%m-%d')} (${result['validation_price']:,.2f})\n"
                     )
@@ -1074,7 +1091,7 @@ def main():
 
         # Показваме резултатите - сбито
         if "analysis" not in results or "error" in results["analysis"]:
-            print(f"\n❌ Грешка в анализ на резултатите:")
+            print("\n❌ Грешка в анализ на резултатите:")
             if "analysis" in results and "error" in results["analysis"]:
                 print(f"   {results['analysis']['error']}")
             else:
@@ -1085,7 +1102,7 @@ def main():
 
         # Проверяваме дали имаме period информация
         if "period" not in results:
-            print(f"\n❌ Грешка: Липсва period информация в резултатите")
+            print("\n❌ Грешка: Липсва period информация в резултатите")
             return
 
         period = results["period"]
@@ -1106,7 +1123,7 @@ def main():
             print(f"   Налични ключове: {list(analysis.keys())}")
             return
 
-        print(f"\n🎯 BACKTEST РЕЗУЛТАТИ:")
+        print("\n🎯 BACKTEST РЕЗУЛТАТИ:")
         print(
             f"📅 Период: {period['start_date'].strftime('%Y-%m-%d')} до {period['end_date'].strftime('%Y-%m-%d')}"
         )
@@ -1114,18 +1131,20 @@ def main():
         print(f"✅ Успешни сигнали: {analysis['successful_signals']}")
         print(f"🎯 Обща точност: {analysis['overall_accuracy']:.1f}%")
         print(
-            f"📈 LONG: {analysis['long_signals']['total']} ({analysis['long_signals']['accuracy']:.1f}%)"
-        )
+            f"📈 LONG: {
+                analysis['long_signals']['total']} ({
+                analysis['long_signals']['accuracy']:.1f}%)")
         print(
-            f"📉 SHORT: {analysis['short_signals']['total']} ({analysis['short_signals']['accuracy']:.1f}%)"
-        )
+            f"📉 SHORT: {
+                analysis['short_signals']['total']} ({
+                analysis['short_signals']['accuracy']:.1f}%)")
         print(f"💰 Среден P&L: {analysis['avg_profit_loss_pct']:+.2f}%")
 
         # Експортираме резултатите
         backtester.export_backtest_results(results, "data/backtest_results.txt")
 
-        print(f"\n✅ Backtest завършен успешно!")
-        print(f"📁 Детайлни резултати записани в data/backtest_results.txt")
+        print("\n✅ Backtest завършен успешно!")
+        print("📁 Детайлни резултати записани в data/backtest_results.txt")
 
     except Exception as e:
         logger.error(f"Критична грешка: {e}")
@@ -1146,7 +1165,7 @@ def main():
             price_patterns_logger.setLevel(original_levels["price_patterns"])
             moving_averages_logger.setLevel(original_levels["moving_averages"])
             elliott_wave_logger.setLevel(original_levels["elliott_wave"])
-        except:
+        except BaseException:
             pass  # Тихо прескачаме ако има грешка при възстановяване
 
     def _calculate_sharpe_ratio(
@@ -1248,7 +1267,7 @@ def main():
                     gross_loss += abs(pnl_pct)
 
             if gross_loss == 0:
-                return float("inf") if gross_profit > 0 else 0.0
+                return float("in") if gross_profit > 0 else 0.0
 
             profit_factor = gross_profit / gross_loss
             return round(profit_factor, 3)
@@ -1275,7 +1294,7 @@ def main():
             net_profit = sum(pnl_returns)
 
             if max_drawdown == 0:
-                return float("inf") if net_profit > 0 else 0.0
+                return float("in") if net_profit > 0 else 0.0
 
             recovery_factor = net_profit / max_drawdown
             return round(recovery_factor, 3)
@@ -1305,7 +1324,7 @@ def main():
             annual_return = (total_return * 365) / days if days > 0 else 0
 
             if max_drawdown == 0:
-                return float("inf") if annual_return > 0 else 0.0
+                return float("in") if annual_return > 0 else 0.0
 
             calmar_ratio = annual_return / max_drawdown
             return round(calmar_ratio, 3)

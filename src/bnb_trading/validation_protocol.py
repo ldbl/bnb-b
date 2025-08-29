@@ -357,7 +357,9 @@ class ValidationProtocol:
                 "max_dd_increase": max_dd_increase,
                 "threshold": dd_threshold,
             },
-            "message": f"Drawdown change: {avg_dd_change:+.1f}% (max increase: {max_dd_increase:+.1f}%)",
+            "message": (
+                f"Drawdown change: {avg_dd_change:+.1f}% (max increase: {max_dd_increase:+.1f}%)"
+            ),
         }
 
     def _validate_short_signal_logic(
@@ -425,7 +427,12 @@ class ValidationProtocol:
                 "reasonable_range": reasonable_range,
                 "short_accuracies": short_accuracies,
             },
-            "message": f"SHORT signals: {short_percentage:.1f}% (expected: {reasonable_range[0]}-{reasonable_range[1]}%)",
+            "message": (
+                f"SHORT signals: {
+                    short_percentage:.1f}% (expected: {
+                    reasonable_range[0]}-{
+                    reasonable_range[1]}%)"
+            ),
         }
 
     def _validate_configuration(
@@ -508,7 +515,9 @@ class ValidationProtocol:
                 "failed_periods": failed_periods,
                 "successful_periods": successful_periods,
             },
-            "message": f"Edge case testing: {successful_periods}/{len(expected_periods)} periods successful",
+            "message": (
+                f"Edge case testing: {successful_periods}/{len(expected_periods)} periods successful"
+            ),
         }
 
     def _validate_performance_impact(

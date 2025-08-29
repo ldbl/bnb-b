@@ -755,7 +755,7 @@ class SentimentAnalyzer:
         composite = self.calculate_composite_sentiment(fear_greed, social, news, momentum)
 
         # Display Fear & Greed Index
-        print(f"\n😨 FEAR & GREED INDEX:")
+        print("\n😨 FEAR & GREED INDEX:")
         print("-" * 40)
 
         if "error" not in fear_greed:
@@ -769,14 +769,14 @@ class SentimentAnalyzer:
             print(f"   Change: {change_icon} {change:+d} points")
 
             if score <= 20:
-                print(f"   💡 Extreme Fear - Often good buying opportunity")
+                print("   💡 Extreme Fear - Often good buying opportunity")
             elif score >= 80:
-                print(f"   ⚠️ Extreme Greed - Consider taking profits")
+                print("   ⚠️ Extreme Greed - Consider taking profits")
             else:
                 print(f"   🎯 {level} sentiment in the market")
 
         # Display Social Media Sentiment
-        print(f"\n📱 SOCIAL MEDIA SENTIMENT:")
+        print("\n📱 SOCIAL MEDIA SENTIMENT:")
         print("-" * 40)
 
         print(f"   Overall: {social['overall_sentiment']}")
@@ -785,23 +785,26 @@ class SentimentAnalyzer:
         twitter_data = social["platforms"]["twitter"]
         print(f"   🐦 Twitter: {twitter_data['total_mentions']} mentions")
         print(
-            f"     • Bullish: {twitter_data['bullish_mentions']} | Bearish: {twitter_data['bearish_mentions']}"
-        )
+            f"     • Bullish: {
+                twitter_data['bullish_mentions']} | Bearish: {
+                twitter_data['bearish_mentions']}")
 
         reddit_data = social["platforms"]["reddit"]
         print(f"   📺 Reddit: {reddit_data['total_posts']} posts")
         print(
-            f"     • Upvoted: {reddit_data['upvoted_posts']} | Downvoted: {reddit_data['downvoted_posts']}"
-        )
+            f"     • Upvoted: {
+                reddit_data['upvoted_posts']} | Downvoted: {
+                reddit_data['downvoted_posts']}")
 
         telegram_data = social["platforms"]["telegram"]
         print(f"   💬 Telegram: {telegram_data['group_mentions']} mentions")
         print(
-            f"     • Positive: {telegram_data['positive_reactions']} | Negative: {telegram_data['negative_reactions']}"
-        )
+            f"     • Positive: {
+                telegram_data['positive_reactions']} | Negative: {
+                telegram_data['negative_reactions']}")
 
         # Display News Sentiment
-        print(f"\n📰 NEWS SENTIMENT:")
+        print("\n📰 NEWS SENTIMENT:")
         print("-" * 40)
 
         print(f"   Overall: {news['news_sentiment']}")
@@ -810,7 +813,7 @@ class SentimentAnalyzer:
         print(f"   Negative Articles: {news['negative_count']}")
         print(f"   Neutral Articles: {news['neutral_count']}")
 
-        print(f"\n   📑 Recent Headlines:")
+        print("\n   📑 Recent Headlines:")
         for i, article in enumerate(news["recent_news"][:3], 1):
             sentiment_icon = (
                 "🟢"
@@ -824,19 +827,19 @@ class SentimentAnalyzer:
             )
 
         # Display Momentum Indicators
-        print(f"\n📊 MOMENTUM INDICATORS:")
+        print("\n📊 MOMENTUM INDICATORS:")
         print("-" * 40)
 
         if "error" not in momentum:
             print(f"   Overall Momentum: {momentum['overall_momentum']}")
             print(f"   Momentum Score: {momentum['momentum_score']}/100")
 
-            print(f"   Timeframe Analysis:")
+            print("   Timeframe Analysis:")
             for timeframe, data in momentum["timeframe_data"].items():
                 print(f"     {timeframe}: {data['trend']} ({data['price_change']:+.2f}%)")
 
         # Display Composite Sentiment
-        print(f"\n🎯 COMPOSITE SENTIMENT ANALYSIS:")
+        print("\n🎯 COMPOSITE SENTIMENT ANALYSIS:")
         print("=" * 40)
 
         print(f"   Overall Sentiment: {composite['overall_sentiment']}")
@@ -844,7 +847,7 @@ class SentimentAnalyzer:
         print(f"   Confidence: {composite['confidence']}%")
         print(f"   Action: {composite['action']}")
 
-        print(f"\n   📊 Component Breakdown:")
+        print("\n   📊 Component Breakdown:")
         scores = composite["individual_scores"]
         weights = composite["weights"]
 
@@ -856,7 +859,7 @@ class SentimentAnalyzer:
         print(f"     Momentum: {scores['momentum']}/100 (Weight: {weights['momentum']:.0%})")
 
         # Generate and display trading signals
-        print(f"\n💡 SENTIMENT-BASED TRADING SIGNALS:")
+        print("\n💡 SENTIMENT-BASED TRADING SIGNALS:")
         print("-" * 40)
 
         signals = self.get_sentiment_trading_signals(composite)
@@ -867,12 +870,12 @@ class SentimentAnalyzer:
         print(f"   Position Size: {signals['position_size']}")
 
         if signals["entry_zones"]:
-            print(f"   Entry Zones:")
+            print("   Entry Zones:")
             for zone in signals["entry_zones"]:
                 print(f"     🎯 {zone}")
 
         if signals["targets"]:
-            print(f"   Targets:")
+            print("   Targets:")
             for target in signals["targets"]:
                 print(f"     🏆 {target}")
 
@@ -880,7 +883,7 @@ class SentimentAnalyzer:
             print(f"   Stop Loss: 🛑 {signals['stop_loss']}")
 
         # Market interpretation
-        print(f"\n🧠 SENTIMENT INTERPRETATION:")
+        print("\n🧠 SENTIMENT INTERPRETATION:")
         print("-" * 40)
 
         score = composite["composite_score"]

@@ -58,28 +58,34 @@ import pandas as pd
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-from elliott_wave_analyzer import ElliottWaveAnalyzer
-from fibonacci import FibonacciAnalyzer
-from indicators import TechnicalIndicators
-from optimal_levels import OptimalLevelsAnalyzer
-from trend_analyzer import TrendAnalyzer
-from weekly_tails import WeeklyTailsAnalyzer
+# Core analysis modules
+from elliott_wave_analyzer import ElliottWaveAnalyzer  # noqa: E402
+from fibonacci import FibonacciAnalyzer  # noqa: E402
+from indicators import TechnicalIndicators  # noqa: E402
+from optimal_levels import OptimalLevelsAnalyzer  # noqa: E402
+from trend_analyzer import TrendAnalyzer  # noqa: E402
+from weekly_tails import WeeklyTailsAnalyzer  # noqa: E402
 
 # Phase 2.2: Integration of Smart SHORT Signals
 try:
-    from smart_short_generator import SmartShortSignalGenerator, create_short_signal_dict
+    from smart_short_generator import (
+        SmartShortSignalGenerator,
+        create_short_signal_dict,
+    )  # noqa: E402
 
     SMART_SHORT_AVAILABLE = True
 except ImportError:
     SMART_SHORT_AVAILABLE = False
     logger.warning("SmartShortSignalGenerator не е наличен - SHORT сигнали ще бъдат ограничени")
-from divergence_detector import DivergenceDetector
-from ichimoku_module import IchimokuAnalyzer
-from moving_averages import MovingAveragesAnalyzer
-from multi_timeframe_analyzer import MultiTimeframeAnalyzer
-from price_action_patterns import PriceActionPatternsAnalyzer
-from sentiment_module import SentimentAnalyzer
-from whale_tracker import WhaleTracker
+
+# Additional analysis modules
+from divergence_detector import DivergenceDetector  # noqa: E402
+from ichimoku_module import IchimokuAnalyzer  # noqa: E402
+from moving_averages import MovingAveragesAnalyzer  # noqa: E402
+from multi_timeframe_analyzer import MultiTimeframeAnalyzer  # noqa: E402
+from price_action_patterns import PriceActionPatternsAnalyzer  # noqa: E402
+from sentiment_module import SentimentAnalyzer  # noqa: E402
+from whale_tracker import WhaleTracker  # noqa: E402
 
 
 class SignalGenerator:
@@ -442,7 +448,8 @@ class SignalGenerator:
             ):
 
                 try:
-                    # Създаваме предварителни анализи за daily и weekly (simplified version for multi-timeframe)
+                    # Създаваме предварителни анализи за daily и weekly (simplified version
+                    # for multi-timeframe)
                     daily_analysis = {
                         "fibonacci_analysis": fib_analysis,
                         "weekly_tails_analysis": tails_analysis,
@@ -554,12 +561,16 @@ class SignalGenerator:
                     ] += f" | Multi-Timeframe: {alignment_info} ({confidence_bonus:+.2f})"
 
                 logger.info(
-                    f"Multi-timeframe analysis applied: {multi_timeframe_analysis.get('overall_alignment', 'UNKNOWN')} | Bonus: {confidence_bonus:+.2f}"
-                )
+                    f"Multi-timeframe analysis applied: {
+                        multi_timeframe_analysis.get(
+                            'overall_alignment',
+                            'UNKNOWN')} | Bonus: {
+                        confidence_bonus:+.2f}")
 
             logger.info(
-                f"Сигнал генериран: {final_signal['signal']} (увереност: {final_signal['confidence']:.2f})"
-            )
+                f"Сигнал генериран: {
+                    final_signal['signal']} (увереност: {
+                    final_signal['confidence']:.2f})")
 
             return signal_details
 
@@ -648,13 +659,15 @@ class SignalGenerator:
                     if macd_conflict:
                         adjusted_weight = self.weekly_tails_weight * 0.7  # Намаляваме с 30%
                         signal_reasons.append(
-                            f"Weekly Tails: {tails_signal['reason']} (сила: {tails_signal['strength']:.2f}) - тегло намалено поради MACD конфликт"
-                        )
+                            f"Weekly Tails: {
+                                tails_signal['reason']} (сила: {
+                                tails_signal['strength']:.2f}) - тегло намалено поради MACD конфликт")
                     else:
                         adjusted_weight = self.weekly_tails_weight
                         signal_reasons.append(
-                            f"Weekly Tails: {tails_signal['reason']} (сила: {tails_signal['strength']:.2f})"
-                        )
+                            f"Weekly Tails: {
+                                tails_signal['reason']} (сила: {
+                                tails_signal['strength']:.2f})")
 
                     score = tails_signal["strength"] * adjusted_weight
                     signal_scores[tails_signal["signal"]] += score
@@ -686,13 +699,15 @@ class SignalGenerator:
                             ):
                                 adjusted_weight = base_weight * 0.6  # Намаляваме с 40%
                                 signal_reasons.append(
-                                    f"Moving Averages: {crossover['signal']} → {ma_signal} ({crossover['confidence']:.0f}%) - тегло намалено поради силен Weekly SHORT"
-                                )
+                                    f"Moving Averages: {
+                                        crossover['signal']} → {ma_signal} ({
+                                        crossover['confidence']:.0f}%) - тегло намалено поради силен Weekly SHORT")
                             else:
                                 adjusted_weight = base_weight
                                 signal_reasons.append(
-                                    f"Moving Averages: {crossover['signal']} → {ma_signal} ({crossover['confidence']:.0f}%)"
-                                )
+                                    f"Moving Averages: {
+                                        crossover['signal']} → {ma_signal} ({
+                                        crossover['confidence']:.0f}%)")
 
                             ma_score = (crossover["confidence"] / 100.0) * adjusted_weight
                             signal_scores[ma_signal] += ma_score
@@ -729,8 +744,10 @@ class SignalGenerator:
                     # EMA потвърждава LONG сигнала - увеличаваме confidence
                     signal_scores["LONG"] += ema_confidence_bonus
                     signal_reasons.append(
-                        f"✅ EMA ПОТВЪРЖДЕНИЕ: {crossover['signal']} ({crossover['confidence']:.0f}%) - +{ema_confidence_bonus:.2f} confidence за LONG"
-                    )
+                        f"✅ EMA ПОТВЪРЖДЕНИЕ: {
+                            crossover['signal']} ({
+                            crossover['confidence']:.0f}%) - +{
+                            ema_confidence_bonus:.2f} confidence за LONG")
                     long_signal_confirmed = True
                     logger.info(
                         f"EMA потвърждение за LONG сигнал: +{ema_confidence_bonus} confidence"
@@ -767,8 +784,7 @@ class SignalGenerator:
                     )
                     burn_enhanced = True
                     logger.info(
-                        f"BNB Burn enhancement: +{burn_confidence_bonus} confidence ({days_to_burn} дни до burn)"
-                    )
+                        f"BNB Burn enhancement: +{burn_confidence_bonus} confidence ({days_to_burn} дни до burn)")
 
             # PHASE 2: Stop-loss препоръки с Fibonacci нива
             stop_loss_recommendation = None
@@ -801,8 +817,9 @@ class SignalGenerator:
                                 "type": "LONG_STOP_LOSS",
                                 "price": stop_loss_price,
                                 "fib_level": f"Под {level_name}",
-                                "risk_pct": ((current_price - stop_loss_price) / current_price)
-                                * 100,
+                                "risk_pct": (
+                                    ((current_price - stop_loss_price) / current_price) * 100
+                                ),
                                 "reason": f"Fibonacci support на {closest_support:.2f}",
                             }
                             signal_reasons.append(
@@ -826,8 +843,9 @@ class SignalGenerator:
                                 "type": "SHORT_STOP_LOSS",
                                 "price": stop_loss_price,
                                 "fib_level": f"Над {level_name}",
-                                "risk_pct": ((stop_loss_price - current_price) / current_price)
-                                * 100,
+                                "risk_pct": (
+                                    ((stop_loss_price - current_price) / current_price) * 100
+                                ),
                                 "reason": f"Fibonacci resistance на {closest_resistance:.2f}",
                             }
                             signal_reasons.append(
@@ -879,7 +897,7 @@ class SignalGenerator:
             # 4.5. ATH Proximity филтър за SHORT сигнали - СТРОГ!
             # SHORT само когато сме близо до ATH (> 5% под ATH)
             ath_proximity_score = 0.0
-            if "daily_df" in locals() and daily_df is not None and not daily_df.empty:
+            if "daily_d" in locals() and daily_df is not None and not daily_df.empty:
                 # Намираме най-близката дата до края на седмицата
                 if hasattr(daily_df.index, "date"):
                     target_date = daily_df.index[-1].date()
@@ -898,11 +916,11 @@ class SignalGenerator:
                     if ath_distance_pct > 10.0:  # Далеч от rolling ATH - блокираме SHORT
                         signal_scores["SHORT"] = 0.0  # Изцяло блокираме SHORT сигнала
                         signal_reasons.append(
-                            f"SHORT BLOCKED by rolling ATH proximity: {ath_distance_pct:.1f}% под ATH (твърде далеч)"
-                        )
+                            f"SHORT BLOCKED by rolling ATH proximity: {
+                                ath_distance_pct:.1f}% под ATH (твърде далеч)")
                         logger.info(
-                            f"SHORT blocked by rolling ATH proximity: {ath_distance_pct:.1f}% distance from ATH"
-                        )
+                            f"SHORT blocked by rolling ATH proximity: {
+                                ath_distance_pct:.1f}% distance from ATH")
                     elif ath_proximity_score > 0:  # Близо до ATH - даваме бонус
                         ath_bonus = ath_proximity_score * 0.15  # 15% бонус базиран на proximity
                         signal_scores["SHORT"] += ath_bonus
@@ -916,10 +934,10 @@ class SignalGenerator:
                             f"🔥 ATH BONUS: +{ath_bonus:.3f} за SHORT сигнал (proximity: {ath_proximity_score:.3f})"
                         )
                     else:
-                        signal_reasons.append(f"No ATH proximity data available")
+                        signal_reasons.append("No ATH proximity data available")
 
             # 5. Допълнителни строги филтри за SHORT сигнали
-            if "daily_df" in locals() and daily_df is not None and not daily_df.empty:
+            if "daily_d" in locals() and daily_df is not None and not daily_df.empty:
                 # 5.1 Trend Strength филтър - SHORT само при силни downtrends
                 if trend_analysis and "combined_trend" in trend_analysis:
                     combined_trend = trend_analysis["combined_trend"]
@@ -932,21 +950,17 @@ class SignalGenerator:
                     if trend_direction in ["STRONG_UPTREND"] and trend_strength == "VERY_STRONG":
                         signal_scores["SHORT"] *= 0.5  # Намаляваме SHORT сигнала с 50% (по-леко)
                         signal_reasons.append(
-                            f"SHORT weakened by very strong uptrend: {trend_direction} ({trend_strength})"
-                        )
+                            f"SHORT weakened by very strong uptrend: {trend_direction} ({trend_strength})")
                         logger.info(
-                            f"SHORT weakened by very strong uptrend: {trend_direction} ({trend_strength})"
-                        )
+                            f"SHORT weakened by very strong uptrend: {trend_direction} ({trend_strength})")
                     elif trend_direction in ["UPTREND"] and trend_strength == "STRONG":
                         signal_scores[
                             "SHORT"
                         ] *= 0.7  # Намаляваме SHORT сигнала с 30% (много по-леко)
                         signal_reasons.append(
-                            f"SHORT mildly weakened by strong uptrend: {trend_direction} ({trend_strength})"
-                        )
+                            f"SHORT mildly weakened by strong uptrend: {trend_direction} ({trend_strength})")
                         logger.info(
-                            f"SHORT mildly weakened by strong uptrend: {trend_direction} ({trend_strength})"
-                        )
+                            f"SHORT mildly weakened by strong uptrend: {trend_direction} ({trend_strength})")
 
                 # 5.2 Market Regime филтър - SHORT само в подходящи market conditions
                 if "ATH_Distance_Pct" in daily_df.columns:
@@ -958,11 +972,11 @@ class SignalGenerator:
                             "SHORT"
                         ] *= 0.6  # Намаляваме SHORT сигнала с 40% (много по-леко)
                         signal_reasons.append(
-                            f"SHORT moderately weakened: {ath_distance:.1f}% from ATH + strong uptrend"
-                        )
+                            f"SHORT moderately weakened: {
+                                ath_distance:.1f}% from ATH + strong uptrend")
                         logger.info(
-                            f"SHORT moderately weakened: {ath_distance:.1f}% from ATH + strong uptrend"
-                        )
+                            f"SHORT moderately weakened: {
+                                ath_distance:.1f}% from ATH + strong uptrend")
                     elif ath_distance > 10.0 and trend_direction in ["UPTREND"]:
                         signal_scores["SHORT"] *= 0.8  # Намаляваме SHORT сигнала с 20% (леко)
                         signal_reasons.append(
@@ -1065,7 +1079,8 @@ class SignalGenerator:
                         confluence_bonus += 0.05
                         quality_factors.append("Trend alignment")
 
-                    # RSI oversold bonus - removed redundant condition check (handled in quality enhancement section below)
+                    # RSI oversold bonus - removed redundant condition check (handled in
+                    # quality enhancement section below)
 
                     # Apply strict confluence requirements
                     if confluence_count < 3:  # Must have minimum 3 core confirmations
@@ -1083,7 +1098,9 @@ class SignalGenerator:
                         # Downgrade LONG to HOLD if confidence too low
                         final_signal = "HOLD"
                         confidence = enhanced_confidence
-                        reason = f"HOLD: LONG confidence {enhanced_confidence:.2f} below threshold {long_confidence_threshold:.2f}"
+                        reason = f"HOLD: LONG confidence {
+                            enhanced_confidence:.2f} below threshold {
+                            long_confidence_threshold:.2f}"
                         if quality_factors:
                             reason += f" | Quality: {', '.join(quality_factors[:3])}"
                         if warning_factors:
@@ -1234,11 +1251,12 @@ class SignalGenerator:
                         final_signal = "HOLD"
                         confidence = 0.4
                         signal_reasons.append(
-                            f"SHORT BLOCKED by Fibonacci resistance filter: {fib_resistance_filter_applied['reason']}"
-                        )
+                            f"SHORT BLOCKED by Fibonacci resistance filter: {
+                                fib_resistance_filter_applied['reason']}")
 
                 # ВЪЗСТАНОВЕНИ ВСИЧКИ SHORT ФИЛТРИ - Сега с ATH proximity бонус!
-                # SHORT филтрите са активни, но ATH proximity дава бонус за SHORT когато сме близо до ATH
+                # SHORT филтрите са активни, но ATH proximity дава бонус за SHORT когато
+                # сме близо до ATH
 
                 # Проверяваме дали отговаря на изискванията (по-гъвкаво)
                 if self.fib_tail_required:
@@ -1384,17 +1402,27 @@ class SignalGenerator:
 
                     if confidence >= high_threshold and final_signal == "LONG":
                         # Много силен LONG сигнал
-                        reason += f" | Phase 2 ENHANCED: {'; '.join(long_enhancements_reasons)} (confidence: {old_confidence:.2f} → {confidence:.2f})"
+                        reason += f" | Phase 2 ENHANCED: {
+                            '; '.join(long_enhancements_reasons)} (confidence: {
+                            old_confidence:.2f} → {
+                            confidence:.2f})"
                     elif confidence >= medium_threshold and final_signal == "LONG":
                         # Добър LONG сигнал
-                        reason += f" | Phase 2 BONUS: {'; '.join(long_enhancements_reasons)} (confidence: {old_confidence:.2f} → {confidence:.2f})"
+                        reason += f" | Phase 2 BONUS: {
+                            '; '.join(long_enhancements_reasons)} (confidence: {
+                            old_confidence:.2f} → {
+                            confidence:.2f})"
                     else:
                         # Обикновен бонус
-                        reason += f" | Phase 2: {'; '.join(long_enhancements_reasons)} (+{long_enhancements_bonus:.2f})"
+                        reason += f" | Phase 2: {
+                            '; '.join(long_enhancements_reasons)} (+{
+                            long_enhancements_bonus:.2f})"
 
                     logger.info(
-                        f"LONG Enhancement: {long_enhancements_reasons}, bonus: {long_enhancements_bonus:.2f}, confidence: {old_confidence:.2f} → {confidence:.2f}"
-                    )
+                        f"LONG Enhancement: {long_enhancements_reasons}, bonus: {
+                            long_enhancements_bonus:.2f}, confidence: {
+                            old_confidence:.2f} → {
+                            confidence:.2f}")
 
             # PHASE 2: Добавяме информация за подобренията
             phase2_info = {
@@ -1575,7 +1603,9 @@ class SignalGenerator:
             if not resistance_levels:
                 return {
                     "blocked": True,
-                    "reason": f"SHORT blocked: Опашка ({tail_high:.2f}) няма resistance нива над себе си",
+                    "reason": (
+                        f"SHORT blocked: Опашка ({tail_high:.2f}) няма resistance нива над себе си"
+                    ),
                 }
 
             # Проверяваме дали опашката е близо до някое resistance ниво
@@ -1589,7 +1619,9 @@ class SignalGenerator:
                     )
                     return {
                         "blocked": False,
-                        "reason": f"SHORT allowed: Опашка близо до Fib resistance {resistance_price:.2f}",
+                        "reason": (
+                            f"SHORT allowed: Опашка близо до Fib resistance {resistance_price:.2f}"
+                        ),
                     }
 
             # Ако няма близко resistance ниво, проверяваме дали опашката е над някое ниво
@@ -1604,8 +1636,10 @@ class SignalGenerator:
             # Блокираме SHORT ако опашката не е близо до resistance
             return {
                 "blocked": True,
-                "reason": f"SHORT blocked: Опашка ({tail_high:.2f}) далеч от resistance нива "
-                f"(най-близко: {min_resistance:.2f})",
+                "reason": (
+                    f"SHORT blocked: Опашка ({tail_high:.2f}) далеч от resistance нива "
+                    f"(най-близко: {min_resistance:.2f})"
+                ),
             }
 
         except Exception as e:
@@ -1653,7 +1687,9 @@ class SignalGenerator:
             if len(recent_data) < lookback_periods + 1:
                 return {
                     "confirmed": False,
-                    "reason": f"Недостатъчно данни: нужни {lookback_periods + 1}, има {len(recent_data)}",
+                    "reason": (
+                        f"Недостатъчно данни: нужни {lookback_periods + 1}, има {len(recent_data)}"
+                    ),
                 }
 
             # Текущият обем (последният запис)
@@ -1679,7 +1715,10 @@ class SignalGenerator:
             if volume_multiplier >= multiplier_threshold:
                 return {
                     "confirmed": True,
-                    "reason": f"Volume confirmation: {volume_multiplier:.2f}x > {multiplier_threshold:.2f}x threshold",
+                    "reason": (
+                        f"Volume confirmation: {
+                            volume_multiplier:.2f}x > {
+                            multiplier_threshold:.2f}x threshold"),
                     "current_volume": current_volume,
                     "avg_volume": avg_volume,
                     "volume_multiplier": volume_multiplier,
@@ -1688,7 +1727,10 @@ class SignalGenerator:
             else:
                 return {
                     "confirmed": False,
-                    "reason": f"Недостатъчен volume: {volume_multiplier:.2f}x < {multiplier_threshold:.2f}x threshold",
+                    "reason": (
+                        f"Недостатъчен volume: {
+                            volume_multiplier:.2f}x < {
+                            multiplier_threshold:.2f}x threshold"),
                     "current_volume": current_volume,
                     "avg_volume": avg_volume,
                     "volume_multiplier": volume_multiplier,
@@ -1740,7 +1782,9 @@ class SignalGenerator:
             if is_burn_event:
                 return {
                     "blocked": True,
-                    "reason": f'SHORT BLOCKED: Текущата дата ({latest_date.strftime("%Y-%m-%d")}) е BNB burn дата',
+                    "reason": (
+                        f'SHORT BLOCKED: Текущата дата ({latest_date.strftime("%Y-%m-%d")}) е BNB burn дата'
+                    ),
                     "burn_event": True,
                     "burn_window": True,
                     "current_date": latest_date.strftime("%Y-%m-%d"),
@@ -1748,7 +1792,9 @@ class SignalGenerator:
             elif is_in_burn_window:
                 return {
                     "blocked": True,
-                    "reason": f'SHORT BLOCKED: Текущата дата ({latest_date.strftime("%Y-%m-%d")}) е в burn прозорец',
+                    "reason": (
+                        f'SHORT BLOCKED: Текущата дата ({latest_date.strftime("%Y-%m-%d")}) е в burn прозорец'
+                    ),
                     "burn_event": False,
                     "burn_window": True,
                     "current_date": latest_date.strftime("%Y-%m-%d"),
@@ -1756,7 +1802,9 @@ class SignalGenerator:
             else:
                 return {
                     "blocked": False,
-                    "reason": f'Burn filter OK: Няма предстоящи burn събития около {latest_date.strftime("%Y-%m-%d")}',
+                    "reason": (
+                        f'Burn filter OK: Няма предстоящи burn събития около {
+                            latest_date.strftime("%Y-%m-%d")}'),
                     "burn_event": False,
                     "burn_window": False,
                     "current_date": latest_date.strftime("%Y-%m-%d"),
@@ -1817,7 +1865,9 @@ class SignalGenerator:
             else:
                 return {
                     "confirmed": False,
-                    "reason": f'Недостатъчен rejection: {rejection_analysis.get("reason", "Unknown")}',
+                    "reason": (
+                        f'Недостатъчен rejection: {rejection_analysis.get("reason", "Unknown")}'
+                    ),
                     "rejection_details": rejection_analysis,
                 }
 
@@ -2188,7 +2238,11 @@ class SignalGenerator:
                 if current_confidence >= high_confidence_threshold:
                     return {
                         "allowed": True,
-                        "reason": f'SHORT ALLOWED in {regime} regime (high confidence {current_confidence:.2f} >= {high_confidence_threshold:.2f}): {regime_analysis["reason"]}',
+                        "reason": (
+                            f'SHORT ALLOWED in {regime} regime (high confidence {
+                                current_confidence:.2f} >= {
+                                high_confidence_threshold:.2f}): {
+                                regime_analysis["reason"]}'),
                         "regime": regime,
                         "policy_applied": short_policy,
                         "regime_strength": regime_strength,
@@ -2198,7 +2252,11 @@ class SignalGenerator:
                 else:
                     return {
                         "allowed": False,
-                        "reason": f'SHORT BLOCKED by {regime} regime (low confidence {current_confidence:.2f} < {high_confidence_threshold:.2f}): {regime_analysis["reason"]}',
+                        "reason": (
+                            f'SHORT BLOCKED by {regime} regime (low confidence {
+                                current_confidence:.2f} < {
+                                high_confidence_threshold:.2f}): {
+                                regime_analysis["reason"]}'),
                         "regime": regime,
                         "policy_applied": short_policy,
                         "regime_strength": regime_strength,
@@ -2279,7 +2337,9 @@ class SignalGenerator:
             if len(recent_data) < lookback_periods + 1:
                 return {
                     "bonus": 0.0,
-                    "reason": f"Недостатъчно данни: нужни {lookback_periods + 1}, има {len(recent_data)}",
+                    "reason": (
+                        f"Недостатъчно данни: нужни {lookback_periods + 1}, има {len(recent_data)}"
+                    ),
                     "confirmed": False,
                 }
 
@@ -2301,7 +2361,7 @@ class SignalGenerator:
                 bonus = min(volume_multiplier * 0.005, 0.01)  # Намален максимален бонус 0.01 точки
                 return {
                     "bonus": bonus,
-                    "reason": ".2f",
+                    "reason": ".2",
                     "confirmed": True,
                     "current_volume": current_volume,
                     "avg_volume": avg_volume,
@@ -2311,7 +2371,7 @@ class SignalGenerator:
                 # Недостатъчен volume - лек penalty или неутрален
                 return {
                     "bonus": -0.2,  # Малък penalty за липса на volume
-                    "reason": ".2f",
+                    "reason": ".2",
                     "confirmed": False,
                     "current_volume": current_volume,
                     "avg_volume": avg_volume,
@@ -2368,7 +2428,7 @@ class SignalGenerator:
                 bullish_signals += 1
                 strength = rsi_div.get("confidence", 0.5)
                 total_strength += strength
-                reasons.append(".1f")
+                reasons.append(".1")
 
             # MACD Bullish Divergence
             if macd_div.get("type") == "BULLISH":
@@ -2384,7 +2444,9 @@ class SignalGenerator:
 
                 return {
                     "bonus": bonus,
-                    "reason": f"Bullish divergence ({bullish_signals} сигнала): {'; '.join(reasons)}",
+                    "reason": (
+                        f"Bullish divergence ({bullish_signals} сигнала): {'; '.join(reasons)}"
+                    ),
                     "confirmed": True,
                     "signals_count": bullish_signals,
                     "avg_strength": avg_strength,
@@ -2698,8 +2760,8 @@ class SignalGenerator:
                 )
                 total_score += ath_score
                 logger.info(
-                    f"ATH proximity bonus added: {ath_score} points (proximity: {ath_proximity_score:.2f})"
-                )
+                    f"ATH proximity bonus added: {ath_score} points (proximity: {
+                        ath_proximity_score:.2f})")
             else:
                 score_breakdown["ath_reason"] = "Not near ATH or no data available"
 
@@ -2791,15 +2853,17 @@ class SignalGenerator:
                 "divergence_analysis": divergence_analysis,
                 "moving_averages_analysis": ma_analysis,
                 "price_patterns_analysis": patterns_analysis,
-                "multi_timeframe_analysis": multi_timeframe_analysis  # noqa: F821
-                or {
-                    "overall_alignment": "ERROR",
-                    "confidence_bonus": 0.0,
-                    "alignment_score": 0.5,
-                    "conflicts": ["Analysis failed"],
-                    "confirmations": [],
-                    "recommendation": "HOLD",
-                },
+                "multi_timeframe_analysis": (
+                    multi_timeframe_analysis  # noqa: F821
+                    or {
+                        "overall_alignment": "ERROR",
+                        "confidence_bonus": 0.0,
+                        "alignment_score": 0.5,
+                        "conflicts": ["Analysis failed"],
+                        "confirmations": [],
+                        "recommendation": "HOLD",
+                    }
+                ),
                 "next_targets": self._get_next_targets(final_signal, fib_analysis, tails_analysis),
                 "risk_level": self._calculate_risk_level(
                     final_signal, fib_analysis, tails_analysis
@@ -2953,7 +3017,7 @@ class SignalGenerator:
                         next_targets["entry_price"] = support_levels[0][1]
                         next_targets["fibonacci_levels"][
                             "entry"
-                        ] = f"Fib {support_levels[0][0]*100:.1f}%"
+                        ] = f"Fib {support_levels[0][0] * 100:.1f}%"
 
                     # Следващото resistance за exit
                     if resistance_levels:
@@ -2961,7 +3025,7 @@ class SignalGenerator:
                         next_targets["exit_price"] = resistance_levels[0][1]
                         next_targets["fibonacci_levels"][
                             "exit"
-                        ] = f"Fib {resistance_levels[0][0]*100:.1f}%"
+                        ] = f"Fib {resistance_levels[0][0] * 100:.1f}%"
 
                 elif final_signal["signal"] == "SHORT":
                     # За SHORT: търсим най-близкото resistance за entry
@@ -2970,7 +3034,7 @@ class SignalGenerator:
                         next_targets["entry_price"] = resistance_levels[0][1]
                         next_targets["fibonacci_levels"][
                             "entry"
-                        ] = f"Fib {resistance_levels[0][0]*100:.1f}%"
+                        ] = f"Fib {resistance_levels[0][0] * 100:.1f}%"
 
                     # Следващото support за exit
                     if support_levels:
@@ -2978,7 +3042,7 @@ class SignalGenerator:
                         next_targets["exit_price"] = support_levels[0][1]
                         next_targets["fibonacci_levels"][
                             "exit"
-                        ] = f"Fib {support_levels[0][0]*100:.1f}%"
+                        ] = f"Fib {support_levels[0][0] * 100:.1f}%"
 
             # Добавяме Weekly Tails support
             if tails_analysis and "tails_analysis" in tails_analysis:

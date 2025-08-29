@@ -216,8 +216,9 @@ class BNBDataFetcher:
             daily_df = self.add_ath_analysis(daily_df)
 
             logger.info(
-                f"Успешно извлечени данни: Daily={len(daily_df)} редове, Weekly={len(weekly_df)} редове"
-            )
+                f"Успешно извлечени данни: Daily={
+                    len(daily_df)} редове, Weekly={
+                    len(weekly_df)} редове")
 
             return {"daily": daily_df, "weekly": weekly_df}
 

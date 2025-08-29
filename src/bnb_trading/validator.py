@@ -419,8 +419,9 @@ class SignalValidator:
             # Проверяваме дали вече е валидиран
             if pd.notna(signal_row["validation_date"]):
                 return {
-                    "error": f'Сигналът вече е валидиран на {signal_row["validation_date"].strftime("%Y-%m-%d")}'
-                }
+                    "error": (
+                        f'Сигналът вече е валидиран на {
+                            signal_row["validation_date"].strftime("%Y-%m-%d")}')}
 
             # Изчисляваме резултата
             signal_price = signal_row["signal_price"]
@@ -523,7 +524,7 @@ class SignalValidator:
 
             # Обща статистика
             total_signals = len(recent_signals)
-            successful_signals = len(recent_signals[recent_signals["success"] == True])
+            successful_signals = len(recent_signals[recent_signals["success"]])
             accuracy = (successful_signals / total_signals) * 100 if total_signals > 0 else 0
 
             # Статистика по тип сигнал
@@ -532,12 +533,12 @@ class SignalValidator:
 
             long_accuracy = 0
             if len(long_signals) > 0:
-                long_success = len(long_signals[long_signals["success"] == True])
+                long_success = len(long_signals[long_signals["success"]])
                 long_accuracy = (long_success / len(long_signals)) * 100
 
             short_accuracy = 0
             if len(short_signals) > 0:
-                short_success = len(short_signals[short_signals["success"] == True])
+                short_success = len(short_signals[short_signals["success"]])
                 short_accuracy = (short_success / len(short_signals)) * 100
 
             # Статистика по приоритет
@@ -545,7 +546,7 @@ class SignalValidator:
             for priority in recent_signals["priority"].unique():
                 if pd.notna(priority):
                     priority_signals = recent_signals[recent_signals["priority"] == priority]
-                    priority_success = len(priority_signals[priority_signals["success"] == True])
+                    priority_success = len(priority_signals[priority_signals["success"]])
                     priority_accuracy = (
                         (priority_success / len(priority_signals)) * 100
                         if len(priority_signals) > 0
@@ -559,10 +560,10 @@ class SignalValidator:
 
             # Среден P&L
             avg_profit_loss = recent_signals["profit_loss_pct"].mean()
-            avg_profit_loss_success = recent_signals[recent_signals["success"] == True][
+            avg_profit_loss_success = recent_signals[recent_signals["success"]][
                 "profit_loss_pct"
             ].mean()
-            avg_profit_loss_failure = recent_signals[recent_signals["success"] == False][
+            avg_profit_loss_failure = recent_signals[~recent_signals["success"]][
                 "profit_loss_pct"
             ].mean()
 
@@ -574,7 +575,7 @@ class SignalValidator:
                 "long_signals": {
                     "total": len(long_signals),
                     "success": (
-                        len(long_signals[long_signals["success"] == True])
+                        len(long_signals[long_signals["success"]])
                         if len(long_signals) > 0
                         else 0
                     ),
@@ -583,7 +584,7 @@ class SignalValidator:
                 "short_signals": {
                     "total": len(short_signals),
                     "success": (
-                        len(short_signals[short_signals["success"] == True])
+                        len(short_signals[short_signals["success"]])
                         if len(short_signals) > 0
                         else 0
                     ),
@@ -689,7 +690,10 @@ class SignalValidator:
                         f.write("Последните 10 сигнала:\n")
                         f.write("-" * 80 + "\n")
                         for _, row in recent_signals.iterrows():
-                            signal_info = f"{row['signal_date'].strftime('%Y-%m-%d')} | {row['signal_type']} | ${row['signal_price']:,.2f}"
+                            signal_info = f"{
+                                row['signal_date'].strftime('%Y-%m-%d')} | {
+                                row['signal_type']} | ${
+                                row['signal_price']:,.2f}"
                             if pd.notna(row["validation_date"]):
                                 result = "✓" if row["success"] else "✗"
                                 pnl = f"{row['profit_loss_pct']:+.2f}%"

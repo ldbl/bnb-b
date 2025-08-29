@@ -21,7 +21,9 @@
       "Bash(pip install:*)",
       "Bash(autoflake:*)",
       "Bash(black:*)",
-      "Bash(isort:*)"
+      "Bash(isort:*)",
+      "Bash(autopep8:*)",
+      "Bash(python:*)"
     ],
     "deny": [],
     "ask": []

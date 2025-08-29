@@ -191,7 +191,7 @@ class MarketRegimeDetector:
 
             # Simple trend analysis
             first_half = volumes[: lookback // 2].mean()
-            second_half = volumes[lookback // 2 :].mean()
+            second_half = volumes[lookback // 2:].mean()
 
             ratio = second_half / first_half if first_half > 0 else 1.0
 
@@ -365,24 +365,27 @@ class SmartShortSignalGenerator:
                 }
 
                 logger.info(
-                    f"📊 Enhanced Market Regime: {market_regime['regime']} (confidence: {market_regime['confidence']:.2f})"
-                )
+                    f"📊 Enhanced Market Regime: {
+                        market_regime['regime']} (confidence: {
+                        market_regime['confidence']:.2f})")
 
             else:
                 # Fallback към старата система
                 market_regime = self.market_detector.detect_market_regime(daily_df, weekly_df)
                 market_regime["enhanced"] = False
                 logger.info(
-                    f"📊 Basic Market Regime: {market_regime['regime']} (confidence: {market_regime['confidence']:.2f})"
-                )
+                    f"📊 Basic Market Regime: {
+                        market_regime['regime']} (confidence: {
+                        market_regime['confidence']:.2f})")
 
             # КРИТИЧНА ЛОГИКА: Блокиране на SHORT в STRONG_BULL
             market_regime["short_signals_allowed"] = self._should_allow_short_signals(market_regime)
 
             if not market_regime["short_signals_allowed"]:
                 logger.info(
-                    f"🚫 SHORT сигнали блокирани: {market_regime['regime']} regime (confidence: {market_regime['confidence']:.2f})"
-                )
+                    f"🚫 SHORT сигнали блокирани: {
+                        market_regime['regime']} regime (confidence: {
+                        market_regime['confidence']:.2f})")
                 return []
 
             # Step 2: Scan for potential SHORT setups
@@ -425,7 +428,7 @@ class SmartShortSignalGenerator:
                 candle_data = daily_df.iloc[i]
 
                 # Check for bearish price action
-                if self._is_bearish_price_action(daily_df.iloc[i - lookback_period : i + 1]):
+                if self._is_bearish_price_action(daily_df.iloc[i - lookback_period: i + 1]):
                     setup = {
                         "timestamp": candle_data.name,
                         "price": candle_data["Close"],
@@ -569,8 +572,8 @@ class SmartShortSignalGenerator:
             price_trend = (price_end - price_start) / price_start
 
             # Volume trend (should be down for bearish divergence)
-            volume_start = df[volume_col].iloc[index - lookback : index - lookback + 5].mean()
-            volume_end = df[volume_col].iloc[index - 5 : index].mean()
+            volume_start = df[volume_col].iloc[index - lookback: index - lookback + 5].mean()
+            volume_end = df[volume_col].iloc[index - 5: index].mean()
             volume_trend = (volume_end - volume_start) / volume_start if volume_start > 0 else 0
 
             # Bearish divergence: price up, volume down
@@ -651,10 +654,10 @@ class SmartShortSignalGenerator:
             # Take profit based on technical levels
             # Look for support levels or Fibonacci retracements
             lookback = min(20, index)
-            recent_lows = df["Low"].iloc[index - lookback : index]
+            recent_lows = df["Low"].iloc[index - lookback: index]
 
             # Target profit at 50% retracement of recent range
-            recent_range = df["High"].iloc[index - lookback : index].max() - recent_lows.min()
+            recent_range = df["High"].iloc[index - lookback: index].max() - recent_lows.min()
             target_price = entry_price - (recent_range * 0.5)
 
             risk = entry_price * (stop_distance_pct / 100)
@@ -691,8 +694,8 @@ class SmartShortSignalGenerator:
                 min_ath_correction = 15.0
                 if ath_distance < min_ath_correction:
                     logger.info(
-                        f"🛡️ MODERATE_BULL блокиране: само {ath_distance:.1f}% от ATH (минимум: {min_ath_correction}%)"
-                    )
+                        f"🛡️ MODERATE_BULL блокиране: само {
+                            ath_distance:.1f}% от ATH (минимум: {min_ath_correction}%)")
                     return False
                 else:
                     logger.info(f"✅ MODERATE_BULL позволен: {ath_distance:.1f}% от ATH")
@@ -704,8 +707,8 @@ class SmartShortSignalGenerator:
                 min_ath_correction = 8.0
                 if ath_distance < min_ath_correction:
                     logger.info(
-                        f"🛡️ WEAK_BULL блокиране: само {ath_distance:.1f}% от ATH (минимум: {min_ath_correction}%)"
-                    )
+                        f"🛡️ WEAK_BULL блокиране: само {
+                            ath_distance:.1f}% от ATH (минимум: {min_ath_correction}%)")
                     return False
                 else:
                     logger.info(f"✅ WEAK_BULL позволен: {ath_distance:.1f}% от ATH")
@@ -717,8 +720,8 @@ class SmartShortSignalGenerator:
                 min_ath_correction = 12.0
                 if ath_distance < min_ath_correction:
                     logger.info(
-                        f"🛡️ VOLATILE_BULL блокиране: само {ath_distance:.1f}% от ATH (минимум: {min_ath_correction}%)"
-                    )
+                        f"🛡️ VOLATILE_BULL блокиране: само {
+                            ath_distance:.1f}% от ATH (минимум: {min_ath_correction}%)")
                     return False
                 else:
                     logger.info(f"✅ VOLATILE_BULL позволен: {ath_distance:.1f}% от ATH")
@@ -733,8 +736,8 @@ class SmartShortSignalGenerator:
             logger.info(f"⚠️ Неизвестен режим {regime}: SHORT блокиран за сигурност")
             return False
 
-        except Exception:
-            logger.exception("Грешка при SHORT signal decision")
+        except Exception as e:
+            logger.exception(f"Грешка при SHORT signal decision: {e}")
             return False  # Консервативен fallback
 
 

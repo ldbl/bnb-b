@@ -293,7 +293,7 @@ class DivergenceDetector:
                 if "close" in price_data.columns
                 else price_data["Close"].tail(self.lookback_periods).values
             )
-            recent_rsi = rsi_values[-self.lookback_periods :]
+            recent_rsi = rsi_values[-self.lookback_periods:]
 
             # Намираме пикове в цената
             price_peaks = self._find_peaks(recent_prices, "high")
@@ -348,7 +348,7 @@ class DivergenceDetector:
                 if "close" in price_data.columns
                 else price_data["Close"].tail(self.lookback_periods).values
             )
-            recent_macd = macd_values[-self.lookback_periods :]
+            recent_macd = macd_values[-self.lookback_periods:]
 
             # Намираме пикове в цената
             price_peaks = self._find_peaks(recent_prices, "high")
@@ -685,8 +685,8 @@ class DivergenceDetector:
             else:
                 return "NEUTRAL"
 
-        except Exception:
-            logger.exception("Error analyzing market regime")
+        except Exception as e:
+            logger.exception(f"Error analyzing market regime: {e}")
             return "NEUTRAL"
 
     def _apply_trend_filter(
@@ -718,7 +718,9 @@ class DivergenceDetector:
                         **divergence_result,
                         "type": "NONE",
                         "confidence": 0,
-                        "reason": f"Filtered: Bearish {divergence_type.upper()} divergence blocked in {market_regime} market",
+                        "reason": (
+                            f"Filtered: Bearish {
+                                divergence_type.upper()} divergence blocked in {market_regime} market"),
                         "original_signal": original_type,
                         "filter_applied": "BULL_MARKET_FILTER",
                     }
@@ -728,7 +730,9 @@ class DivergenceDetector:
                     return {
                         **divergence_result,
                         "confidence": enhanced_confidence,
-                        "reason": f'{divergence_result.get("reason", "")} (Enhanced in {market_regime})',
+                        "reason": (
+                            f'{divergence_result.get("reason", "")} (Enhanced in {market_regime})'
+                        ),
                         "filter_applied": "BULL_MARKET_ENHANCEMENT",
                     }
 
@@ -741,7 +745,8 @@ class DivergenceDetector:
                             **divergence_result,
                             "type": "NONE",
                             "confidence": 0,
-                            "reason": f"Filtered: Low confidence bullish divergence in {market_regime} market",
+                            "reason": (
+                                f"Filtered: Low confidence bullish divergence in {market_regime} market"),
                             "original_signal": original_type,
                             "filter_applied": "BEAR_MARKET_FILTER",
                         }
@@ -749,7 +754,9 @@ class DivergenceDetector:
                         return {
                             **divergence_result,
                             "confidence": reduced_confidence,
-                            "reason": f'{divergence_result.get("reason", "")} (Reduced confidence in bear market)',
+                            "reason": (
+                                f'{divergence_result.get("reason", "")} (Reduced confidence in bear market)'
+                            ),
                             "filter_applied": "BEAR_MARKET_REDUCTION",
                         }
                 elif original_type == "BEARISH":
@@ -758,15 +765,17 @@ class DivergenceDetector:
                     return {
                         **divergence_result,
                         "confidence": enhanced_confidence,
-                        "reason": f'{divergence_result.get("reason", "")} (Enhanced in bear market)',
+                        "reason": (
+                            f'{divergence_result.get("reason", "")} (Enhanced in bear market)'
+                        ),
                         "filter_applied": "BEAR_MARKET_ENHANCEMENT",
                     }
 
             # Default: neutral market or no filtering needed
             return {**divergence_result, "filter_applied": "NO_FILTER"}
 
-        except Exception:
-            logger.exception("Error applying trend filter")
+        except Exception as e:
+            logger.exception(f"Error applying trend filter: {e}")
             return divergence_result
 
 

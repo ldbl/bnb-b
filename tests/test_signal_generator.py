@@ -19,7 +19,7 @@ import pytest
 # Add src to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from bnb_trading.signal_generator import SignalGenerator
+from bnb_trading.signal_generator import SignalGenerator  # noqa: E402
 
 
 class TestSignalGenerator:

@@ -214,8 +214,10 @@ class TechnicalIndicators:
 
         logger.info("Технически индикатори инициализирани")
         logger.info(
-            f"RSI: период={self.rsi_period}, overbought={self.rsi_overbought}, oversold={self.rsi_oversold}"
-        )
+            f"RSI: период={
+                self.rsi_period}, overbought={
+                self.rsi_overbought}, oversold={
+                self.rsi_oversold}")
         logger.info(
             f"MACD: fast={self.macd_fast}, slow={self.macd_slow}, signal={self.macd_signal}"
         )
@@ -682,15 +684,18 @@ class TechnicalIndicators:
             if volume_ratio_20 >= 2.0:
                 signal = "LONG"
                 strength = 0.9
-                reason = f"High volume confirmation ({volume_ratio_20:.1f}x avg) - Strong buying interest"
+                reason = f"High volume confirmation ({
+                    volume_ratio_20:.1f}x avg) - Strong buying interest"
             elif volume_ratio_20 >= 1.5:
                 signal = "LONG"
                 strength = 0.7
-                reason = f"Good volume confirmation ({volume_ratio_20:.1f}x avg) - Moderate buying interest"
+                reason = f"Good volume confirmation ({
+                    volume_ratio_20:.1f}x avg) - Moderate buying interest"
             elif volume_ratio_20 >= 1.2:
                 signal = "LONG"
                 strength = 0.5
-                reason = f"Adequate volume confirmation ({volume_ratio_20:.1f}x avg) - Some buying interest"
+                reason = f"Adequate volume confirmation ({
+                    volume_ratio_20:.1f}x avg) - Some buying interest"
             elif volume_ratio_20 < 0.8:
                 signal = "HOLD"
                 strength = 0.0

@@ -328,8 +328,9 @@ class WeeklyTailsAnalyzer:
             }
 
             logger.info(
-                f"Седмица {date.strftime('%Y-%m-%d')}: {dominant_tail} опашка, сила: {tail_strength:.1%}, сигнал: {signal}"
-            )
+                f"Седмица {
+                    date.strftime('%Y-%m-%d')}: {dominant_tail} опашка, сила: {
+                    tail_strength:.1%}, сигнал: {signal}")
 
             return tail_info
 
@@ -436,11 +437,15 @@ class WeeklyTailsAnalyzer:
 
                             # Добавяме в най-добрите входни точки
                             entry_point = {
-                                "type": f"Fib {fib_level*100:.1f}% + {tail['strength_category']} опашка",
+                                "type": (
+                                    f"Fib {fib_level * 100:.1f}% + {tail['strength_category']} опашка"
+                                ),
                                 "price": fib_price,
                                 "signal": tail["signal"],
                                 "strength": confluence_point["confluence_score"],
-                                "reason": f"Съвпадение: Fibonacci {fib_level*100:.1f}% + {tail['dominant_tail']} опашка от {tail['date'].strftime('%Y-%m-%d')}",
+                                "reason": (
+                                    f"Съвпадение: Fibonacci {fib_level * 100:.1f}% + {tail['dominant_tail']} опашка от {tail['date'].strftime('%Y-%m-%d')}"
+                                ),
                             }
                             confluence_info["best_entry_points"].append(entry_point)
 
@@ -455,9 +460,8 @@ class WeeklyTailsAnalyzer:
                     f"Намерени {len(confluence_info['confluence_points'])} съвпадения Fibonacci + опашки"
                 )
                 for point in confluence_info["confluence_points"][:3]:  # Показваме топ 3
-                    logger.info(
-                        f"  {point['tail_date'].strftime('%Y-%m-%d')}: Fib {point['fib_level']*100:.1f}% + {point['tail_signal']} (сила: {point['confluence_score']:.2f})"
-                    )
+                    logger.info(f"  {point['tail_date'].strftime('%Y-%m-%d')}: Fib {point['fib_level'] *
+                                                                                    100:.1f}% + {point['tail_signal']} (сила: {point['confluence_score']:.2f})")
 
             return confluence_info
 

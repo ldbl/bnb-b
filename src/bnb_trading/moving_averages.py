@@ -327,7 +327,10 @@ class MovingAveragesAnalyzer:
                 return {
                     "signal": "BULLISH_CROSS",
                     "confidence": confidence,
-                    "reason": f"Fast EMA ({self.fast_period}) пресича нагоре Slow EMA ({self.slow_period})",
+                    "reason": (
+                        f"Fast EMA ({
+                            self.fast_period}) пресича нагоре Slow EMA ({
+                            self.slow_period})"),
                     "crossover_strength": crossover_strength,
                     "fast_ema": fast_current,
                     "slow_ema": slow_current,
@@ -342,7 +345,10 @@ class MovingAveragesAnalyzer:
                 return {
                     "signal": "BEARISH_CROSS",
                     "confidence": confidence,
-                    "reason": f"Fast EMA ({self.fast_period}) пресича надолу Slow EMA ({self.slow_period})",
+                    "reason": (
+                        f"Fast EMA ({
+                            self.fast_period}) пресича надолу Slow EMA ({
+                            self.slow_period})"),
                     "crossover_strength": crossover_strength,
                     "fast_ema": fast_current,
                     "slow_ema": slow_current,
@@ -358,7 +364,9 @@ class MovingAveragesAnalyzer:
                     return {
                         "signal": "BULLISH_ABOVE",
                         "confidence": confidence,
-                        "reason": f"Fast EMA ({self.fast_period}) е над Slow EMA ({self.slow_period})",
+                        "reason": (
+                            f"Fast EMA ({self.fast_period}) е над Slow EMA ({self.slow_period})"
+                        ),
                         "distance": distance,
                         "fast_ema": fast_current,
                         "slow_ema": slow_current,
@@ -371,7 +379,9 @@ class MovingAveragesAnalyzer:
                     return {
                         "signal": "BEARISH_BELOW",
                         "confidence": confidence,
-                        "reason": f"Fast EMA ({self.fast_period}) е под Slow EMA ({self.slow_period})",
+                        "reason": (
+                            f"Fast EMA ({self.fast_period}) е под Slow EMA ({self.slow_period})"
+                        ),
                         "distance": distance,
                         "fast_ema": fast_current,
                         "slow_ema": slow_current,
@@ -401,7 +411,7 @@ class MovingAveragesAnalyzer:
                 return False
 
             # Изчисляваме среден обем за последните volume_lookback периода
-            recent_volumes = volumes[-self.volume_lookback :]
+            recent_volumes = volumes[-self.volume_lookback:]
             avg_volume = np.mean(recent_volumes)
 
             # Проверяваме дали текущият обем е над средния

@@ -462,7 +462,9 @@ class PriceActionPatternsAnalyzer:
                 return {
                     "detected": True,
                     "confidence": min(95, confidence),
-                    "reason": f"Double Bottom: две дъна на {trough1_price:.2f} и {trough2_price:.2f}",
+                    "reason": (
+                        f"Double Bottom: две дъна на {trough1_price:.2f} и {trough2_price:.2f}"
+                    ),
                     "trough1_price": trough1_price,
                     "trough2_price": trough2_price,
                     "neckline": neckline,
@@ -525,7 +527,10 @@ class PriceActionPatternsAnalyzer:
                 return {
                     "detected": True,
                     "confidence": confidence,
-                    "reason": f"Head & Shoulders: глава на {head_price:.2f}, рамене на {left_shoulder_price:.2f}",
+                    "reason": (
+                        f"Head & Shoulders: глава на {
+                            head_price:.2f}, рамене на {
+                            left_shoulder_price:.2f}"),
                     "head_price": head_price,
                     "left_shoulder_price": left_shoulder_price,
                     "right_shoulder_price": right_shoulder_price,
@@ -583,7 +588,10 @@ class PriceActionPatternsAnalyzer:
                 return {
                     "detected": True,
                     "confidence": confidence,
-                    "reason": f"Inverse H&S: глава на {head_price:.2f}, рамене на {left_shoulder_price:.2f}",
+                    "reason": (
+                        f"Inverse H&S: глава на {
+                            head_price:.2f}, рамене на {
+                            left_shoulder_price:.2f}"),
                     "head_price": head_price,
                     "left_shoulder_price": left_shoulder_price,
                     "right_shoulder_price": right_shoulder_price,
@@ -688,7 +696,7 @@ class PriceActionPatternsAnalyzer:
                 return 0.0
 
             # Взимаме данните между двата пика/дъна
-            between_data = price_data.iloc[idx1 : idx2 + 1]
+            between_data = price_data.iloc[idx1: idx2 + 1]
 
             if is_resistance:
                 # За resistance neckline, търсим най-високата точка
@@ -716,7 +724,7 @@ class PriceActionPatternsAnalyzer:
 
             # Проверяваме дали обемът на pattern_idx е над средния за последните 10 периода
             lookback = min(10, pattern_idx)
-            recent_volumes = volumes[pattern_idx - lookback : pattern_idx]
+            recent_volumes = volumes[pattern_idx - lookback: pattern_idx]
             avg_volume = np.mean(recent_volumes)
 
             return volumes[pattern_idx] > avg_volume * 1.2
@@ -812,7 +820,9 @@ class PriceActionPatternsAnalyzer:
             if len(recent_data) < lookback_periods:
                 return {
                     "rejection_detected": False,
-                    "reason": f"Недостатъчно данни: нужни {lookback_periods}, има {len(recent_data)}",
+                    "reason": (
+                        f"Недостатъчно данни: нужни {lookback_periods}, има {len(recent_data)}"
+                    ),
                 }
 
             # Анализираме всяка свещ за rejection patterns
@@ -860,7 +870,10 @@ class PriceActionPatternsAnalyzer:
                 if strongest_rejection["strength"] >= strength_threshold:
                     return {
                         "rejection_detected": True,
-                        "reason": f'Силен rejection pattern: wick ratio {strongest_rejection["wick_ratio"]:.2f} > {wick_ratio_threshold:.2f}',
+                        "reason": (
+                            f'Силен rejection pattern: wick ratio {
+                                strongest_rejection["wick_ratio"]:.2f} > {
+                                wick_ratio_threshold:.2f}'),
                         "strength": strongest_rejection["strength"],
                         "wick_ratio": strongest_rejection["wick_ratio"],
                         "date": strongest_rejection["date"],
@@ -872,7 +885,10 @@ class PriceActionPatternsAnalyzer:
                 else:
                     return {
                         "rejection_detected": False,
-                        "reason": f'Слаб rejection pattern: strength {strongest_rejection["strength"]:.2f} < {strength_threshold:.2f}',
+                        "reason": (
+                            f'Слаб rejection pattern: strength {
+                                strongest_rejection["strength"]:.2f} < {
+                                strength_threshold:.2f}'),
                         "strength": strongest_rejection["strength"],
                         "wick_ratio": strongest_rejection["wick_ratio"],
                     }
