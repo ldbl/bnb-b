@@ -261,7 +261,7 @@ class DivergenceDetector:
             return divergences
             
         except Exception as e:
-            logger.error(f"Грешка при откриване на divergence: {e}")
+            logger.exception(f"Грешка при откриване на divergence: {e}")
             return {'error': f'Грешка: {e}'}
     
     def _detect_rsi_divergence(self, price_data: pd.DataFrame, rsi_values: List[float]) -> Dict:
@@ -308,7 +308,7 @@ class DivergenceDetector:
                 return {'type': 'NONE', 'confidence': 0, 'reason': 'Няма divergence'}
                 
         except Exception as e:
-            logger.error(f"Грешка при RSI divergence анализ: {e}")
+            logger.exception(f"Грешка при RSI divergence анализ: {e}")
             return {'type': 'NONE', 'confidence': 0, 'reason': f'Грешка: {e}'}
     
     def _detect_macd_divergence(self, price_data: pd.DataFrame, macd_values: List[float]) -> Dict:
@@ -355,7 +355,7 @@ class DivergenceDetector:
                 return {'type': 'NONE', 'confidence': 0, 'reason': 'Няма divergence'}
                 
         except Exception as e:
-            logger.error(f"Грешка при MACD divergence анализ: {e}")
+            logger.exception(f"Грешка при MACD divergence анализ: {e}")
             return {'type': 'NONE', 'confidence': 0, 'reason': f'Грешка: {e}'}
     
     def _detect_price_volume_divergence(self, price_data: pd.DataFrame) -> Dict:
@@ -402,7 +402,7 @@ class DivergenceDetector:
                 return {'type': 'NONE', 'confidence': 0, 'reason': 'Няма divergence'}
                 
         except Exception as e:
-            logger.error(f"Грешка при Price-Volume divergence анализ: {e}")
+            logger.exception(f"Грешка при Price-Volume divergence анализ: {e}")
             return {'type': 'NONE', 'confidence': 0, 'reason': f'Грешка: {e}'}
     
     def _find_peaks(self, data: np.ndarray, peak_type: str) -> List[Tuple[int, float]]:
@@ -429,7 +429,7 @@ class DivergenceDetector:
             return [(int(peak), float(data[peak])) for peak in peaks]
             
         except Exception as e:
-            logger.error(f"Грешка при намиране на пикове: {e}")
+            logger.exception(f"Грешка при намиране на пикове: {e}")
             return []
     
     def _check_bearish_divergence(self, price_peaks: List[Tuple[int, float]], 
@@ -476,7 +476,7 @@ class DivergenceDetector:
             return {'detected': False, 'confidence': 0}
             
         except Exception as e:
-            logger.error(f"Грешка при проверка за bearish divergence: {e}")
+            logger.exception(f"Грешка при проверка за bearish divergence: {e}")
             return {'detected': False, 'confidence': 0}
     
     def _check_bullish_divergence(self, price_troughs: List[Tuple[int, float]], 
@@ -523,7 +523,7 @@ class DivergenceDetector:
             return {'detected': False, 'confidence': 0}
             
         except Exception as e:
-            logger.error(f"Грешка при проверка за bullish divergence: {e}")
+            logger.exception(f"Грешка при проверка за bullish divergence: {e}")
             return {'detected': False, 'confidence': 0}
     
     def _determine_overall_divergence(self, divergences: Dict) -> str:
@@ -552,7 +552,7 @@ class DivergenceDetector:
                 return 'NONE'
                 
         except Exception as e:
-            logger.error(f"Грешка при определяне на overall divergence: {e}")
+            logger.exception(f"Грешка при определяне на overall divergence: {e}")
             return 'NONE'
     
     def get_divergence_trading_signals(self, divergences: Dict) -> Dict:
@@ -597,7 +597,7 @@ class DivergenceDetector:
                 }
                 
         except Exception as e:
-            logger.error(f"Грешка при генериране на divergence trading сигнали: {e}")
+            logger.exception(f"Грешка при генериране на divergence trading сигнали: {e}")
             return {
                 'signal': 'HOLD',
                 'confidence': 0,
