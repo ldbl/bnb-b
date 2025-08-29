@@ -967,9 +967,6 @@ class SignalGenerator:
                             elif rsi_val > 70:  # Overbought warning
                                 enhanced_confidence *= 0.7
                                 warning_factors.append(f"RSI overbought ({rsi_val:.1f})")
-                            elif rsi_val < 30:  # Oversold bonus
-                                enhanced_confidence *= 1.2
-                                quality_factors.append(f"RSI oversold bounce ({rsi_val:.1f})")
                     
                     # Factor 2: Bollinger position quality (0.8x to 1.2x multiplier)
                     if indicators_signals and 'bollinger' in indicators_signals:
