@@ -53,6 +53,11 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
+
+# Set up logging first
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 from elliott_wave_analyzer import ElliottWaveAnalyzer
 from fibonacci import FibonacciAnalyzer
 from indicators import TechnicalIndicators
@@ -75,9 +80,6 @@ from multi_timeframe_analyzer import MultiTimeframeAnalyzer
 from price_action_patterns import PriceActionPatternsAnalyzer
 from sentiment_module import SentimentAnalyzer
 from whale_tracker import WhaleTracker
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 
 class SignalGenerator:
