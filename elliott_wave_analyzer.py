@@ -136,6 +136,13 @@ import numpy as np
 from typing import Dict, List, Optional, Any
 import logging
 
+# Import TrendAnalyzer for momentum confirmation
+try:
+    from trend_analyzer import TrendAnalyzer
+except ImportError:
+    TrendAnalyzer = None
+    logging.warning("TrendAnalyzer not available - momentum filter disabled")
+
 logger = logging.getLogger(__name__)
 
 class ElliottWaveAnalyzer:
@@ -264,6 +271,13 @@ class ElliottWaveAnalyzer:
         self.config = config
         self.lookback_periods = config.get('elliott_wave', {}).get('lookback_periods', 50)
         self.min_wave_strength = config.get('elliott_wave', {}).get('min_wave_strength', 0.02)
+        
+        # Phase 2.3: Trend momentum filter configuration
+        self.trend_momentum_filter = config.get('elliott_wave', {}).get('trend_momentum_filter', True)
+        self.momentum_threshold = config.get('elliott_wave', {}).get('momentum_threshold', 0.7)
+        
+        # Initialize TrendAnalyzer for momentum confirmation
+        self.trend_analyzer = TrendAnalyzer(config) if TrendAnalyzer else None
         
         # Elliott Wave описания
         self.wave_descriptions = {
@@ -610,7 +624,7 @@ class ElliottWaveAnalyzer:
             if primary_wave == 'UNKNOWN':
                 primary_wave = daily_analysis.get('wave', 'UNKNOWN')
             
-            # Генерираме trading сигнали
+            # Генерираме trading сигнали with DataFrames for momentum analysis
             trading_signals = self._generate_trading_signals(daily_analysis, weekly_analysis, daily_df, weekly_df)
             
             return {
@@ -634,7 +648,7 @@ class ElliottWaveAnalyzer:
             return {'error': f'Грешка при комбиниране: {e}'}
     
     def _generate_trading_signals(self, daily_analysis: Dict, weekly_analysis: Dict, daily_df: pd.DataFrame = None, weekly_df: pd.DataFrame = None) -> Dict:
-        """Генерира trading сигнали базирани на Elliott Wave анализа"""
+        """Генерира trading сигнали базирани на Elliott Wave анализа с trend momentum filter"""
         signals = {
             'action': 'WAIT',
             'confidence': 0,
@@ -647,7 +661,10 @@ class ElliottWaveAnalyzer:
         daily_trend = daily_analysis.get('trend', '')
         weekly_trend = weekly_analysis.get('trend', '')
         
-        # Wave-based сигнали
+        # Phase 2.3: Apply trend momentum filter
+        trend_momentum = self._analyze_trend_momentum(daily_df, weekly_df) if self.trend_momentum_filter and daily_df is not None and weekly_df is not None else {'momentum': 'NEUTRAL', 'strength': 0.5}
+        
+        # Wave-based сигнали with trend momentum filter
         if 'WAVE_2' in daily_wave and daily_trend == 'UPTREND':
             signals.update({
                 'action': 'BUY',
@@ -665,12 +682,23 @@ class ElliottWaveAnalyzer:
             })
         
         elif 'WAVE_5' in daily_wave and daily_trend == 'UPTREND':
-            signals.update({
-                'action': 'PREPARE_SELL',
-                'reason': 'Wave 5 - трендът може да свърши скоро',
-                'confidence': daily_analysis.get('confidence', 0),
-                'risk_level': 'HIGH'
-            })
+            # Phase 2.3: Apply momentum filter for Wave 5 completion signals
+            if trend_momentum['momentum'] == 'STRONG_BULL' and trend_momentum['strength'] > self.momentum_threshold:
+                signals.update({
+                    'action': 'HOLD_LONG',
+                    'reason': 'Wave 5 в STRONG_BULL - momentum filter blocks sell signal',
+                    'confidence': max(daily_analysis.get('confidence', 0) - 20, 30),
+                    'risk_level': 'MEDIUM',
+                    'momentum_filter': 'ACTIVE - BULL MARKET DETECTED'
+                })
+            else:
+                signals.update({
+                    'action': 'PREPARE_SELL',
+                    'reason': 'Wave 5 - трендът може да свърши скоро',
+                    'confidence': daily_analysis.get('confidence', 0),
+                    'risk_level': 'HIGH',
+                    'momentum_filter': 'INACTIVE'
+                })
         
         elif 'WAVE_4' in daily_wave and daily_trend == 'UPTREND':
             signals.update({
@@ -692,12 +720,67 @@ class ElliottWaveAnalyzer:
         # Ако няма ясен сигнал, използваме confidence
         if signals['action'] == 'WAIT':
             combined_conf = (daily_analysis.get('confidence', 0) + weekly_analysis.get('confidence', 0)) / 2
-            if combined_conf > 70:
-                signals['confidence'] = combined_conf
-            else:
-                signals['confidence'] = combined_conf
+            signals['confidence'] = combined_conf
+        
+        # Add trend momentum information to signals
+        signals['trend_momentum'] = trend_momentum
         
         return signals
+    
+    def _analyze_trend_momentum(self, daily_df: pd.DataFrame, weekly_df: pd.DataFrame) -> Dict:
+        """
+        Phase 2.3: Analyze trend momentum to filter wave completion signals
+        
+        Prevents false Wave 5 completion signals in persistent bull markets
+        by analyzing long-term trend strength and momentum.
+        """
+        try:
+            if self.trend_analyzer is None:
+                return {'momentum': 'NEUTRAL', 'strength': 0.5, 'confidence': 0.3}
+            
+            # Analyze trend using TrendAnalyzer
+            trend_analysis = self.trend_analyzer.analyze_trend(daily_df, weekly_df)
+            
+            if 'error' in trend_analysis:
+                logger.warning(f"Trend analysis error: {trend_analysis['error']}")
+                return {'momentum': 'NEUTRAL', 'strength': 0.5, 'confidence': 0.3}
+            
+            # Extract market regime information from nested structure
+            market_regime_data = trend_analysis.get('market_regime', {})
+            market_regime = market_regime_data.get('regime', 'NEUTRAL')
+            regime_confidence = market_regime_data.get('confidence', 0.5)
+            
+            # Calculate momentum strength based on regime
+            if market_regime == 'STRONG_BULL':
+                momentum_strength = min(regime_confidence + 0.2, 1.0)
+            elif market_regime == 'MODERATE_BULL':
+                momentum_strength = regime_confidence
+            elif market_regime == 'WEAK_BULL':
+                momentum_strength = max(regime_confidence - 0.1, 0.3)
+            else:
+                momentum_strength = 0.5
+            
+            # Determine momentum classification
+            if market_regime in ['STRONG_BULL', 'MODERATE_BULL'] and regime_confidence > self.momentum_threshold:
+                momentum_type = 'STRONG_BULL'
+            elif market_regime in ['WEAK_BULL'] and regime_confidence > 0.6:
+                momentum_type = 'MODERATE_BULL'
+            elif market_regime in ['BEAR', 'WEAK_BEAR']:
+                momentum_type = 'BEAR'
+            else:
+                momentum_type = 'NEUTRAL'
+            
+            return {
+                'momentum': momentum_type,
+                'strength': momentum_strength,
+                'confidence': regime_confidence,
+                'market_regime': market_regime,
+                'filter_active': momentum_type == 'STRONG_BULL' and momentum_strength > self.momentum_threshold
+            }
+            
+        except Exception:
+            logger.exception("Error in trend momentum analysis")
+            return {'momentum': 'NEUTRAL', 'strength': 0.5, 'confidence': 0.3, 'error': 'Analysis failed'}
 
 if __name__ == "__main__":
     print("Elliott Wave Analyzer модул за BNB Trading System")
