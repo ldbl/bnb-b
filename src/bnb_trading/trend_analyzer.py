@@ -98,7 +98,7 @@ DATE: 2024-01-01
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict
 
 import numpy as np
 import pandas as pd
@@ -762,7 +762,7 @@ class TrendAnalyzer:
             if "error" in combined_trend:
                 return {"error": "Няма тренд анализ за стратегия"}
 
-            current_price = df["Close"].iloc[-1]
+            df["Close"].iloc[-1]
             primary_trend = combined_trend["primary_trend"]
             trend_completed = combined_trend["trend_completed"]
 

@@ -117,7 +117,7 @@ class TestSignalGenerator:
 
     def test_signal_combination_logic(self, sample_config):
         """Test signal combination and weighting logic."""
-        generator = SignalGenerator(sample_config)
+        SignalGenerator(sample_config)
 
         analyses = {
             "fibonacci": {"signal": "LONG", "confidence": 0.8},
@@ -134,7 +134,7 @@ class TestSignalGenerator:
 
     def test_confidence_calculation(self, sample_config):
         """Test confidence score calculation."""
-        generator = SignalGenerator(sample_config)
+        SignalGenerator(sample_config)
 
         # Test high confidence scenario
         high_conf_analyses = {
@@ -161,11 +161,10 @@ class TestSignalGenerator:
     @pytest.mark.integration
     def test_full_analysis_pipeline(self, sample_config, sample_data):
         """Integration test for full analysis pipeline."""
-        generator = SignalGenerator(sample_config)
+        SignalGenerator(sample_config)
 
         # Test with real analysis modules (requires more setup)
         # This is marked as integration test and can be run separately
-        pass
 
     def test_error_handling(self, sample_config):
         """Test error handling with invalid data."""

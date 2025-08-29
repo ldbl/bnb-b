@@ -72,7 +72,7 @@ DATE: 2024-01-01
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -401,11 +401,9 @@ class WeeklyTailsAnalyzer:
                 if tail["dominant_tail"] == "lower" and tail["signal"] == "LONG":
                     # Долна опашка + LONG = търсим support ниво
                     target_price = tail["low"]
-                    target_direction = "support"
                 elif tail["dominant_tail"] == "upper" and tail["signal"] == "SHORT":
                     # Горна опашка + SHORT = търсим resistance ниво
                     target_price = tail["high"]
-                    target_direction = "resistance"
                 else:
                     continue
 

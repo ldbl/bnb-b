@@ -14,9 +14,7 @@ Version: 1.0
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -735,7 +733,7 @@ class SmartShortSignalGenerator:
             logger.info(f"⚠️ Неизвестен режим {regime}: SHORT блокиран за сигурност")
             return False
 
-        except Exception as e:
+        except Exception:
             logger.exception("Грешка при SHORT signal decision")
             return False  # Консервативен fallback
 

@@ -83,10 +83,7 @@ DATE: 2024-01-01
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple
-
-import numpy as np
-import pandas as pd
+from typing import Any, Dict, List, Tuple
 
 logger = logging.getLogger(__name__)
 

@@ -49,7 +49,7 @@ LAST UPDATED: 2024-01-01
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List
 
 import numpy as np
 import pandas as pd
@@ -1457,7 +1457,7 @@ class SignalGenerator:
             # Извличаме информация за тренда
             combined_trend = trend_analysis.get("combined_trend", {})
             daily_trend = trend_analysis.get("daily_trend", {})
-            weekly_trend = trend_analysis.get("weekly_trend", {})
+            trend_analysis.get("weekly_trend", {})
 
             if not combined_trend or not daily_trend:
                 return {"blocked": False, "reason": "Недостатъчна информация за тренда"}
@@ -2630,7 +2630,7 @@ class SignalGenerator:
 
             # 3. Trend alignment scoring (20 точки макс)
             if trend_analysis and "combined_trend" in trend_analysis:
-                combined_trend = trend_analysis["combined_trend"]
+                trend_analysis["combined_trend"]
                 daily_trend = trend_analysis.get("daily_trend", {})
                 weekly_trend = trend_analysis.get("weekly_trend", {})
 
@@ -2791,7 +2791,7 @@ class SignalGenerator:
                 "divergence_analysis": divergence_analysis,
                 "moving_averages_analysis": ma_analysis,
                 "price_patterns_analysis": patterns_analysis,
-                "multi_timeframe_analysis": multi_timeframe_analysis
+                "multi_timeframe_analysis": multi_timeframe_analysis  # noqa: F821
                 or {
                     "overall_alignment": "ERROR",
                     "confidence_bonus": 0.0,
@@ -3137,11 +3137,13 @@ class SignalGenerator:
 
                 if total_signals >= min_signals:
                     bonus = config.get("whale_bonus_long", 0.4)
-                    reason = f"Positive sentiment ({composite_score:.1f}) (+{bonus:.2f} confidence)"
+                    reason = (
+                        f"Strong whale activity ({total_signals} signals) (+{bonus:.2f} confidence)"
+                    )
                 elif total_signals >= min_signals // 2:
                     # Намален бонус за по-малко сигнали
                     bonus = config.get("whale_bonus_long", 0.4) * 0.6
-                    reason = f"Positive sentiment ({composite_score:.1f}) (+{bonus:.2f} confidence)"
+                    reason = f"Moderate whale activity ({total_signals} signals) (+{bonus:.2f} confidence)"
                 # Няма бонус при липса на whale активност
 
             return {"bonus": bonus, "reason": reason}

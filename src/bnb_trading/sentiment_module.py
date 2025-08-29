@@ -133,12 +133,9 @@ VERSION: 2.0.0
 DATE: 2024-01-01
 """
 
-import json
 import logging
-import re
-import time
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict
 
 import requests
 

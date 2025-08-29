@@ -13,7 +13,15 @@
       "Bash(git cherry-pick:*)",
       "Bash(git merge:*)",
       "Bash(grep:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "WebSearch",
+      "Bash(flake8:*)",
+      "Bash(source:*)",
+      "Bash(pip install flake8 black isort)",
+      "Bash(pip install:*)",
+      "Bash(autoflake:*)",
+      "Bash(black:*)",
+      "Bash(isort:*)"
     ],
     "deny": [],
     "ask": []

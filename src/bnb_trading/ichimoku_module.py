@@ -118,9 +118,8 @@ DATE: 2024-01-01
 """
 
 import logging
-import time
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import datetime
+from typing import Dict, List, Optional
 
 import requests
 

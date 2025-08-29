@@ -73,10 +73,8 @@ DATE: 2024-01-01
 import logging
 import os
 import sys
-from datetime import datetime, timedelta
-from typing import Any, Dict, Optional
+from typing import Dict
 
-import numpy as np
 import pandas as pd
 import toml
 
@@ -235,8 +233,8 @@ class BNBTradingSystem:
             daily_df = self.data_fetcher.add_bnb_burn_columns(daily_df, self.config)
 
             # 2. Валидираме качеството на данните
-            daily_quality = self.data_fetcher.validate_data_quality(daily_df)
-            weekly_quality = self.data_fetcher.validate_data_quality(weekly_df)
+            self.data_fetcher.validate_data_quality(daily_df)
+            self.data_fetcher.validate_data_quality(weekly_df)
 
             # 3. Генерираме сигнал
 

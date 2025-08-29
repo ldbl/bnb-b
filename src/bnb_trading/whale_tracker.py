@@ -113,11 +113,9 @@ VERSION: 2.0.0
 DATE: 2024-01-01
 """
 
-import json
 import logging
-import time
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List
 
 import requests
 
@@ -650,7 +648,7 @@ class WhaleTracker:
                         sentiment_level = "🟡 NO SIGNALS"
 
                     # Calculate total volume from high volume periods
-                    total_volume = sum(p["volume"] for p in high_vol_periods)
+                    sum(p["volume"] for p in high_vol_periods)
                     avg_volume = vol_analysis.get("average_volume", 0)
 
                     # Display summary

@@ -7,7 +7,6 @@ across all test modules in the suite.
 
 import os
 import sys
-from datetime import datetime, timedelta
 
 import numpy as np
 import pandas as pd

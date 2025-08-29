@@ -108,8 +108,7 @@ DATE: 2024-01-01
 import logging
 import os
 import sys
-from datetime import datetime, timedelta
-from typing import Any, Dict, List
+from typing import Dict, List
 
 import numpy as np
 import pandas as pd
@@ -388,7 +387,7 @@ class Backtester:
                                     {"date": current_date, "signal": signal, "result": result}
                                 )
 
-                    except Exception as e:
+                    except Exception:
                         # Тихо прескачаме грешките за да не спираме прогреса
                         pass
 

@@ -138,7 +138,7 @@ DATE: 2024-01-01
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -735,7 +735,7 @@ class PriceActionPatternsAnalyzer:
             open_price = candle["open"] if "open" in candle.index else candle["Open"]
             close_price = candle["close"] if "close" in candle.index else candle["Close"]
             high_price = candle["high"] if "high" in candle.index else candle["High"]
-            low_price = candle["low"] if "low" in candle.index else candle["Low"]
+            candle["low"] if "low" in candle.index else candle["Low"]
 
             # Bearish candle: close < open
             if close_price < open_price:
@@ -760,7 +760,7 @@ class PriceActionPatternsAnalyzer:
             candle = price_data.iloc[pattern_idx]
             open_price = candle["open"] if "open" in candle.index else candle["Open"]
             close_price = candle["close"] if "close" in candle.index else candle["Close"]
-            high_price = candle["high"] if "high" in candle.index else candle["High"]
+            candle["high"] if "high" in candle.index else candle["High"]
             low_price = candle["low"] if "low" in candle.index else candle["Low"]
 
             # Bullish candle: close > open
@@ -830,7 +830,7 @@ class PriceActionPatternsAnalyzer:
                 # Изчисляваме body и shadows
                 body_size = abs(close_price - open_price)
                 upper_shadow = high_price - max(open_price, close_price)
-                lower_shadow = min(open_price, close_price) - low_price
+                min(open_price, close_price) - low_price
 
                 # Проверяваме за bearish rejection (SHORT сигнал)
                 if close_price < open_price and upper_shadow > 0:  # Bearish candle с upper shadow
