@@ -620,11 +620,15 @@ class TechnicalIndicators:
             # ATR сигнал
             atr_signal = self.get_atr_signal(latest['ATR'])
 
+            # Volume confirmation signal
+            volume_signal = self.get_volume_signal(df)
+
             all_signals = {
                 'rsi': rsi_signal,
                 'macd': macd_signal,
                 'bollinger': bb_signal,
                 'atr': atr_signal,
+                'volume': volume_signal,  # Added volume confirmation
                 'current_price': latest['Close'],
                 'analysis_date': df.index[-1]
             }
@@ -635,6 +639,77 @@ class TechnicalIndicators:
         except Exception as e:
             logger.error(f"Грешка при генериране на всички индикаторни сигнали: {e}")
             return {'error': f'Грешка: {e}'}
+    
+    def get_volume_signal(self, df: pd.DataFrame) -> Dict[str, any]:
+        """
+        Enhanced Volume Confirmation Analysis for 85%+ LONG Accuracy
+        
+        Args:
+            df: DataFrame with OHLCV data
+            
+        Returns:
+            Dict with volume analysis and confirmation signal
+        """
+        try:
+            if df.empty or 'Volume' not in df.columns:
+                return {'signal': 'HOLD', 'reason': 'Volume data unavailable', 'volume_ratio': 0.0}
+            
+            # Calculate volume metrics
+            current_volume = df['Volume'].iloc[-1]
+            volume_sma_20 = df['Volume'].rolling(window=20).mean().iloc[-1]
+            volume_sma_50 = df['Volume'].rolling(window=50).mean().iloc[-1]
+            
+            # Volume ratio calculations
+            volume_ratio_20 = current_volume / volume_sma_20 if volume_sma_20 > 0 else 0.0
+            volume_ratio_50 = current_volume / volume_sma_50 if volume_sma_50 > 0 else 0.0
+            
+            # Enhanced volume confirmation logic for LONG signals
+            signal = 'HOLD'
+            strength = 0.0
+            reason = f"Volume analysis (ratio: {volume_ratio_20:.1f}x 20-day avg)"
+            
+            # High volume confirmation - strong LONG support
+            if volume_ratio_20 >= 2.0:
+                signal = 'LONG'
+                strength = 0.9
+                reason = f"High volume confirmation ({volume_ratio_20:.1f}x avg) - Strong buying interest"
+            elif volume_ratio_20 >= 1.5:
+                signal = 'LONG' 
+                strength = 0.7
+                reason = f"Good volume confirmation ({volume_ratio_20:.1f}x avg) - Moderate buying interest"
+            elif volume_ratio_20 >= 1.2:
+                signal = 'LONG'
+                strength = 0.5
+                reason = f"Adequate volume confirmation ({volume_ratio_20:.1f}x avg) - Some buying interest"
+            elif volume_ratio_20 < 0.8:
+                signal = 'HOLD'
+                strength = 0.0
+                reason = f"Low volume warning ({volume_ratio_20:.1f}x avg) - Weak conviction"
+            
+            # Volume spike detection for additional confirmation
+            volume_spike = False
+            if len(df) >= 5:
+                recent_avg = df['Volume'].iloc[-5:-1].mean()
+                if current_volume > recent_avg * 2.0:
+                    volume_spike = True
+                    strength = min(strength + 0.2, 1.0)  # Bonus for volume spike
+                    reason += " + Volume spike detected"
+            
+            return {
+                'signal': signal,
+                'strength': strength,
+                'reason': reason,
+                'volume_ratio': volume_ratio_20,
+                'volume_ratio_50': volume_ratio_50,
+                'volume_spike': volume_spike,
+                'current_volume': current_volume,
+                'avg_volume_20': volume_sma_20,
+                'avg_volume_50': volume_sma_50
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in volume signal analysis: {e}")
+            return {'signal': 'HOLD', 'reason': f'Volume analysis error: {e}', 'volume_ratio': 0.0}
 
 if __name__ == "__main__":
     # Тест на Technical Indicators модула

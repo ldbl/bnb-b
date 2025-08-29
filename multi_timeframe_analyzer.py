@@ -207,8 +207,7 @@ class MultiTimeframeAnalyzer:
             else:
                 conflicts.append(f"Trend conflict: {trend_result['reason']}")
 
-            # Добавяме status към резултата
-            trend_result['status'] = 'TREND_ALIGNED' if trend_result['aligned'] else 'TREND_CONFLICT'
+            # Status вече е добавен в метода _analyze_trend_alignment
 
             # 2. Fibonacci alignment анализ
             fib_result = self._analyze_fibonacci_alignment(daily_analysis, weekly_analysis)
@@ -219,6 +218,8 @@ class MultiTimeframeAnalyzer:
                 confirmations.append(f"Fibonacci alignment: {fib_result['reason']}")
             else:
                 conflicts.append(f"Fibonacci conflict: {fib_result['reason']}")
+            
+            # Status вече е добавен в метода _analyze_fibonacci_alignment
 
             # 3. MACD alignment анализ
             macd_result = self._analyze_macd_alignment(daily_analysis, weekly_analysis)
@@ -229,6 +230,7 @@ class MultiTimeframeAnalyzer:
                 confirmations.append(f"MACD alignment: {macd_result['reason']}")
             else:
                 conflicts.append(f"MACD conflict: {macd_result['reason']}")
+            # Status вече е добавен в метода _analyze_macd_alignment
 
             # 4. Volume alignment анализ
             volume_result = self._analyze_volume_alignment(daily_analysis, weekly_analysis)
@@ -239,9 +241,10 @@ class MultiTimeframeAnalyzer:
                 confirmations.append(f"Volume alignment: {volume_result['reason']}")
             else:
                 conflicts.append(f"Volume conflict: {volume_result['reason']}")
+            # Status вече е добавен в метода _analyze_volume_alignment
 
             # 5. Weekly tails confirmation (ако е налично)
-            weekly_tails_result = {'score': 0.0, 'aligned': True, 'reason': 'Not applicable'}
+            weekly_tails_result = {'score': 0.0, 'aligned': True, 'reason': 'Not applicable', 'status': 'N/A'}
             if self.weekly_tails_confirmation and 'weekly_tails' in weekly_analysis:
                 weekly_tails_result = self._analyze_weekly_tails_confirmation(daily_analysis, weekly_analysis)
                 total_score += weekly_tails_result['score']
@@ -251,6 +254,7 @@ class MultiTimeframeAnalyzer:
                     confirmations.append(f"Weekly tails confirmation: {weekly_tails_result['reason']}")
                 else:
                     conflicts.append(f"Weekly tails conflict: {weekly_tails_result['reason']}")
+                # Status вече е добавен в метода _analyze_weekly_tails_confirmation
 
             # Изчисляваме alignment score
             alignment_score = total_score / max_score if max_score > 0 else 0.5
@@ -271,11 +275,11 @@ class MultiTimeframeAnalyzer:
                 'alignment_score': alignment_score,
                 'conflicts': conflicts,
                 'confirmations': confirmations,
-                'trend_alignment': trend_result['status'],
-                'fibonacci_alignment': fib_result['status'],
-                'macd_alignment': macd_result['status'],
-                'volume_alignment': volume_result['status'],
-                'weekly_tails_alignment': weekly_tails_result['status'] if weekly_tails_result else 'N/A',
+                'trend_alignment': trend_result.get('status', 'UNKNOWN'),
+                'fibonacci_alignment': fib_result.get('status', 'UNKNOWN'),
+                'macd_alignment': macd_result.get('status', 'UNKNOWN'),
+                'volume_alignment': volume_result.get('status', 'UNKNOWN'),
+                'weekly_tails_alignment': weekly_tails_result.get('status', 'N/A') if weekly_tails_result else 'N/A',
                 'recommendation': recommendation,
                 'analysis_summary': {
                     'total_signals_analyzed': max_score,
