@@ -208,28 +208,29 @@ class TrendAnalyzer:
         # Load centralized trend analysis configuration with fallbacks
         trend_config = config.get('trend_analysis', {})
         
-        # Basic trend parameters with .get() method for safe access
-        self.trend_lookback_days = trend_config.get('trend_lookback_days', 30)
-        self.trend_threshold = trend_config.get('trend_threshold', 0.015)
-        self.range_analysis_periods = trend_config.get('range_analysis_periods', 20)
+        # Basic trend parameters with type casting for safety
+        self.trend_lookback_days = int(trend_config.get('trend_lookback_days', 30))
+        self.trend_threshold = float(trend_config.get('trend_threshold', 0.015))
+        self.range_analysis_periods = int(trend_config.get('range_analysis_periods', 20))
         
-        # Market regime detection thresholds (addresses PR #6 review)
-        self.strong_bull_threshold = trend_config.get('strong_bull_threshold', 0.50) * 100  # Convert to percentage
-        self.moderate_bull_threshold = trend_config.get('moderate_bull_threshold', 0.25) * 100
-        self.weak_bull_threshold = trend_config.get('weak_bull_threshold', 0.10) * 100
-        self.bear_threshold = trend_config.get('bear_threshold', -0.10) * 100
+        # Market regime detection thresholds with unit conversion (fraction → percent)
+        # Config values are stored as fractions (e.g., 0.50), converted to percentages for internal use
+        self.strong_bull_threshold = float(trend_config.get('strong_bull_threshold', 0.50)) * 100  # 0.50 → 50%
+        self.moderate_bull_threshold = float(trend_config.get('moderate_bull_threshold', 0.25)) * 100  # 0.25 → 25%
+        self.weak_bull_threshold = float(trend_config.get('weak_bull_threshold', 0.10)) * 100  # 0.10 → 10%
+        self.bear_threshold = float(trend_config.get('bear_threshold', -0.10)) * 100  # -0.10 → -10%
         
-        # Trend strength classification thresholds
-        self.trend_strength_weak = trend_config.get('trend_strength_weak', 0.05) * 100
-        self.trend_strength_moderate = trend_config.get('trend_strength_moderate', 0.10) * 100
-        self.trend_strength_strong = trend_config.get('trend_strength_strong', 0.20) * 100
-        self.trend_strength_extreme = trend_config.get('trend_strength_extreme', 0.30) * 100
+        # Trend strength classification thresholds with unit conversion (fraction → percent)
+        self.trend_strength_weak = float(trend_config.get('trend_strength_weak', 0.05)) * 100  # 0.05 → 5%
+        self.trend_strength_moderate = float(trend_config.get('trend_strength_moderate', 0.10)) * 100  # 0.10 → 10%
+        self.trend_strength_strong = float(trend_config.get('trend_strength_strong', 0.20)) * 100  # 0.20 → 20%
+        self.trend_strength_extreme = float(trend_config.get('trend_strength_extreme', 0.30)) * 100  # 0.30 → 30%
         
-        # Range detection parameters
-        self.range_threshold_factor = trend_config.get('range_threshold_factor', 0.8)
-        self.range_breakout_factor = trend_config.get('range_breakout_factor', 0.5)
-        self.range_upper_threshold = trend_config.get('range_upper_threshold', 0.8)
-        self.range_lower_threshold = trend_config.get('range_lower_threshold', 0.2)
+        # Range detection parameters (unitless ratios, no conversion needed)
+        self.range_threshold_factor = float(trend_config.get('range_threshold_factor', 0.8))
+        self.range_breakout_factor = float(trend_config.get('range_breakout_factor', 0.5))
+        self.range_upper_threshold = float(trend_config.get('range_upper_threshold', 0.8))
+        self.range_lower_threshold = float(trend_config.get('range_lower_threshold', 0.2))
         
         # Fixed analysis periods for multi-timeframe analysis
         self.long_term_lookback_days = 180  # 6 месеца дългосрочен анализ
@@ -320,7 +321,12 @@ class TrendAnalyzer:
             start_price = y[0]
             end_price = y[-1]
             price_change = end_price - start_price
-            price_change_pct = (price_change / start_price) * 100
+            # Guard against division by zero in daily trend analysis
+            if start_price != 0:
+                price_change_pct = (price_change / start_price) * 100
+            else:
+                logger.warning(f"Start price is zero in daily trend analysis, using 0% change")
+                price_change_pct = 0.0
             
             # Определяме силата на тренда с конфигурабилни параметри
             abs_change = abs(price_change_pct)
@@ -330,10 +336,8 @@ class TrendAnalyzer:
                 trend_strength = 'MODERATE'
             elif abs_change < self.trend_strength_strong:
                 trend_strength = 'STRONG'
-            elif abs_change < self.trend_strength_extreme:
-                trend_strength = 'STRONG'  # Keep as STRONG until EXTREME category is fully implemented
-            else:
-                trend_strength = 'EXTREME'  # Added EXTREME category (addresses PR #6 review)
+            else:  # abs_change >= self.trend_strength_strong
+                trend_strength = 'EXTREME'  # Now fully implemented - all changes >= 20% are EXTREME
             
             # Определяме посоката на тренда
             if slope > self.trend_threshold:
@@ -381,14 +385,19 @@ class TrendAnalyzer:
             start_price = y[0]
             end_price = y[-1]
             price_change = end_price - start_price
-            price_change_pct = (price_change / start_price) * 100
+            # Guard against division by zero in weekly trend analysis
+            if start_price != 0:
+                price_change_pct = (price_change / start_price) * 100
+            else:
+                logger.warning(f"Start price is zero in weekly trend analysis, using 0% change")
+                price_change_pct = 0.0
             
             # Определяме силата с адаптирани прагове за седмични данни
             abs_change = abs(price_change_pct)
             weekly_weak_threshold = self.trend_strength_weak * 2  # 2x за седмични данни
             weekly_moderate_threshold = self.trend_strength_moderate * 2.5  # 2.5x за седмични данни
             weekly_strong_threshold = self.trend_strength_strong * 1.25  # 1.25x за седмични данни
-            weekly_extreme_threshold = self.trend_strength_extreme * 1.0  # Same для седмични данни
+            # Note: EXTREME threshold not needed since we use else clause for all remaining cases
             
             if abs_change < weekly_weak_threshold:
                 trend_strength = 'WEAK'
@@ -397,7 +406,7 @@ class TrendAnalyzer:
             elif abs_change < weekly_strong_threshold:
                 trend_strength = 'STRONG'
             else:
-                trend_strength = 'EXTREME'  # Added EXTREME category for weekly analysis
+                trend_strength = 'EXTREME'  # All changes >= weekly_strong_threshold are EXTREME
             
             # Определяме посоката
             if slope > self.trend_threshold * 2:  # По-голям threshold за седмици
@@ -439,13 +448,23 @@ class TrendAnalyzer:
             current_high = recent_data['High'].max()
             current_low = recent_data['Low'].min()
             current_range = current_high - current_low
-            current_range_pct = (current_range / current_low) * 100
+            # Guard against division by zero in current range calculation
+            if current_low != 0:
+                current_range_pct = (current_range / current_low) * 100
+            else:
+                logger.warning(f"Current low price is zero in range analysis, using 0% range")
+                current_range_pct = 0.0
             
             # Намираме исторически range
             historical_high = df['High'].max()
             historical_low = df['Low'].min()
             historical_range = historical_high - historical_low
-            historical_range_pct = (historical_range / historical_low) * 100
+            # Guard against division by zero in historical range calculation
+            if historical_low != 0:
+                historical_range_pct = (historical_range / historical_low) * 100
+            else:
+                logger.warning(f"Historical low price is zero in range analysis, using 0% range")
+                historical_range_pct = 0.0
             
             # Определяме дали range се разширява или свива
             if current_range_pct > historical_range_pct * 0.8:
@@ -453,11 +472,17 @@ class TrendAnalyzer:
             elif current_range_pct < historical_range_pct * 0.5:
                 range_status = 'CONTRACTING'
             else:
-                range_status = 'STABLE'
+                range_status = 'RANGE'  # Normalize STABLE→RANGE terminology
             
-            # Позиция в текущия range
+            # Позиция в текущия range - guard against division by zero
             current_price = df['Close'].iloc[-1]
-            range_position = (current_price - current_low) / current_range
+            if current_range > 0:
+                range_position = (current_price - current_low) / current_range
+            else:
+                # When current_high == current_low (no range), position is undefined
+                # Set to 0.5 (middle) as reasonable default for flat price action
+                range_position = 0.5
+                logger.debug(f"No price range detected (high={current_high}, low={current_low}), using default range_position=0.5")
             
             range_analysis = {
                 'current_range': current_range,
@@ -577,7 +602,7 @@ class TrendAnalyzer:
             return combined_trend
             
         except Exception as e:
-            logger.error(f"Грешка при комбиниране на тренд анализите: {e}")
+            logger.exception(f"Грешка при комбиниране на тренд анализите: {e}")
             return {'error': f'Грешка: {e}'}
     
     def _strength_to_score(self, strength: str) -> float:
@@ -607,9 +632,12 @@ class TrendAnalyzer:
                 if range_analysis['range_position'] > 0.8:
                     # Трите timeframe-а показват слабост?
                     weak_signals = 0
-                    if daily_trend['strength'] == 'WEAK': weak_signals += 1
-                    if weekly_trend['strength'] == 'WEAK': weak_signals += 1  
-                    if medium_term_trend['strength'] == 'WEAK': weak_signals += 1
+                    if daily_trend['strength'] == 'WEAK':
+                        weak_signals += 1
+                    if weekly_trend['strength'] == 'WEAK':
+                        weak_signals += 1  
+                    if medium_term_trend['strength'] == 'WEAK':
+                        weak_signals += 1
                     
                     return weak_signals >= 2  # Поне 2 от 3 timeframe-а са слаби
                     
@@ -617,16 +645,19 @@ class TrendAnalyzer:
                 # За downtrend, проверяваме за bottom сигнали
                 if range_analysis['range_position'] < 0.2:
                     weak_signals = 0
-                    if daily_trend['strength'] == 'WEAK': weak_signals += 1
-                    if weekly_trend['strength'] == 'WEAK': weak_signals += 1
-                    if medium_term_trend['strength'] == 'WEAK': weak_signals += 1
+                    if daily_trend['strength'] == 'WEAK':
+                        weak_signals += 1
+                    if weekly_trend['strength'] == 'WEAK':
+                        weak_signals += 1
+                    if medium_term_trend['strength'] == 'WEAK':
+                        weak_signals += 1
                     
                     return weak_signals >= 2
             
             return False
             
         except Exception as e:
-            logger.error(f"Грешка при определяне дали тренда е приключил: {e}")
+            logger.exception(f"Грешка при определяне дали тренда е приключил: {e}")
             return False
 
     def _is_trend_completed(self, daily_trend: Dict, weekly_trend: Dict, range_analysis: Dict) -> bool:
@@ -651,7 +682,7 @@ class TrendAnalyzer:
             return False
             
         except Exception as e:
-            logger.error(f"Грешка при определяне дали тренда е приключил: {e}")
+            logger.exception(f"Грешка при определяне дали тренда е приключил: {e}")
             return False
     
     def _generate_adaptive_strategy(self, combined_trend: Dict, df: pd.DataFrame) -> Dict:
@@ -783,14 +814,19 @@ class TrendAnalyzer:
             start_price = y[0]
             end_price = y[-1]
             price_change = end_price - start_price
-            price_change_pct = (price_change / start_price) * 100
+            # Guard against division by zero in medium-term trend analysis
+            if start_price != 0:
+                price_change_pct = (price_change / start_price) * 100
+            else:
+                logger.warning(f"Start price is zero in medium-term trend analysis, using 0% change")
+                price_change_pct = 0.0
             
             # Определяме силата на тренда с конфигурабилни прагове за средносрочен анализ
             abs_change = abs(price_change_pct)
             medium_weak_threshold = self.trend_strength_weak * 3  # 3x за 90-дни период
             medium_moderate_threshold = self.trend_strength_moderate * 3.5  # 3.5x за 90-дни период
             medium_strong_threshold = self.trend_strength_strong * 3  # 3x за 90-дни период
-            medium_extreme_threshold = self.trend_strength_extreme * 2  # 2x за 90-дни период
+            # Note: EXTREME threshold not needed since we use else clause for all remaining cases
             
             if abs_change < medium_weak_threshold:
                 trend_strength = 'WEAK'
@@ -799,7 +835,7 @@ class TrendAnalyzer:
             elif abs_change < medium_strong_threshold:
                 trend_strength = 'STRONG'
             else:
-                trend_strength = 'EXTREME'  # Full EXTREME category support
+                trend_strength = 'EXTREME'  # All changes >= medium_strong_threshold are EXTREME
             
             # Определяме посоката на тренда (по-голям threshold за по-дълъг период)
             threshold = self.trend_threshold * 3  # 3x по-голям threshold за 90 дни
@@ -849,14 +885,19 @@ class TrendAnalyzer:
             start_price = y[0]
             end_price = y[-1]
             price_change = end_price - start_price
-            price_change_pct = (price_change / start_price) * 100
+            # Guard against division by zero in long-term trend analysis
+            if start_price != 0:
+                price_change_pct = (price_change / start_price) * 100
+            else:
+                logger.warning(f"Start price is zero in long-term trend analysis, using 0% change")
+                price_change_pct = 0.0
             
             # Определяме силата на тренда с конфигурабилни прагове за дългосрочен анализ
             abs_change = abs(price_change_pct)
             long_weak_threshold = self.trend_strength_weak * 5  # 5x за 180-дни период
             long_moderate_threshold = self.trend_strength_moderate * 5  # 5x за 180-дни период
             long_strong_threshold = self.trend_strength_strong * 5  # 5x за 180-дни период
-            long_extreme_threshold = self.trend_strength_extreme * 3.33  # 3.33x за 180-дни период
+            # Note: EXTREME threshold not needed since we use else clause for all remaining cases
             
             if abs_change < long_weak_threshold:
                 trend_strength = 'WEAK'
@@ -865,7 +906,7 @@ class TrendAnalyzer:
             elif abs_change < long_strong_threshold:
                 trend_strength = 'STRONG'
             else:
-                trend_strength = 'EXTREME'  # Complete EXTREME category implementation
+                trend_strength = 'EXTREME'  # All changes >= long_strong_threshold are EXTREME
             
             # Определяме посоката на тренда (още по-голям threshold за 180 дни)
             threshold = self.trend_threshold * 5  # 5x по-голям threshold за 180 дни
@@ -965,29 +1006,56 @@ class TrendAnalyzer:
             return {'regime': 'UNKNOWN', 'confidence': 0.0, 'reason': f'Грешка: {e}'}
 
     def _estimate_bull_duration(self, df: pd.DataFrame) -> int:
-        """Оценява продължителността на bull market в месеци"""
+        """Оценява продължителността на bull market в месеци с drawdown-based pivot detection"""
         try:
-            # Търсим последния значителен bottom (20%+ спад от предишен връх)
             if len(df) < 60:  # Минимум 2 месеца данни
                 return 0
                 
-            # Работим назад във времето
+            # Enhanced drawdown-based pivot detection for more robust bull market duration
             current_price = df['Close'].iloc[-1]
-            months_back = 0
+            prices = df['Close'].values
             
-            for i in range(30, min(len(df), 547)):  # До 18 месеца назад
-                past_price = df['Close'].iloc[-(i)]
-                price_increase = ((current_price / past_price) - 1) * 100
+            # Find significant drawdown pivots (20%+ correction from recent highs)
+            drawdown_threshold = 0.20  # 20% drawdown threshold
+            min_recovery_gain = 0.15   # 15% minimum recovery to confirm bull continuation
+            
+            # Track rolling highs and significant drawdowns
+            rolling_high = current_price
+            last_significant_low_idx = len(prices) - 1
+            
+            # Work backwards to find the last major drawdown pivot
+            for i in range(len(prices) - 2, max(0, len(prices) - 547), -1):  # Up to 18 months back
+                price = prices[i]
                 
-                if price_increase < 20:  # Не е значителен bull run
-                    break
-                    
-                months_back = i // 30  # Конвертираме дни в месеци
+                # Update rolling high as we go back
+                if price > rolling_high:
+                    rolling_high = price
                 
-            return months_back
+                # Check for significant drawdown from rolling high
+                drawdown = (rolling_high - price) / rolling_high
+                if drawdown >= drawdown_threshold:
+                    # Found a significant low - check if we recovered meaningfully since then
+                    recovery_from_low = (current_price - price) / price
+                    if recovery_from_low >= min_recovery_gain:
+                        # This is our bull market start point
+                        last_significant_low_idx = i
+                        break
+            
+            # Calculate duration from last significant low to now
+            days_since_low = len(prices) - 1 - last_significant_low_idx
+            months_duration = max(1, days_since_low // 30)  # At least 1 month
+            
+            # Validate the bull run strength
+            if last_significant_low_idx < len(prices) - 1:
+                bull_gain = (current_price / prices[last_significant_low_idx] - 1) * 100
+                if bull_gain < 15:  # Less than 15% total gain doesn't qualify as significant bull
+                    return 0
+            
+            logger.info(f"Bull market duration: {months_duration} months (drawdown-based pivot detection)")
+            return min(months_duration, 18)  # Cap at 18 months for sanity
             
         except Exception as e:
-            logger.error(f"Грешка при оценка на bull duration: {e}")
+            logger.exception(f"Грешка при оценка на bull duration: {e}")
             return 0
 
 if __name__ == "__main__":

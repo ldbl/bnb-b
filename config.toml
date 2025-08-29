@@ -242,7 +242,7 @@ min_risk_reward = 2.0
 burn_enhancement = true   # ✅ АКТИВИРАНО - BNB burn enhancement за LONG
 ema_fast_period = 10      # Fast EMA период за crossover
 
-# Enhanced LONG Signal Requirements для 85%+ accuracy
+# Enhanced LONG Signal Requirements для 100% accuracy target
 long_confidence_threshold = 0.9  # Increased from 0.8 to 0.9 for higher quality
 min_confluence_requirements = 3  # Minimum 3 confirmations for LONG
 required_confirmations = ["fibonacci", "weekly_tails", "volume"]  # Core requirements
