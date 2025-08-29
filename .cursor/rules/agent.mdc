@@ -14,19 +14,6 @@ Simple, modular BNB swing trading system with technical analysis. Target: **75%+
 - **Configuration-driven** - all parameters in config.toml
 - **Easy to tune** - change settings without touching code
 
-## 📊 Architecture
-```
-bnb_trading/
-├── config.toml              # ALL PARAMETERS HERE
-├── main.py                  # Entry point
-├── data_fetcher.py          # Binance API with ccxt
-├── fibonacci.py             # Fib calculations (separate module)
-├── weekly_tails.py          # Weekly wick analysis (separate module)  
-├── indicators.py            # RSI, MACD, BB (ta-lib)
-├── signal_generator.py      # Combines all signals
-├── validator.py             # Tracks accuracy
-└── results.csv              # Signal history
-```
 
 ## 🔧 Code Standards
 - Python 3.8+ with type hints
@@ -35,12 +22,6 @@ bnb_trading/
 - Log all operations
 - Try/catch for API calls
 - Save everything in CSV for analysis
-
-## 📈 Signal Priority (from config)
-1. **Fibonacci levels** - primary signals
-2. **Weekly tails** - confirmation signals
-3. **MACD** - trend confirmation
-4. **Technical indicators** - supporting signals
 
 ## 🎯 Trading Signals Philosophy
 
@@ -75,26 +56,8 @@ bnb_trading/
 - **Max Drawdown < 10%** - минимални загуби
 
 **SHORT сигнали:**
-- **Accuracy > 50%** - повече печеливши от губещи
+- **Accuracy > 75%** - повече печеливши от губещи
 - **Profit Factor > 1.0** - брутна печалба > брутна загуба
-- **Max Drawdown < 20%** - контролирана волатилност
-- **Sharpe Ratio > 0.5** - добра risk-adjusted доходност
+- **Max Drawdown < 10%** - контролирана волатилност
 
-### 🚀 Следващи Стъпки:
-1. **Запазваме LONG успеваемост** - не застрашаваме работещите LONG сигнали
-2. **Оптимизираме SHORT филтрите** - за по-висока accuracy на SHORT
-3. **Калибрираме теглата** - баланс между индикаторите
-4. **Добавим risk management** - за SHORT позиции
-5. **Тестване в реално време** - с малки позиции
 
-## 🚫 Забранява се
-- **Хардкоднати тестови данни** - не прави DataFrame с фиксирани стойности
-- **Тестови сигнали** - не прави dummy сигнали за тестване
-- **Симулирани резултати** - не прави fake валидации
-- **Тестови конфигурации** - всичко трябва да е в config.toml
-
-## ✅ Правилно използване
-- **main.py** - единствената точка за стартиране
-- **Реални данни** - от Binance API чрез ccxt
-- **Конфигурация** - всички параметри в config.toml
-- **Логване** - всички операции се записват в лог файлове

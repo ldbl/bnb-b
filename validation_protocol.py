@@ -94,8 +94,8 @@ class ValidationProtocol:
                 description="LONG сигнали точността трябва да остане 100%",
                 critical=True,
                 validator_func=self._validate_long_accuracy,
-                expected_result=">= 95.0%",
-                failure_message="LONG accuracy падна под критичния праг от 95%"
+                expected_result=">= 100.0%",
+                failure_message="LONG accuracy падна под критичния праг от 100%"
             ),
 
             ValidationPoint(
@@ -260,8 +260,8 @@ class ValidationProtocol:
         avg_long_accuracy = sum(long_accuracies) / len(long_accuracies)
         min_long_accuracy = min(long_accuracies)
 
-        # LONG accuracy трябва да е >= 95%
-        passed = min_long_accuracy >= 95.0
+        # LONG accuracy трябва да е >= 100% (перфектна точност)
+        passed = min_long_accuracy >= 100.0
 
         return {
             'passed': passed,
@@ -271,7 +271,7 @@ class ValidationProtocol:
                 'min_accuracy': min_long_accuracy,
                 'all_accuracies': long_accuracies
             },
-            'message': f"LONG accuracy: {min_long_accuracy:.1f}% (min required: 95%)"
+            'message': f"LONG accuracy: {min_long_accuracy:.1f}% (min required: 100%)"
         }
 
     def _validate_pnl_stability(self, feature_name: str, test_results: Dict[str, TestResult],
@@ -376,15 +376,15 @@ class ValidationProtocol:
         # В силен bull market е нормално да няма SHORT сигнали
         # В bear/correction период SHORT сигналите трябва да са 10-40%
 
-        # Анализираме сигналите
-        total_signals = len([r for r in test_results.values() if r and hasattr(r, 'total_signals')])
+        # Анализираме сигналите (Fix: Use separate variable to avoid corrupting total_signals)
+        total_periods = len([r for r in test_results.values() if r and hasattr(r, 'total_signals')])
         long_signals = sum([r.long_signals for r in test_results.values() if r and hasattr(r, 'long_signals')])
         short_signals = sum([r.short_signals for r in test_results.values() if r and hasattr(r, 'short_signals')])
 
         # Дефинираме reasonable_range в началото
         reasonable_range = (10, 40)
 
-        if total_signals == 0:
+        if total_periods == 0:
             # Никакви сигнали - не можем да оценим
             passed = False
         elif short_signals == 0 and long_signals >= 10:
@@ -400,7 +400,8 @@ class ValidationProtocol:
         return {
             'passed': passed,
             'details': {
-                'total_signals': total_signals,
+                'total_signals': total_signals,  # Keep original accumulated total for metrics
+                'total_periods': total_periods,  # Add periods count for clarity
                 'short_signals': total_short_signals,
                 'short_percentage': short_percentage,
                 'reasonable_range': reasonable_range,
