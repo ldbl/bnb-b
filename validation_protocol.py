@@ -403,6 +403,7 @@ class ValidationProtocol:
                 'total_signals': total_signals,  # Keep original accumulated total for metrics
                 'total_periods': total_periods,  # Add periods count for clarity
                 'short_signals': total_short_signals,
+                'long_signals': long_signals,  # Include for completeness
                 'short_percentage': short_percentage,
                 'reasonable_range': reasonable_range,
                 'short_accuracies': short_accuracies
