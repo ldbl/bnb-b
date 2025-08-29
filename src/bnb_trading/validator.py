@@ -421,7 +421,9 @@ class SignalValidator:
                 return {
                     "error": (
                         f'Сигналът вече е валидиран на {
-                            signal_row["validation_date"].strftime("%Y-%m-%d")}')}
+                            signal_row["validation_date"].strftime("%Y-%m-%d")}'
+                    )
+                }
 
             # Изчисляваме резултата
             signal_price = signal_row["signal_price"]
@@ -575,9 +577,7 @@ class SignalValidator:
                 "long_signals": {
                     "total": len(long_signals),
                     "success": (
-                        len(long_signals[long_signals["success"]])
-                        if len(long_signals) > 0
-                        else 0
+                        len(long_signals[long_signals["success"]]) if len(long_signals) > 0 else 0
                     ),
                     "accuracy": long_accuracy,
                 },

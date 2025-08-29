@@ -787,21 +787,24 @@ class SentimentAnalyzer:
         print(
             f"     • Bullish: {
                 twitter_data['bullish_mentions']} | Bearish: {
-                twitter_data['bearish_mentions']}")
+                twitter_data['bearish_mentions']}"
+        )
 
         reddit_data = social["platforms"]["reddit"]
         print(f"   📺 Reddit: {reddit_data['total_posts']} posts")
         print(
             f"     • Upvoted: {
                 reddit_data['upvoted_posts']} | Downvoted: {
-                reddit_data['downvoted_posts']}")
+                reddit_data['downvoted_posts']}"
+        )
 
         telegram_data = social["platforms"]["telegram"]
         print(f"   💬 Telegram: {telegram_data['group_mentions']} mentions")
         print(
             f"     • Positive: {
                 telegram_data['positive_reactions']} | Negative: {
-                telegram_data['negative_reactions']}")
+                telegram_data['negative_reactions']}"
+        )
 
         # Display News Sentiment
         print("\n📰 NEWS SENTIMENT:")

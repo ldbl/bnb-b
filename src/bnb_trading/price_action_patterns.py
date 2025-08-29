@@ -530,7 +530,8 @@ class PriceActionPatternsAnalyzer:
                     "reason": (
                         f"Head & Shoulders: глава на {
                             head_price:.2f}, рамене на {
-                            left_shoulder_price:.2f}"),
+                            left_shoulder_price:.2f}"
+                    ),
                     "head_price": head_price,
                     "left_shoulder_price": left_shoulder_price,
                     "right_shoulder_price": right_shoulder_price,
@@ -591,7 +592,8 @@ class PriceActionPatternsAnalyzer:
                     "reason": (
                         f"Inverse H&S: глава на {
                             head_price:.2f}, рамене на {
-                            left_shoulder_price:.2f}"),
+                            left_shoulder_price:.2f}"
+                    ),
                     "head_price": head_price,
                     "left_shoulder_price": left_shoulder_price,
                     "right_shoulder_price": right_shoulder_price,
@@ -873,7 +875,8 @@ class PriceActionPatternsAnalyzer:
                         "reason": (
                             f'Силен rejection pattern: wick ratio {
                                 strongest_rejection["wick_ratio"]:.2f} > {
-                                wick_ratio_threshold:.2f}'),
+                                wick_ratio_threshold:.2f}'
+                        ),
                         "strength": strongest_rejection["strength"],
                         "wick_ratio": strongest_rejection["wick_ratio"],
                         "date": strongest_rejection["date"],
@@ -888,7 +891,8 @@ class PriceActionPatternsAnalyzer:
                         "reason": (
                             f'Слаб rejection pattern: strength {
                                 strongest_rejection["strength"]:.2f} < {
-                                strength_threshold:.2f}'),
+                                strength_threshold:.2f}'
+                        ),
                         "strength": strongest_rejection["strength"],
                         "wick_ratio": strongest_rejection["wick_ratio"],
                     }

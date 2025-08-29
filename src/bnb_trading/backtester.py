@@ -391,7 +391,6 @@ class Backtester:
                     except Exception as e:
                         # Тихо прескачаме грешките за да не спираме прогреса
                         logging.warning(f"Error processing date {current_date}: {e}")
-                        pass
 
                     # Обновяваме прогрес бара с информация
                     pbar.set_postfix(
@@ -535,7 +534,8 @@ class Backtester:
                         logger.info(
                             f"Using fallback validation at {
                                 target_data.index[0].strftime('%Y-%m-%d')} for signal on {
-                                signal_date.strftime('%Y-%m-%d')}")
+                                signal_date.strftime('%Y-%m-%d')}"
+                        )
                     else:
                         logger.warning(
                             f"Insufficient data for 14-day minimum validation period after {signal_date.strftime('%Y-%m-%d')}"
@@ -764,12 +764,14 @@ class Backtester:
                     f"  LONG сигнали: {
                         analysis['long_signals']['accuracy']:.1f}% ({
                         analysis['long_signals']['success']}/{
-                        analysis['long_signals']['total']})\n")
+                        analysis['long_signals']['total']})\n"
+                )
                 f.write(
                     f"  SHORT сигнали: {
                         analysis['short_signals']['accuracy']:.1f}% ({
                         analysis['short_signals']['success']}/{
-                        analysis['short_signals']['total']})\n\n")
+                        analysis['short_signals']['total']})\n\n"
+                )
 
                 # P&L статистика по тип сигнал
                 if analysis["long_signals"]["total"] > 0:
@@ -838,7 +840,8 @@ class Backtester:
                             signal_data['date'].strftime('%Y-%m-%d')} | {
                             signal['signal']} | ${
                             current_price:,.2f} | {
-                            result['profit_loss_pct']:+.2f}%\n")
+                            result['profit_loss_pct']:+.2f}%\n"
+                    )
                 f.write("\n")
 
                 # Най-лоши сигнали
@@ -853,7 +856,8 @@ class Backtester:
                             signal_data['date'].strftime('%Y-%m-%d')} | {
                             signal['signal']} | ${
                             current_price:,.2f} | {
-                            result['profit_loss_pct']:+.2f}%\n")
+                            result['profit_loss_pct']:+.2f}%\n"
+                    )
                 f.write("\n")
 
                 # Детайлни резултати
@@ -876,7 +880,8 @@ class Backtester:
                     f.write(
                         f"Сигнал: {
                             signal['signal']} (увереност: {
-                            confidence:.2f}) [{confidence_level}]\n")
+                            confidence:.2f}) [{confidence_level}]\n"
+                    )
                     f.write(f"Приоритет: {signal['priority']}\n")
                     current_price = signal.get("fibonacci_analysis", {}).get("current_price", 0)
                     f.write(f"Цена: ${current_price:,.2f}\n")
@@ -935,7 +940,8 @@ class Backtester:
                         macd_status = "bullish" if macd_value > 0 else "bearish"
                         f.write(
                             f"MACD: {
-                                macd_value:+.3f} ({macd_status}) - {macd_signal} - {macd_reason}\n")
+                                macd_value:+.3f} ({macd_status}) - {macd_signal} - {macd_reason}\n"
+                        )
 
                     # Bollinger Bands информация
                     if (
@@ -957,7 +963,8 @@ class Backtester:
 
                         f.write(
                             f"Bollinger Bands: {
-                                bb_position:+.2f} ({bb_status}) - {bb_signal} - {bb_reason}\n")
+                                bb_position:+.2f} ({bb_status}) - {bb_signal} - {bb_reason}\n"
+                        )
 
                     # Weekly Tails информация
                     if (
@@ -986,7 +993,8 @@ class Backtester:
                                 f.write(
                                     f"📊 MA: {
                                         crossover['signal']} ({
-                                        crossover['confidence']:.0f}%)\n")
+                                        crossover['confidence']:.0f}%)\n"
+                                )
 
                     # Price Action Patterns информация (кратко)
                     if "price_patterns_analysis" in signal and signal["price_patterns_analysis"]:
@@ -999,7 +1007,8 @@ class Backtester:
                     f.write(
                         f"Резултат: {
                             'УСПЕХ' if result['success'] else 'НЕУСПЕХ'} ({
-                            result['profit_loss_pct']:+.2f}%)\n")
+                            result['profit_loss_pct']:+.2f}%)\n"
+                    )
                     f.write(
                         f"Валидация: {result['validation_date'].strftime('%Y-%m-%d')} (${result['validation_price']:,.2f})\n"
                     )
@@ -1133,11 +1142,13 @@ def main():
         print(
             f"📈 LONG: {
                 analysis['long_signals']['total']} ({
-                analysis['long_signals']['accuracy']:.1f}%)")
+                analysis['long_signals']['accuracy']:.1f}%)"
+        )
         print(
             f"📉 SHORT: {
                 analysis['short_signals']['total']} ({
-                analysis['short_signals']['accuracy']:.1f}%)")
+                analysis['short_signals']['accuracy']:.1f}%)"
+        )
         print(f"💰 Среден P&L: {analysis['avg_profit_loss_pct']:+.2f}%")
 
         # Експортираме резултатите

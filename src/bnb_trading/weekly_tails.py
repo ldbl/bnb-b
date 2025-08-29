@@ -330,7 +330,8 @@ class WeeklyTailsAnalyzer:
             logger.info(
                 f"Седмица {
                     date.strftime('%Y-%m-%d')}: {dominant_tail} опашка, сила: {
-                    tail_strength:.1%}, сигнал: {signal}")
+                    tail_strength:.1%}, сигнал: {signal}"
+            )
 
             return tail_info
 
@@ -460,8 +461,10 @@ class WeeklyTailsAnalyzer:
                     f"Намерени {len(confluence_info['confluence_points'])} съвпадения Fibonacci + опашки"
                 )
                 for point in confluence_info["confluence_points"][:3]:  # Показваме топ 3
-                    logger.info(f"  {point['tail_date'].strftime('%Y-%m-%d')}: Fib {point['fib_level'] *
-                                                                                    100:.1f}% + {point['tail_signal']} (сила: {point['confluence_score']:.2f})")
+                    logger.info(
+                        f"  {point['tail_date'].strftime('%Y-%m-%d')}: Fib {point['fib_level'] *
+                                                                                    100:.1f}% + {point['tail_signal']} (сила: {point['confluence_score']:.2f})"
+                    )
 
             return confluence_info
 

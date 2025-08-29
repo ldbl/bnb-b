@@ -330,7 +330,8 @@ class MovingAveragesAnalyzer:
                     "reason": (
                         f"Fast EMA ({
                             self.fast_period}) пресича нагоре Slow EMA ({
-                            self.slow_period})"),
+                            self.slow_period})"
+                    ),
                     "crossover_strength": crossover_strength,
                     "fast_ema": fast_current,
                     "slow_ema": slow_current,
@@ -348,7 +349,8 @@ class MovingAveragesAnalyzer:
                     "reason": (
                         f"Fast EMA ({
                             self.fast_period}) пресича надолу Slow EMA ({
-                            self.slow_period})"),
+                            self.slow_period})"
+                    ),
                     "crossover_strength": crossover_strength,
                     "fast_ema": fast_current,
                     "slow_ema": slow_current,

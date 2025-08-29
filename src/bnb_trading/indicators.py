@@ -217,7 +217,8 @@ class TechnicalIndicators:
             f"RSI: период={
                 self.rsi_period}, overbought={
                 self.rsi_overbought}, oversold={
-                self.rsi_oversold}")
+                self.rsi_oversold}"
+        )
         logger.info(
             f"MACD: fast={self.macd_fast}, slow={self.macd_slow}, signal={self.macd_signal}"
         )

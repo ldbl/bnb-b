@@ -331,7 +331,8 @@ class FibonacciAnalyzer:
                             level_info['level'] *
                             100:5.1f}%: ${
                             level_info['price']:,.2f} (±{
-                            level_info['distance_percentage']:.2%})")
+                            level_info['distance_percentage']:.2%})"
+                    )
 
             return proximity_info
 
@@ -391,7 +392,8 @@ class FibonacciAnalyzer:
                         f"LONG: Цената е над Fibonacci support {
                             level *
                             100:.1f}% (${
-                            active_level['price']:.2f})")
+                            active_level['price']:.2f})"
+                    )
 
                 elif level in [
                     0.618,
@@ -410,20 +412,23 @@ class FibonacciAnalyzer:
                                 f"SHORT: Отскок от Fibonacci resistance {
                                     level *
                                     100:.1f}% (${
-                                    active_level['price']:.2f}) - цена под ниво и rejection потвърден")
+                                    active_level['price']:.2f}) - цена под ниво и rejection потвърден"
+                            )
                         else:
                             signal_info["signal"] = "HOLD"
                             signal_info["strength"] = 0.3
                             signal_info["reason"] = (
                                 f"HOLD: Близо до resistance {
-                                    level * 100:.1f}% но няма rejection - изчакай потвърждение")
+                                    level * 100:.1f}% но няма rejection - изчакай потвърждение"
+                            )
                     else:
                         # Цената е НАД resistance нивото - няма SHORT сигнал
                         signal_info["signal"] = "HOLD"
                         signal_info["strength"] = 0.2
                         signal_info["reason"] = (
                             f"HOLD: Цената е над resistance {
-                                level * 100:.1f}% - няма SHORT възможност")
+                                level * 100:.1f}% - няма SHORT възможност"
+                        )
 
                 elif level == 0.5:  # Средно ниво
                     signal_info["signal"] = "HOLD"
@@ -442,7 +447,8 @@ class FibonacciAnalyzer:
                         f"Следващо ниво: {
                             next_resistance[0] *
                             100:.1f}% (${
-                            next_resistance[1]:,.2f})")
+                            next_resistance[1]:,.2f})"
+                    )
 
             elif signal_info["signal"] == "SHORT":
                 next_support = (
@@ -498,7 +504,8 @@ class FibonacciAnalyzer:
             if price_distance_pct < min_rejection_distance:
                 logger.info(
                     f"Няма rejection: Цената е твърде близо до resistance ({
-                        price_distance_pct:.2f}%)")
+                        price_distance_pct:.2f}%)"
+                )
                 return False
 
             # Проверка 2: Цената трябва да е под resistance нивото

@@ -125,7 +125,8 @@ class HistoricalTester:
         logger.info(
             f"📊 Baseline metrics loaded: LONG {
                 self.baseline_metrics.long_accuracy:.1f}%, Overall {
-                self.baseline_metrics.overall_accuracy:.1f}%")
+                self.baseline_metrics.overall_accuracy:.1f}%"
+        )
 
     def load_baseline_metrics(self) -> BaselineMetrics:
         """
@@ -237,7 +238,8 @@ class HistoricalTester:
             lookback_days = max(lookback_days + 30, 100)  # минимум 100 дни
 
             logger.info(
-                f"Изчислен lookback period: {lookback_days} дни за период {start_date} до {end_date}")
+                f"Изчислен lookback period: {lookback_days} дни за период {start_date} до {end_date}"
+            )
 
             data = self.data_fetcher.fetch_bnb_data(lookback_days=lookback_days)
 
@@ -251,7 +253,8 @@ class HistoricalTester:
                 data["daily"] = daily_df
                 logger.info(
                     f"Филтрирани daily данни: {
-                        len(daily_df)} редове за периода {start_date} до {end_date}")
+                        len(daily_df)} редове за периода {start_date} до {end_date}"
+                )
 
             if data and "weekly" in data:
                 weekly_df = data["weekly"]
@@ -264,7 +267,8 @@ class HistoricalTester:
                 data["weekly"] = weekly_df
                 logger.info(
                     f"Филтрирани weekly данни: {
-                        len(weekly_df)} редове за периода {start_date} до {end_date}")
+                        len(weekly_df)} редове за периода {start_date} до {end_date}"
+                )
 
         except Exception as e:
             logger.error(f"❌ Грешка при fetch на данни: {e}")
@@ -646,7 +650,8 @@ class HistoricalTester:
                         result.sharpe_ratio:.2f}, Avg Duration: {
                         result.avg_trade_duration:.1f} days",
                     "",
-                ])
+                ]
+            )
 
         return "\n".join(summary_lines)
 

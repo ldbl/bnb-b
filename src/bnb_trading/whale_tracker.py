@@ -683,7 +683,8 @@ class WhaleTracker:
                         print(
                             f"     📊 {
                                 biggest['volume']:,.0f} BNB ({
-                                biggest['volume_ratio']:.1f}x) | {time_str}")
+                                biggest['volume_ratio']:.1f}x) | {time_str}"
+                        )
 
                 else:
                     print("   ✅ No significant whale activity detected")

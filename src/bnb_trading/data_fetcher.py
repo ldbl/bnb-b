@@ -218,7 +218,8 @@ class BNBDataFetcher:
             logger.info(
                 f"Успешно извлечени данни: Daily={
                     len(daily_df)} редове, Weekly={
-                    len(weekly_df)} редове")
+                    len(weekly_df)} редове"
+            )
 
             return {"daily": daily_df, "weekly": weekly_df}
 

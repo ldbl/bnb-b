@@ -174,7 +174,8 @@ class MultiTimeframeAnalyzer:
             f"Confidence bonuses: Fibonacci={
                 self.fibonacci_bonus}, MACD={
                 self.macd_bonus}, Volume={
-                self.volume_bonus}")
+                self.volume_bonus}"
+        )
 
     def analyze_timeframe_alignment(
         self, daily_analysis: Dict, weekly_analysis: Dict

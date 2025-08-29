@@ -367,7 +367,8 @@ class SmartShortSignalGenerator:
                 logger.info(
                     f"📊 Enhanced Market Regime: {
                         market_regime['regime']} (confidence: {
-                        market_regime['confidence']:.2f})")
+                        market_regime['confidence']:.2f})"
+                )
 
             else:
                 # Fallback към старата система
@@ -376,7 +377,8 @@ class SmartShortSignalGenerator:
                 logger.info(
                     f"📊 Basic Market Regime: {
                         market_regime['regime']} (confidence: {
-                        market_regime['confidence']:.2f})")
+                        market_regime['confidence']:.2f})"
+                )
 
             # КРИТИЧНА ЛОГИКА: Блокиране на SHORT в STRONG_BULL
             market_regime["short_signals_allowed"] = self._should_allow_short_signals(market_regime)
@@ -385,7 +387,8 @@ class SmartShortSignalGenerator:
                 logger.info(
                     f"🚫 SHORT сигнали блокирани: {
                         market_regime['regime']} regime (confidence: {
-                        market_regime['confidence']:.2f})")
+                        market_regime['confidence']:.2f})"
+                )
                 return []
 
             # Step 2: Scan for potential SHORT setups
@@ -695,7 +698,8 @@ class SmartShortSignalGenerator:
                 if ath_distance < min_ath_correction:
                     logger.info(
                         f"🛡️ MODERATE_BULL блокиране: само {
-                            ath_distance:.1f}% от ATH (минимум: {min_ath_correction}%)")
+                            ath_distance:.1f}% от ATH (минимум: {min_ath_correction}%)"
+                    )
                     return False
                 else:
                     logger.info(f"✅ MODERATE_BULL позволен: {ath_distance:.1f}% от ATH")
@@ -708,7 +712,8 @@ class SmartShortSignalGenerator:
                 if ath_distance < min_ath_correction:
                     logger.info(
                         f"🛡️ WEAK_BULL блокиране: само {
-                            ath_distance:.1f}% от ATH (минимум: {min_ath_correction}%)")
+                            ath_distance:.1f}% от ATH (минимум: {min_ath_correction}%)"
+                    )
                     return False
                 else:
                     logger.info(f"✅ WEAK_BULL позволен: {ath_distance:.1f}% от ATH")
@@ -721,7 +726,8 @@ class SmartShortSignalGenerator:
                 if ath_distance < min_ath_correction:
                     logger.info(
                         f"🛡️ VOLATILE_BULL блокиране: само {
-                            ath_distance:.1f}% от ATH (минимум: {min_ath_correction}%)")
+                            ath_distance:.1f}% от ATH (минимум: {min_ath_correction}%)"
+                    )
                     return False
                 else:
                     logger.info(f"✅ VOLATILE_BULL позволен: {ath_distance:.1f}% от ATH")

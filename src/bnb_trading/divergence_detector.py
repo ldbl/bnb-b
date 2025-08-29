@@ -720,7 +720,8 @@ class DivergenceDetector:
                         "confidence": 0,
                         "reason": (
                             f"Filtered: Bearish {
-                                divergence_type.upper()} divergence blocked in {market_regime} market"),
+                                divergence_type.upper()} divergence blocked in {market_regime} market"
+                        ),
                         "original_signal": original_type,
                         "filter_applied": "BULL_MARKET_FILTER",
                     }
@@ -746,7 +747,8 @@ class DivergenceDetector:
                             "type": "NONE",
                             "confidence": 0,
                             "reason": (
-                                f"Filtered: Low confidence bullish divergence in {market_regime} market"),
+                                f"Filtered: Low confidence bullish divergence in {market_regime} market"
+                            ),
                             "original_signal": original_type,
                             "filter_applied": "BEAR_MARKET_FILTER",
                         }
