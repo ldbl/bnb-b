@@ -5,17 +5,18 @@ Enhanced Backtest with Detailed Signal Analysis
 """
 
 import logging
-import os
 import sys
 from datetime import datetime
+
+# Add src to path
+from pathlib import Path
 from typing import Any
 
 import pandas as pd
 
-# Add src to path
-current_dir = os.path.dirname(os.path.abspath(__file__))
-src_dir = os.path.join(current_dir, "src")
-sys.path.insert(0, src_dir)
+current_dir = Path(__file__).parent.absolute()
+src_dir = current_dir / "src"
+sys.path.insert(0, str(src_dir))
 
 try:
     import toml
@@ -282,7 +283,7 @@ class EnhancedBacktester:
             f.write("\n")
 
             f.write("🔍 TOP 5 SUCCESSFUL SIGNALS:\n")
-            top_signals = df[df["success"] == True].nlargest(5, "pnl_pct")
+            top_signals = df[df["success"]].nlargest(5, "pnl_pct")
             for _, signal in top_signals.iterrows():
                 f.write(
                     f"  {signal['signal_date'].date()}: {signal['pnl_pct']:.1f}% PnL, "
@@ -290,7 +291,7 @@ class EnhancedBacktester:
                 )
 
             f.write("\n🔍 WORST 5 FAILED SIGNALS:\n")
-            worst_signals = df[df["success"] == False].nsmallest(5, "pnl_pct")
+            worst_signals = df[~df["success"]].nsmallest(5, "pnl_pct")
             for _, signal in worst_signals.iterrows():
                 f.write(
                     f"  {signal['signal_date'].date()}: {signal['pnl_pct']:.1f}% PnL, "

@@ -33,8 +33,8 @@ def load_fixture_context(date: str = "2024-08-05") -> DecisionContext:
     daily_df = data["daily"][data["daily"].index <= target_date]
     weekly_df = data["weekly"][data["weekly"].index <= target_date]
 
-    # Execute analyses
-    analyses = pipeline._execute_analyses(daily_df, weekly_df)
+    # Execute analyses (not used but verifies pipeline works)
+    _ = pipeline._execute_analyses(daily_df, weekly_df)
 
     return DecisionContext(
         closed_daily_df=daily_df,

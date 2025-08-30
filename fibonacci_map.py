@@ -14,21 +14,16 @@ Requirements:
 - No look-ahead bias
 """
 
-import os
-import sys
+import logging
 from datetime import datetime
 from typing import Any
 
 import numpy as np
 import pandas as pd
 
-# Add src to path for imports
-current_dir = os.path.dirname(os.path.abspath(__file__))
-src_dir = os.path.join(current_dir, "src")
-if src_dir not in sys.path:
-    sys.path.insert(0, src_dir)
-
 from bnb_trading.data.fetcher import BNBDataFetcher
+
+logger = logging.getLogger(__name__)
 
 
 def find_last_weekly_swing(
@@ -52,10 +47,29 @@ def find_last_weekly_swing(
     # Use closed candles only (exclude current incomplete week)
     closed_df = weekly_df[:-1].copy()  # Remove last (potentially incomplete) candle
 
-    # Get OHLC columns (handle different naming conventions)
-    high_col = "high" if "high" in closed_df.columns else "High"
-    low_col = "low" if "low" in closed_df.columns else "Low"
-    close_col = "close" if "close" in closed_df.columns else "Close"
+    # Get OHLC columns with validation
+    required_columns = {
+        "high": ["high", "High"],
+        "low": ["low", "Low"],
+        "close": ["close", "Close"],
+    }
+    column_mapping = {}
+
+    for col_type, possible_names in required_columns.items():
+        found = None
+        for name in possible_names:
+            if name in closed_df.columns:
+                found = name
+                break
+        if found is None:
+            raise ValueError(
+                f"Missing OHLC column: {col_type}. Expected one of {possible_names}. "
+                f"Available columns: {list(closed_df.columns)}"
+            )
+        column_mapping[col_type] = found
+
+    high_col = column_mapping["high"]
+    low_col = column_mapping["low"]
 
     # For relevance, focus on last 20 weeks maximum
     recent_df = closed_df.tail(20).copy()
@@ -188,9 +202,29 @@ def count_touches(
     if len(daily_df) == 0:
         return 0
 
-    # Get OHLC columns
-    high_col = "high" if "high" in daily_df.columns else "High"
-    low_col = "low" if "low" in daily_df.columns else "Low"
+    # Get OHLC columns with validation
+    high_col = None
+    low_col = None
+
+    for col in ["high", "High"]:
+        if col in daily_df.columns:
+            high_col = col
+            break
+    for col in ["low", "Low"]:
+        if col in daily_df.columns:
+            low_col = col
+            break
+
+    if high_col is None:
+        raise ValueError(
+            "Missing high column. Expected 'high' or 'High'. "
+            f"Available columns: {list(daily_df.columns)}"
+        )
+    if low_col is None:
+        raise ValueError(
+            "Missing low column. Expected 'low' or 'Low'. "
+            f"Available columns: {list(daily_df.columns)}"
+        )
 
     highs = daily_df[high_col].values
     lows = daily_df[low_col].values
@@ -233,7 +267,7 @@ def create_fibonacci_map() -> str:
         Formatted string with complete Fibonacci analysis
     """
     try:
-        print("🔄 Fetching BNB/USDT data...")
+        logger.info("🔄 Fetching BNB/USDT data...")
 
         # Initialize data fetcher
         fetcher = BNBDataFetcher()
@@ -246,20 +280,32 @@ def create_fibonacci_map() -> str:
         if daily_df.empty or weekly_df.empty:
             return "❌ Error: No data available"
 
-        print(f"📊 Data loaded: {len(daily_df)} daily, {len(weekly_df)} weekly candles")
+        logger.info(
+            f"📊 Data loaded: {len(daily_df)} daily, {len(weekly_df)} weekly candles"
+        )
 
-        # Get current price
-        close_col = "close" if "close" in daily_df.columns else "Close"
+        # Get current price with validation
+        close_col = None
+        for col in ["close", "Close"]:
+            if col in daily_df.columns:
+                close_col = col
+                break
+        if close_col is None:
+            raise ValueError(
+                "Missing close column. Expected 'close' or 'Close'. "
+                f"Available columns: {list(daily_df.columns)}"
+            )
+
         current_price = float(daily_df[close_col].iloc[-1])
         current_date = datetime.now().strftime("%Y-%m-%d")
 
-        print(f"💰 Current price: ${current_price:.2f}")
+        logger.info(f"💰 Current price: ${current_price:.2f}")
 
         # Find last weekly swing
-        print("🔍 Detecting last weekly swing...")
+        logger.info("🔍 Detecting last weekly swing...")
         swing_low, swing_high, low_date, high_date = find_last_weekly_swing(weekly_df)
 
-        print(
+        logger.info(
             f"📈 Last swing: ${swing_low:.2f} ({low_date}) → ${swing_high:.2f} ({high_date})"
         )
 
@@ -267,7 +313,7 @@ def create_fibonacci_map() -> str:
         fib_data = calculate_fibonacci_levels(swing_low, swing_high, current_price)
 
         # Count touches for each level
-        print("🔢 Counting historical touches...")
+        logger.info("🔢 Counting historical touches...")
 
         all_touches = []
 

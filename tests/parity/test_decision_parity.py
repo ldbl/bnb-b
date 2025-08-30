@@ -62,11 +62,11 @@ class TestDecisionParity:
 
             data.append(
                 {
-                    "open": open_price,
-                    "high": high,
-                    "low": low,
-                    "close": close,
-                    "volume": max(volume, 100000),  # Minimum volume
+                    "Open": open_price,
+                    "High": high,
+                    "Low": low,
+                    "Close": close,
+                    "Volume": max(volume, 100000),  # Minimum volume
                 }
             )
 
@@ -84,11 +84,11 @@ class TestDecisionParity:
 
             weekly_data.append(
                 {
-                    "open": week_data.iloc[0]["open"],
-                    "high": week_data["high"].max(),
-                    "low": week_data["low"].min(),
-                    "close": week_data.iloc[-1]["close"],
-                    "volume": week_data["volume"].sum(),
+                    "Open": week_data.iloc[0]["Open"],
+                    "High": week_data["High"].max(),
+                    "Low": week_data["Low"].min(),
+                    "Close": week_data.iloc[-1]["Close"],
+                    "Volume": week_data["Volume"].sum(),
                 }
             )
 

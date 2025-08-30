@@ -107,33 +107,32 @@ DATE: 2024-01-01
 
 import logging
 import os
-import sys
 
 import numpy as np
 import pandas as pd
 import toml
 from tqdm import tqdm
 
-# For direct script execution - add src to path
-if __name__ == "__main__":
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    src_dir = os.path.dirname(current_dir)
-    if src_dir not in sys.path:
-        sys.path.insert(0, src_dir)
-
-    # Use absolute imports for direct execution
+# Check if we are running as installed package (CI) or development mode
+try:
+    # First try absolute imports (works when installed via pip install -e .)
     from bnb_trading.data.fetcher import BNBDataFetcher
     from bnb_trading.fibonacci import FibonacciAnalyzer
     from bnb_trading.indicators import TechnicalIndicators
     from bnb_trading.signals.generator import SignalGenerator
     from bnb_trading.weekly_tails import WeeklyTailsAnalyzer
-else:
-    # Use relative imports when imported as module
-    from .data.fetcher import BNBDataFetcher
-    from .fibonacci import FibonacciAnalyzer
-    from .indicators import TechnicalIndicators
-    from .signals.generator import SignalGenerator
-    from .weekly_tails import WeeklyTailsAnalyzer
+except ImportError:
+    # Fallback to relative imports (for local development without installation)
+    try:
+        from .data.fetcher import BNBDataFetcher
+        from .fibonacci import FibonacciAnalyzer
+        from .indicators import TechnicalIndicators
+        from .signals.generator import SignalGenerator
+        from .weekly_tails import WeeklyTailsAnalyzer
+    except ImportError as e:
+        raise ImportError(
+            f"Cannot import required modules. Make sure all dependencies are available. Error: {e}"
+        ) from e
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

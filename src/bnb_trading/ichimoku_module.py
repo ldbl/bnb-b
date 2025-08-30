@@ -119,6 +119,7 @@ DATE: 2024-01-01
 
 import logging
 from datetime import datetime
+from typing import Any
 
 import requests
 
@@ -217,9 +218,16 @@ class IchimokuAnalyzer:
         for accurate Ichimoku cloud calculation and signal generation.
     """
 
-    def __init__(self, config: dict | None = None) -> None:
+    def __init__(self, config: dict[str, Any] | None = None) -> None:
         self.config = config or {}
         self.base_url = "https://api.binance.com/api/v3"
+
+        # Connection parameters from config
+        data_config = self.config.get("data", {})
+        self.symbol = data_config.get("symbol", "BNB/USDT").replace(
+            "/", ""
+        )  # Convert to Binance format
+        self.timeout = self.config.get("timeout", 30)  # Default 30s timeout
 
         # Ichimoku parameters (from config or standard settings)
         ichimoku_config = self.config.get("ichimoku", {})
@@ -239,21 +247,21 @@ class IchimokuAnalyzer:
         """Fetch data for Ichimoku analysis"""
         try:
             params = {
-                "symbol": "BNBUSDT",
+                "symbol": self.symbol,
                 "interval": interval,
                 "limit": min(limit, 1000),
             }
 
             response = requests.get(
-                f"{self.base_url}/klines", params=params, timeout=10
+                f"{self.base_url}/klines", params=params, timeout=self.timeout
             )
             if response.status_code == 200:
                 return response.json()
-            print(f"API Error: {response.status_code}")
+            logger.warning("Binance klines non-200: %s", response.status_code)
             return []
 
-        except Exception as e:
-            print(f"Error fetching data: {e}")
+        except Exception:
+            logger.exception("Error fetching klines")
             return []
 
     def process_klines_data(self, klines: list) -> dict:
@@ -552,13 +560,14 @@ class IchimokuAnalyzer:
         try:
             response = requests.get(
                 f"{self.base_url}/ticker/price",
-                params={"symbol": "BNBUSDT"},
-                timeout=10,
+                params={"symbol": self.symbol},
+                timeout=self.timeout,
             )
             if response.status_code == 200:
                 return float(response.json()["price"])
-        except BaseException:
-            pass
+        except Exception:
+            logger.exception("Ticker fetch failed")
+            return None
         return None
 
     def display_ichimoku_analysis(self, interval: str = "1d", limit: int = 100):

@@ -66,6 +66,7 @@ ml_models/
 .bandit
 .pre-commit-config.yaml.backup
 .coverage.*
+.bandit-report.json
 
 # Environment variables
 .env
@@ -94,3 +95,4 @@ coverage.xml
 .env
 .env.local
 .env.*.local
+bandit-report.json

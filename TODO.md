@@ -75,7 +75,7 @@ _Актуализирано: 2025-08-30 - LONG System Mastery Achieved_
 ```python
 # Target Specifications:
 target_accuracy = 75.0  # Minimum acceptable
-risk_reward_ratio = 1.3  # Minimum 1:3 ratio
+reward_risk_ratio = 3.0  # Minimum reward:risk 3:1 ratio
 max_drawdown = 10.0     # Maximum acceptable
 quality_over_quantity = True  # Better 1 winning than 100 losing
 ```

@@ -154,7 +154,7 @@ quality_over_quantity = true
 
 ### Code Standards (ACHIEVED)
 
--   **Python 3.10+** standardized across project
+-   **Python 3.13** standardized across project
 -   **Strict Type Safety**: Full mypy compliance without ignore flags
 -   **Ruff**: Unified code quality - **0 linting errors achieved**
 -   **Modular Architecture**: 8 organized packages with clean dependencies
@@ -295,3 +295,5 @@ This system represents **PERFECT LONG SIGNAL MASTERY** with:
 -   **Focus**: Enhanced risk management and market regime detection
 
 Винаги запазваме 100% LONG успех. Всички следващи развития трябва да поддържат тази перфектна точност. Модулната архитектура осигурява чиста структура за нови функционалности без нарушаване на постигнатото съвършенство.
+
+-   винаги lint и backtest преди да кажеш , че е готово!

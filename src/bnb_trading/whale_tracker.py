@@ -294,7 +294,7 @@ class WhaleTracker:
                 response = requests.get(
                     f"{self.base_url}/klines",
                     params={"symbol": "BNBUSDT", "interval": interval, "limit": limit},
-                    timeout=5,
+                    timeout=10,
                 )
                 response.raise_for_status()
 
@@ -437,7 +437,7 @@ class WhaleTracker:
                 orderbook_response = requests.get(
                     f"{self.base_url}/depth",
                     params={"symbol": "BNBUSDT", "limit": 100},
-                    timeout=5,
+                    timeout=10,
                 )
                 orderbook_response.raise_for_status()
 

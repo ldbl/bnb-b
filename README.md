@@ -67,8 +67,8 @@
 ### Prerequisites
 
 ```bash
-# Python 3.10+ required
-python3 --version
+# Python 3.13+ required
+python3.13 --version
 
 # Install dependencies
 pip3 install -r requirements.txt

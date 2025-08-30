@@ -120,7 +120,10 @@ class TradingPipeline:
             logger.info("✅ Validating results...")
             validated_signal = self._validate_results(signal, daily_df)
 
-            # Step 5: Return results
+            # Step 5: Export results to CSV
+            self._export_results_to_csv(validated_signal, daily_df, weekly_df, analyses)
+
+            # Step 6: Return results
             return {
                 "signal": validated_signal,
                 "data": {"daily": daily_df, "weekly": weekly_df},
@@ -333,3 +336,72 @@ class TradingPipeline:
                 "confidence": 0.0,
                 "reason": f"Validation error: {e}",
             }
+
+    def _export_results_to_csv(
+        self,
+        signal: dict[str, Any],
+        daily_df: pd.DataFrame,
+        weekly_df: pd.DataFrame,
+        analyses: dict[str, Any],
+    ) -> None:
+        """
+        Export analysis results to CSV file for tracking and analysis.
+
+        Args:
+            signal: Validated trading signal
+            daily_df: Daily OHLCV DataFrame
+            weekly_df: Weekly OHLCV DataFrame
+            analyses: Analysis results from all modules
+        """
+        try:
+            from datetime import datetime
+            from pathlib import Path
+
+            # Ensure data directory exists
+            data_dir = Path("data")
+            data_dir.mkdir(parents=True, exist_ok=True)
+
+            # Create CSV record
+            timestamp = datetime.now()
+            current_price = daily_df["Close"].iloc[-1] if not daily_df.empty else 0.0
+
+            # Build analysis summary
+            analysis_summary = {}
+            for module, result in analyses.items():
+                if isinstance(result, dict):
+                    analysis_summary[f"{module}_signal"] = result.get(
+                        "signal", "UNKNOWN"
+                    )
+                    analysis_summary[f"{module}_confidence"] = result.get(
+                        "confidence", 0.0
+                    )
+                    analysis_summary[f"{module}_strength"] = result.get("strength", 0.0)
+
+            # Create record
+            record = {
+                "timestamp": timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+                "run_id": timestamp.strftime("%Y%m%d_%H%M%S"),
+                "signal": signal.get("signal", "UNKNOWN"),
+                "confidence": signal.get("confidence", 0.0),
+                "current_price": current_price,
+                "reason": signal.get("reason", ""),
+                "daily_candles": len(daily_df),
+                "weekly_candles": len(weekly_df),
+                **analysis_summary,
+            }
+
+            # Convert to DataFrame
+            results_df = pd.DataFrame([record])
+
+            # Configurable filename with timestamp
+            filename = (
+                data_dir / f"pipeline_results_{timestamp.strftime('%Y%m%d_%H%M%S')}.csv"
+            )
+
+            # Export with proper encoding and no index
+            results_df.to_csv(filename, index=False, encoding="utf-8")
+            logger.info(f"📄 Results exported to: {filename}")
+
+        except Exception as e:
+            logger.exception(f"Failed to export results to CSV: {e}")
+            # Don't re-raise - CSV export failure shouldn't break the pipeline
