@@ -43,7 +43,7 @@ PERFORMANCE TARGETS:
     - Sharpe ratio: >1.5
 
 EXAMPLE USAGE:
-    >>> from bnb_trading.pipeline.runners import PipelineRunner
+    >>> from .pipeline.runners import PipelineRunner
     >>> runner = PipelineRunner()
     >>> results = runner.run_live_analysis()
     >>> print(f"Signal: {results['signal']['signal']}")
@@ -64,12 +64,19 @@ src_dir = os.path.dirname(current_dir)
 if src_dir not in sys.path:
     sys.path.insert(0, src_dir)
 
-# Try absolute import first (works in all cases)
-try:
-    from bnb_trading.pipeline.runners import PipelineRunner
-except ImportError:
-    # Fallback to relative import if needed
-    from .pipeline.runners import PipelineRunner
+
+def _import_pipeline_runner():
+    """Import PipelineRunner after path setup to avoid E402"""
+    try:
+        # Try relative import first (when run as module)
+        from .pipeline.runners import PipelineRunner
+
+        return PipelineRunner
+    except ImportError:
+        # Fall back to absolute import (when run directly)
+        from bnb_trading.pipeline.runners import PipelineRunner
+
+        return PipelineRunner
 
 
 def setup_logging() -> None:
@@ -82,14 +89,29 @@ def setup_logging() -> None:
             logging.StreamHandler(),
         ],
     )
+    # Set all module loggers to ERROR level to suppress INFO messages
+    logging.getLogger("bnb_trading").setLevel(logging.ERROR)
+    logging.getLogger("src.bnb_trading").setLevel(logging.ERROR)
 
 
 def display_signal_summary(results: dict[str, Any], structured: bool = False) -> None:
-    """Display signal summary with optional structured format."""
+    """Display signal summary with enhanced telemetry for unified decision logic."""
+
+    # Check if this is a unified decision result
+    if results.get("unified_decision") and "decision_result" in results:
+        from .utils.telemetry import display_decision_telemetry
+
+        decision_result = results["decision_result"]
+        display_decision_telemetry(decision_result)
+        return
+
     if structured:
         # Use enhanced structured display from REc.md plan
         try:
-            from bnb_trading.utils.display import display_structured_signal_report
+            try:
+                from .utils.display import display_structured_signal_report
+            except ImportError:
+                from bnb_trading.utils.display import display_structured_signal_report
 
             signal_data = results.get("signal", {})
             data = results.get("data", {})
@@ -98,9 +120,9 @@ def display_signal_summary(results: dict[str, Any], structured: bool = False) ->
 
             display_structured_signal_report(signal_data, data, analyses, metadata)
             return
-        except ImportError:
-            # Fall back to simple display if structured display not available
-            pass
+        except Exception as e:
+            # Show the error and fall back to simple display
+            print(f"⚠️  Structured display error: {e}")
 
     # Simple signal summary (original format)
     signal_data = results.get("signal", {})
@@ -141,7 +163,8 @@ def run_live_analysis() -> dict[str, Any]:
         print("🔴 LIVE: Starting real-time BNB analysis...")
 
         # Initialize pipeline runner
-        runner = PipelineRunner()
+        pipeline_runner_class = _import_pipeline_runner()
+        runner = pipeline_runner_class()
 
         # Execute live analysis
         results = runner.run_live_analysis()
@@ -168,7 +191,8 @@ def main() -> None:
     if len(sys.argv) > 1:
         mode = sys.argv[1].lower()
 
-        runner = PipelineRunner()
+        pipeline_runner_class = _import_pipeline_runner()
+        runner = pipeline_runner_class()
 
         if mode == "backtest":
             months = int(sys.argv[2]) if len(sys.argv) > 2 else 18

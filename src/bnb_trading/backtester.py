@@ -498,7 +498,7 @@ class Backtester:
         self, daily_df: pd.DataFrame, weekly_df: pd.DataFrame, date: pd.Timestamp
     ) -> dict:
         """
-        Генерира сигнал за историческа дата
+        Генерира сигнал за историческа дата използвайки унифицираната логика
 
         Args:
             daily_df: Daily данни до датата
@@ -509,13 +509,31 @@ class Backtester:
             Dict с генерирания сигнал
         """
         try:
-            # Генерираме сигнал
-            signal = self.signal_generator.generate_signal(daily_df, weekly_df)
+            # Use unified decision logic for backtesting
+            from .core.models import DecisionContext
+            from .signals.decision import decide_long
 
-            if "error" in signal:
-                return None
+            # Create decision context with historical data (no look-ahead)
+            ctx = DecisionContext(
+                closed_daily_df=daily_df,  # Historical data up to this point
+                closed_weekly_df=weekly_df,  # Historical data up to this point
+                config=self.config,
+                timestamp=date,
+            )
 
-            return signal
+            # Make decision using unified logic
+            decision = decide_long(ctx)
+
+            # Convert to legacy format for compatibility
+            return {
+                "signal": decision.signal,
+                "confidence": decision.confidence,
+                "price": decision.price_level,
+                "timestamp": decision.analysis_timestamp,
+                "reasons": decision.reasons,
+                "metrics": decision.metrics,
+                "unified_decision": True,  # Flag for tracking
+            }
 
         except Exception as e:
             logger.exception(f"Грешка при генериране на исторически сигнал: {e}")

@@ -336,7 +336,7 @@ class SentimentAnalyzer:
         try:
             # Get market data to simulate Fear & Greed
             response = requests.get(
-                f"{self.base_url}/ticker/24hr", params={"symbol": "BNBUSDT"}
+                f"{self.base_url}/ticker/24hr", params={"symbol": "BNBUSDT"}, timeout=10
             )
 
             if response.status_code == 200:
@@ -572,6 +572,7 @@ class SentimentAnalyzer:
                 response = requests.get(
                     f"{self.base_url}/klines",
                     params={"symbol": "BNBUSDT", "interval": interval, "limit": 24},
+                    timeout=10,
                 )
 
                 if response.status_code == 200:
@@ -704,7 +705,9 @@ class SentimentAnalyzer:
         # Get current price for calculations
         try:
             response = requests.get(
-                f"{self.base_url}/ticker/price", params={"symbol": "BNBUSDT"}
+                f"{self.base_url}/ticker/price",
+                params={"symbol": "BNBUSDT"},
+                timeout=10,
             )
             if response.status_code == 200:
                 current_price = float(response.json()["price"])

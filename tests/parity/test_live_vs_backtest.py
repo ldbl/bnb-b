@@ -37,10 +37,10 @@ def load_fixture_context(date: str = "2024-08-05") -> DecisionContext:
     analyses = pipeline._execute_analyses(daily_df, weekly_df)
 
     return DecisionContext(
-        daily_df=daily_df,
-        weekly_df=weekly_df,
-        analyses=analyses,
+        closed_daily_df=daily_df,
+        closed_weekly_df=weekly_df,
         config=pipeline.config,
+        timestamp=target_date,
     )
 
 

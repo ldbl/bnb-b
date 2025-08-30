@@ -3,7 +3,7 @@
 import logging
 from typing import Any
 
-from bnb_trading.core.exceptions import AnalysisError
+from ..core.exceptions import AnalysisError
 
 logger = logging.getLogger(__name__)
 

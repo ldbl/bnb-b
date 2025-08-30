@@ -370,9 +370,7 @@ class TrendAnalyzer:
             x = np.arange(len(recent_data))
             y = np.array(recent_data["Close"].values, dtype=float)
 
-            slope, intercept, r_value, p_value, std_err, intercept_stderr = (
-                stats.linregress(x, y)
-            )
+            slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
 
             # Изчисляваме промяната в цената
             start_price = y[0]
@@ -442,9 +440,7 @@ class TrendAnalyzer:
             x = np.arange(len(recent_weeks))
             y = recent_weeks["Close"].values
 
-            slope, intercept, r_value, p_value, std_err, intercept_stderr = (
-                stats.linregress(x, y)
-            )
+            slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
 
             # Изчисляваме промяната
             start_price = y[0]
@@ -971,9 +967,7 @@ class TrendAnalyzer:
             x = np.arange(len(recent_data))
             y = np.array(recent_data["Close"].values, dtype=float)
 
-            slope, intercept, r_value, p_value, std_err, intercept_stderr = (
-                stats.linregress(x, y)
-            )
+            slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
 
             # Изчисляваме промяната в цената
             start_price = y[0]
@@ -1062,9 +1056,7 @@ class TrendAnalyzer:
             x = np.arange(len(recent_data))
             y = np.array(recent_data["Close"].values, dtype=float)
 
-            slope, intercept, r_value, p_value, std_err, intercept_stderr = (
-                stats.linregress(x, y)
-            )
+            slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
 
             # Изчисляваме промяната в цената
             start_price = y[0]

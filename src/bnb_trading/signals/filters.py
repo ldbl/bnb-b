@@ -3,8 +3,8 @@
 import logging
 from typing import Any
 
-from bnb_trading.core.constants import SIGNAL_HOLD, SIGNAL_LONG, SIGNAL_SHORT
-from bnb_trading.core.exceptions import AnalysisError
+from ..core.constants import SIGNAL_HOLD, SIGNAL_LONG, SIGNAL_SHORT
+from ..core.exceptions import AnalysisError
 
 logger = logging.getLogger(__name__)
 

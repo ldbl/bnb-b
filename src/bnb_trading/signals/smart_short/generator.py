@@ -5,8 +5,7 @@ from typing import Any
 
 import pandas as pd
 
-from bnb_trading.core.models import ShortSignalCandidate
-
+from ...core.models import ShortSignalCandidate
 from .confluence import validate_short_confluence
 from .market_regime import MarketRegimeDetector
 from .risk_filters import apply_risk_filters
@@ -33,7 +32,7 @@ class SmartShortSignalGenerator:
 
         # НОВИ: Интеграция с Enhanced Trend Analyzer
         try:
-            from bnb_trading.trend_analyzer import TrendAnalyzer
+            from ...trend_analyzer import TrendAnalyzer
 
             self.trend_analyzer = TrendAnalyzer(config)
             self.use_enhanced_regime_detection = True

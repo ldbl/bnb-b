@@ -209,21 +209,30 @@ class WhaleTracker:
         Results are most accurate during high market activity periods.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, config: dict | None = None) -> None:
+        self.config = config or {}
         self.base_url = "https://api.binance.com/api/v3"
         self.bscscan_url = "https://api.bscscan.com/api"
 
-        # Whale thresholds
-        self.whale_thresholds = {
-            "mega_whale": 100000,  # 100K+ BNB
-            "whale": 50000,  # 50K+ BNB
-            "large_holder": 10000,  # 10K+ BNB
-            "medium_holder": 1000,  # 1K+ BNB
-        }
+        # Whale thresholds (from config or defaults)
+        whale_config = self.config.get("whale_tracker", {})
+        self.whale_thresholds = whale_config.get(
+            "whale_thresholds",
+            {
+                "mega_whale": 100000,  # 100K+ BNB
+                "whale": 50000,  # 50K+ BNB
+                "large_holder": 10000,  # 10K+ BNB
+                "medium_holder": 1000,  # 1K+ BNB
+            },
+        )
 
-        # Price monitoring
-        self.price_change_threshold = 0.02  # 2% price change alert
-        self.volume_spike_threshold = 2.0  # 2x average volume
+        # Price monitoring (from config or defaults)
+        self.price_change_threshold = whale_config.get(
+            "price_change_threshold", 0.02
+        )  # 2% price change alert
+        self.volume_spike_threshold = whale_config.get(
+            "volume_spike_threshold", 2.0
+        )  # 2x average volume
 
         # Known whale addresses (examples - you'd need real ones)
         self.known_whales = {
@@ -246,7 +255,7 @@ class WhaleTracker:
         try:
             # 24h ticker
             ticker_response = requests.get(
-                f"{self.base_url}/ticker/24hr", params={"symbol": "BNBUSDT"}
+                f"{self.base_url}/ticker/24hr", params={"symbol": "BNBUSDT"}, timeout=10
             )
 
             if ticker_response.status_code == 200:
@@ -292,12 +301,10 @@ class WhaleTracker:
                 try:
                     klines = response.json()
                 except (ValueError, requests.exceptions.JSONDecodeError) as e:
-                    self.logger.error(
-                        f"Failed to parse JSON response from /klines: {e}"
-                    )
+                    logger.error(f"Failed to parse JSON response from /klines: {e}")
                     return {}
             except requests.exceptions.RequestException as e:
-                self.logger.error(f"Request failed for /klines: {e}")
+                logger.error(f"Request failed for /klines: {e}")
                 return {}
 
             if klines:
@@ -376,13 +383,13 @@ class WhaleTracker:
                 return whale_activity
 
         except requests.exceptions.RequestException as e:
-            self.logger.error(f"Network error fetching whale summary: {e}")
+            logger.error(f"Network error fetching whale summary: {e}")
             return {}
         except (ValueError, KeyError) as e:
-            self.logger.error(f"Data processing error in whale summary: {e}")
+            logger.error(f"Data processing error in whale summary: {e}")
             return {}
         except Exception as e:
-            self.logger.exception(f"Unexpected error fetching whale summary: {e}")
+            logger.exception(f"Unexpected error fetching whale summary: {e}")
             return {}
 
     def classify_whale_signal(
@@ -437,10 +444,10 @@ class WhaleTracker:
                 try:
                     data = orderbook_response.json()
                 except (ValueError, requests.exceptions.JSONDecodeError) as e:
-                    self.logger.error(f"Failed to parse JSON response from /depth: {e}")
+                    logger.error(f"Failed to parse JSON response from /depth: {e}")
                     return {}
             except requests.exceptions.RequestException as e:
-                self.logger.error(
+                logger.error(
                     f"Request failed for /depth - URL: {self.base_url}/depth, params: {{'symbol': 'BNBUSDT', 'limit': 100}}, timeout: 5, error: {e}"
                 )
                 return {}
@@ -486,11 +493,11 @@ class WhaleTracker:
                 }
 
         except requests.exceptions.RequestException as e:
-            self.logger.error(f"Network error in order book analysis: {e}")
+            logger.error(f"Network error in order book analysis: {e}")
         except (ValueError, KeyError) as e:
-            self.logger.error(f"Data processing error in order book analysis: {e}")
+            logger.error(f"Data processing error in order book analysis: {e}")
         except Exception as e:
-            self.logger.exception(f"Unexpected error in order book analysis: {e}")
+            logger.exception(f"Unexpected error in order book analysis: {e}")
 
         return {}
 
