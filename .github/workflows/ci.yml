@@ -41,9 +41,10 @@ jobs:
         ruff check src/ --output-format=github
         ruff format --check src/
 
-    - name: Type check with mypy (strict)
+    - name: Type check with mypy (gradual)
       run: |
-        mypy src/ --ignore-missing-imports
+        # Use same relaxed mypy config as pre-commit hooks
+        python -m mypy src/ --config-file=pyproject.toml
 
     - name: Security check with bandit
       run: |
