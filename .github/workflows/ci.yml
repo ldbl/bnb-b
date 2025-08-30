@@ -36,6 +36,8 @@ jobs:
 
     - name: Lint and format check with Ruff
       run: |
+        # Verify Ruff config is loaded properly
+        ruff --version
         ruff check src/ --output-format=github
         ruff format --check src/
 

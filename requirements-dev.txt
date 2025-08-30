@@ -2,7 +2,7 @@
 -r requirements.txt
 
 # Code formatting and linting (unified with Ruff)
-ruff>=0.1.0
+ruff==0.12.11
 
 # Development tools
 ipython>=8.14.0
