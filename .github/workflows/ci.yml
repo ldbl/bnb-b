@@ -16,7 +16,7 @@ jobs:
     - name: Set up Python 3.13
       uses: actions/setup-python@v5
       with:
-        python-version: '3.13'
+        python-version: '3.13.7'
 
     - name: Cache pip dependencies
       uses: actions/cache@v4
@@ -41,10 +41,10 @@ jobs:
         ruff check src/ --output-format=github
         ruff format --check src/
 
-    - name: Type check with mypy (basic checks)
+    - name: Type check with mypy (gradual)
       run: |
-        mypy src/ --ignore-missing-imports --disable-error-code=no-any-return --disable-error-code=attr-defined --disable-error-code=union-attr
-      continue-on-error: true  # Focused on critical type safety issues only
+        # Use same relaxed mypy config as pre-commit hooks
+        python -m mypy src/ --config-file=pyproject.toml
 
     - name: Security check with bandit
       run: |
@@ -53,19 +53,20 @@ jobs:
 
     - name: Test with pytest
       run: |
-        echo "Tests temporarily disabled - clean testing approach in development"
-        # pytest tests/ -v --cov=src/bnb_trading --cov-report=xml --cov-report=term-missing
+        # Run tests with lower coverage requirement for now
+        pytest tests/ --tb=short --cov=src/bnb_trading --cov-report=term-missing --cov-fail-under=15
       env:
         # Add any required environment variables here
         PYTHONPATH: src
 
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v4
-      with:
-        file: ./coverage.xml
-        flags: unittests
-        name: codecov-umbrella
-        fail_ci_if_error: false
+    # Codecov upload disabled - no API key configured
+    # - name: Upload coverage to Codecov
+    #   uses: codecov/codecov-action@v4
+    #   with:
+    #     file: ./coverage.xml
+    #     flags: unittests
+    #     name: codecov-umbrella
+    #     fail_ci_if_error: false
 
   integration-tests:
     runs-on: ubuntu-latest
@@ -78,7 +79,7 @@ jobs:
     - name: Set up Python 3.13
       uses: actions/setup-python@v5
       with:
-        python-version: '3.13'
+        python-version: '3.13.7'
 
     - name: Install dependencies
       run: |
@@ -106,7 +107,7 @@ jobs:
     - name: Set up Python 3.13
       uses: actions/setup-python@v5
       with:
-        python-version: '3.13'
+        python-version: '3.13.7'
 
     - name: Install dependencies
       run: |

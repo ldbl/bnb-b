@@ -352,7 +352,7 @@ class ElliottWaveAnalyzer:
             price_series = pd.Series(df[price_column])
 
             # Нормализираме NaN стойности
-            price_series = price_series.fillna(method="ffill").fillna(method="bfill")
+            price_series = price_series.ffill().bfill()
 
             # Проверяваме за останали NaN стойности
             if price_series.isna().any() or len(price_series) < 20:

@@ -368,7 +368,7 @@ class TrendAnalyzer:
 
             # Линейна регресия за определяне на тренда
             x = np.arange(len(recent_data))
-            y = recent_data["Close"].values
+            y = np.array(recent_data["Close"].values, dtype=float)
 
             slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
 
@@ -737,9 +737,9 @@ class TrendAnalyzer:
             ):
                 # STRONG_BULL продължава освен при екстремни условия
                 if range_analysis["range_position"] > 0.95:  # Много близо до ATH
-                    return (
-                        daily_trend["strength"] == "WEAK"
-                        and weekly_trend["strength"] == "WEAK"
+                    return bool(
+                        daily_trend.get("strength") == "WEAK"
+                        and weekly_trend.get("strength") == "WEAK"
                     )
                 return False  # STRONG_BULL продължава
 
@@ -822,7 +822,7 @@ class TrendAnalyzer:
             primary_trend = combined_trend["primary_trend"]
             trend_completed = combined_trend["trend_completed"]
 
-            strategy = {
+            strategy: dict[str, Any] = {
                 "trend_based_entry": {},
                 "risk_management": {},
                 "position_sizing": {},
@@ -965,7 +965,7 @@ class TrendAnalyzer:
 
             # Линейна регресия
             x = np.arange(len(recent_data))
-            y = recent_data["Close"].values
+            y = np.array(recent_data["Close"].values, dtype=float)
 
             slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
 
@@ -1054,7 +1054,7 @@ class TrendAnalyzer:
 
             # Линейна регресия
             x = np.arange(len(recent_data))
-            y = recent_data["Close"].values
+            y = np.array(recent_data["Close"].values, dtype=float)
 
             slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
 

@@ -586,6 +586,55 @@ class MovingAveragesAnalyzer:
             logger.exception(f"Грешка при анализ на MA сила: {e}")
             return {"strength": "UNKNOWN", "reason": f"Грешка: {e}"}
 
+    def analyze_moving_averages(self, price_data: pd.DataFrame) -> dict:
+        """
+        Complete moving averages analysis - main orchestrating method
+
+        Args:
+            price_data: DataFrame with OHLCV data
+
+        Returns:
+            Dict with complete moving averages analysis
+        """
+        try:
+            # Step 1: Calculate EMAs
+            ema_analysis = self.calculate_emas(price_data)
+
+            if "error" in ema_analysis:
+                return {
+                    "signal": "HOLD",
+                    "confidence": 0,
+                    "error": ema_analysis["error"],
+                    "reason": "EMA calculation failed",
+                }
+
+            # Step 2: Get trading signals
+            trading_signals = self.get_ma_trading_signals(ema_analysis)
+
+            # Step 3: Analyze strength
+            strength_analysis = self.analyze_ma_strength(ema_analysis)
+
+            # Step 4: Combine results
+            return {
+                "signal": trading_signals.get("signal", "HOLD"),
+                "confidence": trading_signals.get("confidence", 0),
+                "reason": trading_signals.get("reason", "MA analysis"),
+                "ema_analysis": ema_analysis,
+                "strength": strength_analysis.get("strength", "UNKNOWN"),
+                "crossover_strength": strength_analysis.get("crossover_strength", 0),
+                "volume_confirmed": ema_analysis.get("volume_confirmed", False),
+                "risk_level": trading_signals.get("risk_level", "MEDIUM"),
+            }
+
+        except Exception as e:
+            logger.exception(f"Грешка в analyze_moving_averages: {e}")
+            return {
+                "signal": "HOLD",
+                "confidence": 0,
+                "error": str(e),
+                "reason": "Moving averages analysis failed",
+            }
+
 
 if __name__ == "__main__":
     print("Moving Averages анализатор за BNB Trading System")

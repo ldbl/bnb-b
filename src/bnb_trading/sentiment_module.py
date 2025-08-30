@@ -248,6 +248,23 @@ class SentimentAnalyzer:
             base_url: Binance API base URL (default: "https://api.binance.com/api/v3")
         """
         self.base_url = base_url
+        self.DEFAULT_TIMEOUT = 10  # Default timeout for all HTTP requests
+
+        # Configure session with retries
+        import requests
+        from requests.adapters import HTTPAdapter
+        from urllib3.util.retry import Retry
+
+        self.session = requests.Session()
+        retry_strategy = Retry(
+            total=3,
+            backoff_factor=1,
+            status_forcelist=[502, 503, 504],
+            raise_on_status=False,
+        )
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        self.session.mount("http://", adapter)
+        self.session.mount("https://", adapter)
 
         # Fear & Greed thresholds
         self.fear_greed_levels = {
@@ -335,8 +352,10 @@ class SentimentAnalyzer:
 
         try:
             # Get market data to simulate Fear & Greed
-            response = requests.get(
-                f"{self.base_url}/ticker/24hr", params={"symbol": "BNBUSDT"}
+            response = self.session.get(
+                f"{self.base_url}/ticker/24hr",
+                params={"symbol": "BNBUSDT"},
+                timeout=(2, 10),
             )
 
             if response.status_code == 200:
@@ -569,27 +588,32 @@ class SentimentAnalyzer:
             momentum_data = {}
 
             for interval in intervals:
-                response = requests.get(
-                    f"{self.base_url}/klines",
-                    params={"symbol": "BNBUSDT", "interval": interval, "limit": 24},
-                )
+                try:
+                    response = requests.get(
+                        f"{self.base_url}/klines",
+                        params={"symbol": "BNBUSDT", "interval": interval, "limit": 24},
+                        timeout=self.DEFAULT_TIMEOUT,
+                    )
 
-                if response.status_code == 200:
-                    klines = response.json()
-                    closes = [float(k[4]) for k in klines]
+                    if response.status_code == 200:
+                        klines = response.json()
+                        closes = [float(k[4]) for k in klines]
 
-                    if len(closes) >= 2:
-                        price_change = (closes[-1] - closes[0]) / closes[0] * 100
-                        momentum_data[interval] = {
-                            "price_change": round(price_change, 2),
-                            "trend": (
-                                "🟢 UP"
-                                if price_change > 0
-                                else "🔴 DOWN"
-                                if price_change < 0
-                                else "🟡 FLAT"
-                            ),
-                        }
+                        if len(closes) >= 2:
+                            price_change = (closes[-1] - closes[0]) / closes[0] * 100
+                            momentum_data[interval] = {
+                                "price_change": round(price_change, 2),
+                                "trend": (
+                                    "🟢 UP"
+                                    if price_change > 0
+                                    else "🔴 DOWN"
+                                    if price_change < 0
+                                    else "🟡 FLAT"
+                                ),
+                            }
+                except requests.exceptions.RequestException as e:
+                    logger.error(f"Request failed for {interval} klines: {e}")
+                    continue
 
             # Calculate overall momentum score
             momentum_score = 50  # Neutral baseline
@@ -704,7 +728,9 @@ class SentimentAnalyzer:
         # Get current price for calculations
         try:
             response = requests.get(
-                f"{self.base_url}/ticker/price", params={"symbol": "BNBUSDT"}
+                f"{self.base_url}/ticker/price",
+                params={"symbol": "BNBUSDT"},
+                timeout=self.DEFAULT_TIMEOUT,
             )
             if response.status_code == 200:
                 current_price = float(response.json()["price"])
