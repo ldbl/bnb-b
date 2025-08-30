@@ -54,18 +54,19 @@ jobs:
     - name: Test with pytest
       run: |
         # Run tests with lower coverage requirement for now
-        pytest tests/ --tb=short --cov=src/bnb_trading --cov-report=xml --cov-report=term-missing --cov-fail-under=15
+        pytest tests/ --tb=short --cov=src/bnb_trading --cov-report=term-missing --cov-fail-under=15
       env:
         # Add any required environment variables here
         PYTHONPATH: src
 
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v4
-      with:
-        file: ./coverage.xml
-        flags: unittests
-        name: codecov-umbrella
-        fail_ci_if_error: false
+    # Codecov upload disabled - no API key configured
+    # - name: Upload coverage to Codecov
+    #   uses: codecov/codecov-action@v4
+    #   with:
+    #     file: ./coverage.xml
+    #     flags: unittests
+    #     name: codecov-umbrella
+    #     fail_ci_if_error: false
 
   integration-tests:
     runs-on: ubuntu-latest

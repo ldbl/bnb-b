@@ -79,18 +79,26 @@ def test_identical_decisions():
 
         if signal_match and confidence_match:
             print("🎉 PARITY TEST PASSED - Live and backtest are identical!")
-            return True
-        print("❌ PARITY TEST FAILED - Live and backtest differ!")
-        print(f"   Signal difference: {live_result.signal} vs {backtest_result.signal}")
-        print(f"   Confidence difference: {confidence_diff:.6f}")
-        return False
+        else:
+            print("❌ PARITY TEST FAILED - Live and backtest differ!")
+            print(
+                f"   Signal difference: {live_result.signal} vs {backtest_result.signal}"
+            )
+            print(f"   Confidence difference: {confidence_diff:.6f}")
+
+        assert signal_match, (
+            f"Signal mismatch: {live_result.signal} vs {backtest_result.signal}"
+        )
+        assert confidence_match, (
+            f"Confidence mismatch: diff {confidence_diff:.6f} > 0.001"
+        )
 
     except Exception as e:
         print(f"❌ Parity test failed with error: {e}")
         import traceback
 
         traceback.print_exc()
-        return False
+        raise AssertionError(f"Parity test failed with error: {e}") from e
 
 
 def test_multiple_dates():
@@ -139,7 +147,9 @@ def test_multiple_dates():
     ]
     print(f"\n📊 Summary: {len(successful_tests)}/{len(test_dates)} tests passed")
 
-    return len(successful_tests) == len(test_dates)
+    assert len(successful_tests) == len(test_dates), (
+        f"Multiple dates parity test failed: {len(successful_tests)}/{len(test_dates)} passed"
+    )
 
 
 if __name__ == "__main__":

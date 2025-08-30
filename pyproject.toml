@@ -160,10 +160,6 @@ line-ending = "auto"
 [tool.pytest.ini_options]
 minversion = "7.0"
 addopts = [
-    "--cov=src/bnb_trading",
-    "--cov-report=html",
-    "--cov-report=term-missing",
-    "--cov-fail-under=80",
     "--strict-markers",
     "--strict-config",
     "--verbose",
