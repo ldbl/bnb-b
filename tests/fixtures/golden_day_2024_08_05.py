@@ -1,6 +1,5 @@
 """Minimal reproducible test case for 2024-08-05 LONG signal fixture."""
 
-import os
 import sys
 
 import pandas as pd
@@ -121,6 +120,7 @@ def run_fixture_test():
 if __name__ == "__main__":
     # Create test fixtures directory
     from pathlib import Path
+
     Path("tests/fixtures").mkdir(parents=True, exist_ok=True)
 
     # Run the test

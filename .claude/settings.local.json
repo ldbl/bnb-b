@@ -31,7 +31,8 @@
       "Bash(ruff check:*)",
       "Bash(timeout:*)",
       "Bash(find:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(pre-commit run:*)"
     ],
     "deny": [],
     "ask": []

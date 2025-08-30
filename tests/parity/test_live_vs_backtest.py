@@ -1,6 +1,5 @@
 """Parity tests to ensure live and backtest generate identical decisions."""
 
-import os
 import sys
 from pathlib import Path
 
@@ -8,7 +7,8 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root / "src"))
 
-from bnb_trading.signals.decision import (
+# Import after path modification
+from bnb_trading.signals.decision import (  # noqa: E402
     DecisionContext,
     run_backtest_decision,
     run_live_decision,
@@ -81,9 +81,7 @@ def test_identical_decisions():
             print("🎉 PARITY TEST PASSED - Live and backtest are identical!")
             return True
         print("❌ PARITY TEST FAILED - Live and backtest differ!")
-        print(
-            f"   Signal difference: {live_result.signal} vs {backtest_result.signal}"
-        )
+        print(f"   Signal difference: {live_result.signal} vs {backtest_result.signal}")
         print(f"   Confidence difference: {confidence_diff:.6f}")
         return False
 
