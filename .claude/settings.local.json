@@ -58,7 +58,11 @@
       "Bash(PYTHONPATH=src python -m pytest tests/ -v --tb=short)",
       "Bash(PYTHONPATH=src python -m pytest tests/ --cov=bnb_trading --cov-report=term-missing)",
       "Bash(PYTHONPATH=src python -m pytest -v --collect-only)",
-      "Bash(PYTHONPATH=src python -m pytest tests/analysis/test_fibonacci.py -v)"
+      "Bash(PYTHONPATH=src python -m pytest tests/analysis/test_fibonacci.py -v)",
+      "Bash(PYTHONPATH=src python -m pytest tests/signals/test_decision.py -v)",
+      "Bash(PYTHONPATH=src python -m pytest tests/signals/test_decision.py::test_decide_long_health_gate_failure -v)",
+      "Bash(PYTHONPATH=src python -m pytest tests/signals/test_decision.py::test_decide_long_critical_modules_config -v)",
+      "Bash(PYTHONPATH=src python -m pytest tests/signals/test_decision.py::test_load_critical_modules_validation -v)"
     ],
     "deny": [],
     "ask": []

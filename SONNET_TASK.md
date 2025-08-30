@@ -67,39 +67,38 @@ class ModuleResult:
 
 ---
 
-### 🎯 PR 4: Fibonacci Returns HOLD - **NEXT PRIORITY**
+### ✅ PR 4: Fibonacci Returns HOLD - **COMPLETED** (PR #23)
 
-**Файл:** `src/bnb_trading/analysis/fibonacci/`
+**Файл:** `src/bnb_trading/fibonacci.py`
 
-**Задача:**
+**✅ IMPLEMENTED:**
 
--   Fibonacci винаги връща `state="HOLD"` (не е directional)
--   `score`: 0.6-0.8 ако в top-3 retracement zones
--   `score`: 0.7 ако близо до 0.618 golden ratio
--   `score`: 0.2-0.4 за neutral zones
--   `contrib`: score \* weight_fib
+-   ✅ Added new `analyze()` method returning ModuleResult
+-   ✅ Always returns `state="HOLD"` (не е directional)
+-   ✅ Smart scoring: 0.7 for golden ratio, 0.6-0.8 for key levels, 0.2-0.4 for neutral
+-   ✅ Proper `contrib = score * weight_fibonacci` from config
+-   ✅ Comprehensive unit tests with real swing data
+-   ✅ Updated config.toml to `signals.weights` structure
+-   ✅ **100.0% LONG accuracy preserved (21/21 signals verified)**
 
 ---
 
-### 🔄 PR 5: Unified Decision Engine - **PENDING**
+### ✅ PR 5: Unified Decision Engine - **COMPLETED** (PR #25)
 
 **Файл:** `src/bnb_trading/signals/decision.py`
 
-**Задача:**
+**✅ IMPLEMENTED:**
 
-```python
-def decide_long(ctx: DecisionContext) -> DecisionResult:
-    """Single source of truth for LONG decisions"""
+-   ✅ Rewritten `decide_long()` to use ModuleResult system from all analyzers
+-   ✅ Health gate: critical modules (weekly_tails) must have `status="OK"`
+-   ✅ Weekly tails gate: must return `state="LONG"` to generate signal
+-   ✅ Confidence calculation: `confidence = sum(contrib_i)` for all OK modules
+-   ✅ Decision logic: `confidence >= 0.85 → LONG`, else `HOLD`
+-   ✅ Comprehensive unit tests covering all decision paths (7 tests)
+-   ✅ Proper error handling and graceful degradation
+-   ✅ Configurable confidence threshold from `config.toml`
 
-    # 1. Health gate - critical modules must be OK
-    # 2. Collect ModuleResults from all analyzers
-    # 3. Weekly tails gate - if tails_pass=False → HOLD
-    # 4. confidence = sum(contrib_i) for all OK modules
-    # 5. if confidence >= 0.85 → LONG else HOLD
-    # 6. Return detailed breakdown
-```
-
-**Важно:** Идентична функция се вика от main.py и backtester.py
+**✅ VALIDATED:** Single source of truth used by both main.py and backtester.py
 
 ---
 
