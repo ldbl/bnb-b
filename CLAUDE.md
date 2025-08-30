@@ -199,6 +199,61 @@ quality_over_quantity = true
 
 4. **No exceptions**: Signal accuracy is THE ONLY metric that matters for merge approval
 
+### Git Commit Best Practices
+
+**CRITICAL: Handle Pre-commit Hook Formatting**
+
+Pre-commit hooks automatically format files but leave changes unstaged. Always use this workflow:
+
+```bash
+# Method 1: Commit then amend (PREFERRED)
+git add <files>
+git commit -m "Your commit message"
+git add -A && git commit --amend --no-edit
+git push --force-with-lease
+
+# Method 2: Pre-format then commit
+pre-commit run --all-files
+git add -A && git commit -m "Your message"
+git push
+
+# Method 3: One-liner for amendments
+git add -A && git commit --amend --no-edit
+```
+
+**Never ignore pre-commit changes** - they ensure code quality standards.
+
+### Branch Management Rules
+
+**CRITICAL: Always verify branch before git operations**
+
+```bash
+# Before ANY git operation, check current branch:
+git branch --show-current
+
+# NEVER commit to main branch directly
+# ALWAYS work on feature branches for PRs
+```
+
+### Clean Repository Rules
+
+**CRITICAL: Keep repository completely clean**
+
+```bash
+# Always verify pristine state:
+git stash clear        # Clear all stashed changes
+git status            # Must show "working tree clean"
+git stash list        # Must be empty
+git clean -fd         # Remove untracked files if needed
+```
+
+**Clean state verification checklist:**
+
+1. ✅ Working tree clean (no uncommitted changes)
+2. ✅ Stash empty (no stashed changes)
+3. ✅ Minimal untracked files
+4. ✅ Branch synced with remote
+
 ## Performance Status & Achievements
 
 ### 🏆 PERFECT LONG SYSTEM STATUS ✅ (2025-08-30)
