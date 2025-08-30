@@ -217,15 +217,23 @@ class IchimokuAnalyzer:
         for accurate Ichimoku cloud calculation and signal generation.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, config: dict | None = None) -> None:
+        self.config = config or {}
         self.base_url = "https://api.binance.com/api/v3"
 
-        # Ichimoku parameters (standard settings)
-        self.tenkan_period = 9  # Conversion Line
-        self.kijun_period = 26  # Base Line
-        self.senkou_span_b_period = 52  # Leading Span B
-        self.chikou_span_offset = 26  # Lagging Span offset
-        self.senkou_span_offset = 26  # Cloud offset
+        # Ichimoku parameters (from config or standard settings)
+        ichimoku_config = self.config.get("ichimoku", {})
+        self.tenkan_period = ichimoku_config.get("tenkan_period", 9)  # Conversion Line
+        self.kijun_period = ichimoku_config.get("kijun_period", 26)  # Base Line
+        self.senkou_span_b_period = ichimoku_config.get(
+            "senkou_span_b_period", 52
+        )  # Leading Span B
+        self.chikou_span_offset = ichimoku_config.get(
+            "chikou_span_offset", 26
+        )  # Lagging Span offset
+        self.senkou_span_offset = ichimoku_config.get(
+            "senkou_span_offset", 26
+        )  # Cloud offset
 
     def fetch_ichimoku_data(self, interval: str = "1d", limit: int = 100):
         """Fetch data for Ichimoku analysis"""
@@ -236,7 +244,9 @@ class IchimokuAnalyzer:
                 "limit": min(limit, 1000),
             }
 
-            response = requests.get(f"{self.base_url}/klines", params=params)
+            response = requests.get(
+                f"{self.base_url}/klines", params=params, timeout=10
+            )
             if response.status_code == 200:
                 return response.json()
             print(f"API Error: {response.status_code}")
@@ -541,7 +551,9 @@ class IchimokuAnalyzer:
         """Get current BNB price"""
         try:
             response = requests.get(
-                f"{self.base_url}/ticker/price", params={"symbol": "BNBUSDT"}
+                f"{self.base_url}/ticker/price",
+                params={"symbol": "BNBUSDT"},
+                timeout=10,
             )
             if response.status_code == 200:
                 return float(response.json()["price"])

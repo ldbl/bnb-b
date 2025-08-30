@@ -3,8 +3,8 @@
 import logging
 from typing import Any
 
-from bnb_trading.core.constants import SIGNAL_HOLD, SIGNAL_LONG, SIGNAL_SHORT
-from bnb_trading.core.exceptions import AnalysisError
+from ..core.constants import SIGNAL_HOLD, SIGNAL_LONG, SIGNAL_SHORT
+from ..core.exceptions import AnalysisError
 
 logger = logging.getLogger(__name__)
 
@@ -41,15 +41,37 @@ def combine_signals(
 
         # Process each analysis result
         for analysis_name, analysis_result in analyses.items():
+            logger.info(
+                f"Processing analysis: {analysis_name}, result: {type(analysis_result)}"
+            )
             if analysis_result is None or not isinstance(analysis_result, dict):
+                logger.info(f"Skipping {analysis_name}: invalid result type")
                 continue
 
             weight = weights.get(analysis_name, 0.0)
             if weight == 0.0:
+                logger.info(f"Skipping {analysis_name}: zero weight")
                 continue
+            logger.info(f"Using {analysis_name} with weight {weight}")
 
             signal = analysis_result.get("signal", SIGNAL_HOLD)
             strength = analysis_result.get("strength", 0.0)
+            logger.info(
+                f"  {analysis_name}: signal={signal}, strength={strength} (type: {type(strength)})"
+            )
+
+            # Ensure strength is numeric
+            if isinstance(strength, str):
+                # Try to extract numeric value from string or use confidence instead
+                confidence = analysis_result.get("confidence", 0.0)
+                if isinstance(confidence, (int, float)):
+                    strength = (
+                        float(confidence) / 100.0 if confidence > 1 else confidence
+                    )
+                else:
+                    strength = 0.0
+            elif not isinstance(strength, (int, float)):
+                strength = 0.0
 
             # Apply weighted scoring
             weighted_strength = strength * weight

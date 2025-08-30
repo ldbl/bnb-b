@@ -12,14 +12,9 @@ if __name__ == "__main__":
     if src_dir not in sys.path:
         sys.path.insert(0, src_dir)
 
-try:
-    from bnb_trading.core.exceptions import AnalysisError
-
-    from .orchestrator import TradingPipeline
-except ImportError:
-    # Fallback for direct execution
-    from bnb_trading.core.exceptions import AnalysisError
-    from bnb_trading.pipeline.orchestrator import TradingPipeline
+# Use relative imports for package structure
+from ..core.exceptions import AnalysisError
+from .orchestrator import TradingPipeline
 
 logger = logging.getLogger(__name__)
 
@@ -32,11 +27,14 @@ class PipelineRunner:
         self.pipeline = TradingPipeline(config_path)
 
     def run_live_analysis(self) -> dict[str, Any]:
-        """Run live trading analysis."""
+        """Run live trading analysis mode."""
         try:
             logger.info("🔴 LIVE: Starting real-time analysis...")
+
+            # Use the existing pipeline.run_analysis() method
             results = self.pipeline.run_analysis()
-            logger.info(f"🔴 LIVE: Signal generated: {results['signal']['signal']}")
+
+            logger.info("🔴 LIVE: Analysis completed successfully")
             return results
 
         except Exception as e:

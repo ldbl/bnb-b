@@ -6,8 +6,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from bnb_trading.core.exceptions import AnalysisError
-from bnb_trading.core.models import TestResult
+from ...core.exceptions import AnalysisError
+from ...core.models import TestResult
 
 logger = logging.getLogger(__name__)
 

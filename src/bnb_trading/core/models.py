@@ -8,6 +8,28 @@ import pandas as pd
 
 
 @dataclass
+class DecisionContext:
+    """Context for unified decision making - no look-ahead"""
+
+    closed_daily_df: pd.DataFrame  # Last 500 closed daily candles
+    closed_weekly_df: pd.DataFrame  # Last 100 closed weekly candles
+    config: dict[str, Any]  # Configuration from config.toml
+    timestamp: pd.Timestamp  # Decision timestamp for MTF sync validation
+
+
+@dataclass
+class DecisionResult:
+    """Result from unified decision function"""
+
+    signal: str  # LONG, SHORT, HOLD
+    confidence: float  # 0.0 to 1.0
+    reasons: list[str]  # List of reasons for decision
+    metrics: dict[str, Any]  # Detailed metrics for telemetry
+    price_level: float  # Signal price level
+    analysis_timestamp: pd.Timestamp  # When analysis was performed
+
+
+@dataclass
 class TestResult:
     """Структура за резултати от тестване"""
 

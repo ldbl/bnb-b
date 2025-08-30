@@ -5,12 +5,12 @@ from typing import Any
 
 import pandas as pd
 
-from bnb_trading.core.exceptions import AnalysisError
-from bnb_trading.core.types import SignalResult
-
+from ..core.exceptions import AnalysisError
+from ..core.types import SignalResult
 from .combiners import combine_signals
 from .confidence import calculate_confidence
-from .filters import apply_signal_filters
+
+# from .filters import apply_signal_filters  # Temporarily disabled for new architecture
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +41,7 @@ class SignalGenerator:
         self.rsi_weight = signals_config.get("rsi_weight", 0.08)
         self.macd_weight = signals_config.get("macd_weight", 0.07)
         self.bb_weight = signals_config.get("bb_weight", 0.00)
+        self.sentiment_weight = signals_config.get("sentiment_weight", 0.05)
         self.min_confirmations = signals_config.get("min_confirmations", 1)
         self.confidence_threshold = signals_config.get("confidence_threshold", 0.8)
 
@@ -87,7 +88,8 @@ class SignalGenerator:
                 "volume_filter",
                 "regime_filter",
             ]  # Example filters
-            final_signal = apply_signal_filters(combined_signal, self.config)
+            # Apply basic signal filters (simplified for now)
+            final_signal = combined_signal  # TODO: Re-implement filters module
             filters_passed = (
                 "Yes" if final_signal.get("signal") != "HOLD" else "Partial"
             )
@@ -100,7 +102,7 @@ class SignalGenerator:
                 "signal": final_signal.get("signal", "HOLD"),
                 "confidence": confidence,
                 "price": daily_df["Close"].iloc[-1] if not daily_df.empty else 0.0,
-                "timestamp": daily_df.index[-1]
+                "timestamp": pd.Timestamp(daily_df.index[-1])
                 if not daily_df.empty
                 else pd.Timestamp.now(),
                 "reasons": final_signal.get("reasons", []),
@@ -124,9 +126,9 @@ class SignalGenerator:
 
         try:
             # Import analysis modules
-            from bnb_trading.fibonacci import FibonacciAnalyzer
-            from bnb_trading.indicators import TechnicalIndicators
-            from bnb_trading.weekly_tails import WeeklyTailsAnalyzer
+            from ..fibonacci import FibonacciAnalyzer
+            from ..indicators import TechnicalIndicators
+            from ..weekly_tails import WeeklyTailsAnalyzer
 
             logger.info("Executing all analysis modules...")
 
@@ -149,16 +151,27 @@ class SignalGenerator:
 
             # 2. Weekly Tails Analysis
             try:
+                logger.info(
+                    f"Weekly tails check: weekly_df={weekly_df is not None}, config_has_weekly_tails={'weekly_tails' in self.config}, weight={self.weekly_tails_weight}"
+                )
                 if (
                     weekly_df is not None
                     and "weekly_tails" in self.config
                     and self.weekly_tails_weight > 0
                 ):
+                    logger.info("Weekly tails analysis starting...")
                     tails_analyzer = WeeklyTailsAnalyzer(self.config)
                     tails_result = tails_analyzer.analyze_weekly_tails_trend(weekly_df)
+                    logger.info(
+                        f"Tails result type: {type(tails_result)}, keys: {list(tails_result.keys()) if isinstance(tails_result, dict) else 'N/A'}"
+                    )
                     analyses["weekly_tails"] = tails_result.get("tails_signal", {})
                     logger.info(
                         f"Weekly tails analysis completed: {analyses['weekly_tails'].get('signal', 'N/A')}"
+                    )
+                else:
+                    logger.warning(
+                        f"Weekly tails check failed: weekly_df={weekly_df is not None}, config_has_weekly_tails={'weekly_tails' in self.config}, weight={self.weekly_tails_weight}"
                     )
             except Exception as e:
                 logger.exception(f"Error in Weekly Tails analysis: {e}")
@@ -185,15 +198,54 @@ class SignalGenerator:
                         )
 
                     if self.macd_weight > 0:
-                        macd_signals = indicators.get_macd_signal(daily_with_indicators)
+                        # Get MACD values from the last row
+                        macd_line = (
+                            daily_with_indicators["MACD"].iloc[-1]
+                            if "MACD" in daily_with_indicators.columns
+                            else 0.0
+                        )
+                        signal_line = (
+                            daily_with_indicators["MACD_signal"].iloc[-1]
+                            if "MACD_signal" in daily_with_indicators.columns
+                            else 0.0
+                        )
+                        histogram = (
+                            daily_with_indicators["MACD_histogram"].iloc[-1]
+                            if "MACD_histogram" in daily_with_indicators.columns
+                            else 0.0
+                        )
+                        macd_signals = indicators.get_macd_signal(
+                            macd_line, signal_line, histogram
+                        )
                         analyses["macd"] = macd_signals
                         logger.info(
                             f"MACD analysis completed: {macd_signals.get('signal', 'N/A')}"
                         )
 
                     if self.bb_weight > 0:
+                        # Get Bollinger values from the last row
+                        current_price = (
+                            daily_with_indicators["Close"].iloc[-1]
+                            if "Close" in daily_with_indicators.columns
+                            else 0.0
+                        )
+                        upper_band = (
+                            daily_with_indicators["BB_upper"].iloc[-1]
+                            if "BB_upper" in daily_with_indicators.columns
+                            else 0.0
+                        )
+                        lower_band = (
+                            daily_with_indicators["BB_lower"].iloc[-1]
+                            if "BB_lower" in daily_with_indicators.columns
+                            else 0.0
+                        )
+                        bb_position = (
+                            ((current_price - lower_band) / (upper_band - lower_band))
+                            if upper_band > lower_band
+                            else 0.5
+                        )
                         bb_signals = indicators.get_bollinger_signal(
-                            daily_with_indicators
+                            current_price, upper_band, lower_band, bb_position
                         )
                         analyses["bollinger"] = bb_signals
                         logger.info(
@@ -224,7 +276,7 @@ class SignalGenerator:
             # 4. Moving Averages Analysis (if weight > 0)
             try:
                 if self.ma_weight > 0:
-                    from bnb_trading.moving_averages import MovingAveragesAnalyzer
+                    from ..moving_averages import MovingAveragesAnalyzer
 
                     ma_analyzer = MovingAveragesAnalyzer(self.config)
                     # Use the available methods to build a simple MA analysis
@@ -260,4 +312,6 @@ class SignalGenerator:
             "rsi": self.rsi_weight,
             "macd": self.macd_weight,
             "bollinger": self.bb_weight,
+            "sentiment": self.sentiment_weight,
+            "trend": 0.05,  # Add trend analysis weight
         }
