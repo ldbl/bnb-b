@@ -21,6 +21,9 @@ sentiment = 0.00  # disabled for now
 [signals.thresholds]
 confidence_min = 0.85
 
+# Critical modules that must be healthy for signal generation
+critical_modules = ["weekly_tails"]  # Weekly tails is critical for 100% LONG accuracy
+
 [weekly_tails]
 # Enhanced parameters for LONG precision ≥85% with correct ATR normalization (TESTING)
 lookback_weeks = 8

@@ -4,8 +4,10 @@ ModuleResult-based decision logic with health gates and proper confidence calcul
 """
 
 import logging
+from pathlib import Path
 
 import pandas as pd
+import toml
 
 from ..analysis.trend.analyzer import PatternTrendAnalyzer
 from ..analysis.weekly_tails.analyzer import WeeklyTailsAnalyzer
@@ -14,6 +16,58 @@ from ..fibonacci import FibonacciAnalyzer
 from ..moving_averages import MovingAveragesAnalyzer
 
 logger = logging.getLogger(__name__)
+
+
+def _load_critical_modules(config_ctx: dict | None = None) -> list[str]:
+    """
+    Load critical modules from config.toml with validation and fallback.
+
+    Args:
+        config_ctx: Optional config dict (from DecisionContext), if None loads from file
+
+    Returns:
+        List of critical module names
+    """
+    default_critical_modules = ["weekly_tails"]
+
+    try:
+        # Try to use provided config first
+        if config_ctx:
+            critical_modules = config_ctx.get("signals", {}).get("critical_modules")
+        else:
+            # Fall back to loading from config.toml
+            config_path = Path(__file__).parent.parent.parent.parent / "config.toml"
+            if config_path.exists():
+                config = toml.load(config_path)
+                critical_modules = config.get("signals", {}).get("critical_modules")
+            else:
+                logger.warning(
+                    f"Config file not found at {config_path}, using default critical modules"
+                )
+                return default_critical_modules
+
+        # Validate the configuration value
+        if not isinstance(critical_modules, list):
+            logger.warning(
+                f"Critical modules config is not a list: {critical_modules}, using default"
+            )
+            return default_critical_modules
+
+        # Validate all items are strings
+        if not all(isinstance(module, str) for module in critical_modules):
+            logger.warning(
+                f"Not all critical modules are strings: {critical_modules}, using default"
+            )
+            return default_critical_modules
+
+        logger.debug(f"Loaded critical modules from config: {critical_modules}")
+        return critical_modules
+
+    except Exception as e:
+        logger.warning(
+            f"Error loading critical modules from config: {e}, using default"
+        )
+        return default_critical_modules
 
 
 def decide_long(ctx: DecisionContext) -> DecisionResult:
@@ -111,9 +165,7 @@ def decide_long(ctx: DecisionContext) -> DecisionResult:
             )
 
         # 3. Health gate - critical modules must be OK
-        critical_modules = [
-            "weekly_tails"
-        ]  # Weekly tails is critical for 100% LONG accuracy
+        critical_modules = _load_critical_modules(ctx.config)
         for module_name in critical_modules:
             if module_name in module_results:
                 if module_results[module_name].status != "OK":

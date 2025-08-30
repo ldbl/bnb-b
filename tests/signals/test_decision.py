@@ -8,7 +8,7 @@ import pandas as pd
 import pytest
 
 from bnb_trading.core.models import DecisionContext, ModuleResult
-from bnb_trading.signals.decision import decide_long
+from bnb_trading.signals.decision import _load_critical_modules, decide_long
 
 
 @pytest.fixture
@@ -336,6 +336,43 @@ def test_decide_long_exception_handling(sample_context):
         assert "Error:" in result.reasons[0]
 
 
+def test_decide_long_critical_modules_config(sample_context):
+    """Test that critical modules can be configured"""
+
+    # Add additional critical module to config
+    sample_context.config["signals"]["critical_modules"] = ["weekly_tails", "fibonacci"]
+
+    with (
+        patch("bnb_trading.signals.decision.WeeklyTailsAnalyzer") as mock_tails,
+        patch("bnb_trading.signals.decision.FibonacciAnalyzer") as mock_fib,
+    ):
+        # Weekly tails OK but Fibonacci not OK
+        mock_tails.return_value.analyze.return_value = ModuleResult(
+            status="OK",
+            state="LONG",
+            score=1.0,
+            contrib=0.60,
+            reason="Strong weekly tail",
+        )
+
+        # Fibonacci has ERROR status (should fail health gate)
+        mock_fib.return_value.analyze.return_value = ModuleResult(
+            status="ERROR",
+            state="NEUTRAL",
+            score=0.0,
+            contrib=0.0,
+            reason="Fibonacci analysis failed",
+        )
+
+        result = decide_long(sample_context)
+
+        # Should fail health gate due to Fibonacci being critical and not healthy
+        assert result.signal == "HOLD"
+        assert result.confidence == 0.0
+        assert "Critical module fibonacci not healthy" in result.reasons[0]
+        assert result.metrics["failed_health_gate"] == "fibonacci"
+
+
 def test_decide_long_config_threshold_override(sample_context):
     """Test that confidence threshold can be configured"""
 
@@ -386,3 +423,32 @@ def test_decide_long_config_threshold_override(sample_context):
         assert result.signal == "LONG"
         assert result.confidence >= 0.50
         assert result.metrics["threshold"] == 0.50
+
+
+def test_load_critical_modules_validation():
+    """Test _load_critical_modules validation and fallback behavior"""
+
+    # Test with valid config
+    valid_config = {"signals": {"critical_modules": ["weekly_tails", "fibonacci"]}}
+    result = _load_critical_modules(valid_config)
+    assert result == ["weekly_tails", "fibonacci"]
+
+    # Test with invalid type (not a list)
+    invalid_config = {"signals": {"critical_modules": "weekly_tails"}}
+    result = _load_critical_modules(invalid_config)
+    assert result == ["weekly_tails"]  # Should fall back to default
+
+    # Test with invalid list items (not strings)
+    invalid_config = {"signals": {"critical_modules": ["weekly_tails", 123]}}
+    result = _load_critical_modules(invalid_config)
+    assert result == ["weekly_tails"]  # Should fall back to default
+
+    # Test with missing config section
+    empty_config = {}
+    result = _load_critical_modules(empty_config)
+    assert result == ["weekly_tails"]  # Should fall back to default
+
+    # Test with None config (should load from file)
+    result = _load_critical_modules(None)
+    assert isinstance(result, list)  # Should return a list
+    assert "weekly_tails" in result  # Should contain default or config value
