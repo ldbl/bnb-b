@@ -19,7 +19,7 @@ from bnb_trading.core.models import ModuleResult, SignalState
 logger = logging.getLogger(__name__)
 
 
-class TrendAnalyzer:
+class PatternTrendAnalyzer:
     """
     Simple trend analyzer using HH/HL logic and moving average confirmation.
 
@@ -40,7 +40,7 @@ class TrendAnalyzer:
         self.weight = float(trend_config.get("weight", 0.10))
 
         logger.info(
-            f"TrendAnalyzer initialized: lookback={self.lookback_days}, weight={self.weight}"
+            f"PatternTrendAnalyzer initialized: lookback={self.lookback_days}, weight={self.weight}"
         )
 
     def analyze(self, daily_df: pd.DataFrame) -> ModuleResult:
@@ -87,8 +87,13 @@ class TrendAnalyzer:
                 meta={
                     "hh_hl_state": hh_hl_result["state"],
                     "hh_hl_score": hh_hl_result["score"],
+                    "max_hh_streak": hh_hl_result.get("max_hh_streak", 0),
+                    "max_hl_streak": hh_hl_result.get("max_hl_streak", 0),
+                    "max_lh_streak": hh_hl_result.get("max_lh_streak", 0),
+                    "max_ll_streak": hh_hl_result.get("max_ll_streak", 0),
                     "ema_state": ema_result["state"],
                     "ema_score": ema_result["score"],
+                    "ema_valid_points": ema_result.get("valid_data_points", 0),
                     "lookback_days": self.lookback_days,
                 },
             )
@@ -105,43 +110,91 @@ class TrendAnalyzer:
             )
 
     def _analyze_hh_hl_patterns(self, df: pd.DataFrame) -> dict[str, Any]:
-        """Analyze Higher Highs/Higher Lows patterns in recent data."""
+        """Analyze Higher Highs/Higher Lows patterns with proper consecutive tracking."""
         recent_data = df.tail(self.lookback_days).copy()
 
-        # Find local highs and lows (simplified)
-        highs = recent_data["High"].values
-        lows = recent_data["Low"].values
+        # Robust NaN handling per project guidelines
+        highs = np.nan_to_num(recent_data["High"].values, nan=0.0)
+        lows = np.nan_to_num(recent_data["Low"].values, nan=0.0)
 
-        # Simple approach: compare 5-day windows
-        window_size = 5
-        higher_highs = 0
-        lower_highs = 0
-        higher_lows = 0
-        lower_lows = 0
+        # Filter out zero values (converted NaNs)
+        valid_indices = (highs > 0) & (lows > 0)
+        if not np.any(valid_indices):
+            return {"state": "NEUTRAL", "score": 0.3, "reason": "No valid price data"}
 
-        for i in range(window_size, len(highs) - window_size):
+        highs = highs[valid_indices]
+        lows = lows[valid_indices]
+
+        if len(highs) < 6:  # Need minimum data for pattern detection
+            return {
+                "state": "NEUTRAL",
+                "score": 0.3,
+                "reason": "Insufficient data for patterns",
+            }
+
+        # Track consecutive streaks properly
+        max_hh_streak = 0
+        max_hl_streak = 0
+        max_lh_streak = 0
+        max_ll_streak = 0
+
+        current_hh_streak = 0
+        current_hl_streak = 0
+        current_lh_streak = 0
+        current_ll_streak = 0
+
+        # Compare consecutive 3-day windows for more robust detection
+        window_size = 3
+        for i in range(window_size, len(highs)):
             current_high = highs[i]
             previous_high = highs[i - window_size]
             current_low = lows[i]
             previous_low = lows[i - window_size]
 
+            # Track Higher Highs streak
             if current_high > previous_high:
-                higher_highs += 1
-            elif current_high < previous_high:
-                lower_highs += 1
+                current_hh_streak += 1
+                max_hh_streak = max(max_hh_streak, current_hh_streak)
+            else:
+                current_hh_streak = 0
 
+            # Track Higher Lows streak
             if current_low > previous_low:
-                higher_lows += 1
-            elif current_low < previous_low:
-                lower_lows += 1
+                current_hl_streak += 1
+                max_hl_streak = max(max_hl_streak, current_hl_streak)
+            else:
+                current_hl_streak = 0
 
-        # Determine trend direction
-        if higher_highs >= self.min_consecutive and higher_lows >= self.min_consecutive:
+            # Track Lower Highs streak
+            if current_high < previous_high:
+                current_lh_streak += 1
+                max_lh_streak = max(max_lh_streak, current_lh_streak)
+            else:
+                current_lh_streak = 0
+
+            # Track Lower Lows streak
+            if current_low < previous_low:
+                current_ll_streak += 1
+                max_ll_streak = max(max_ll_streak, current_ll_streak)
+            else:
+                current_ll_streak = 0
+
+        # Determine trend based on CONSECUTIVE patterns (architectural requirement)
+        if (
+            max_hh_streak >= self.min_consecutive
+            and max_hl_streak >= self.min_consecutive
+        ):
             state: SignalState = "UP"
-            score = min(0.8, 0.4 + (higher_highs + higher_lows) * 0.05)
-        elif lower_highs >= self.min_consecutive and lower_lows >= self.min_consecutive:
+            # Score based on streak strength and alignment
+            streak_strength = min(max_hh_streak, max_hl_streak)
+            score = min(0.8, 0.5 + streak_strength * 0.1)
+        elif (
+            max_lh_streak >= self.min_consecutive
+            and max_ll_streak >= self.min_consecutive
+        ):
             state = "DOWN"
-            score = min(0.8, 0.4 + (lower_highs + lower_lows) * 0.05)
+            streak_strength = min(max_lh_streak, max_ll_streak)
+            score = min(0.8, 0.5 + streak_strength * 0.1)
         else:
             state = "NEUTRAL"
             score = 0.3
@@ -149,59 +202,85 @@ class TrendAnalyzer:
         return {
             "state": state,
             "score": score,
-            "higher_highs": higher_highs,
-            "lower_highs": lower_highs,
-            "higher_lows": higher_lows,
-            "lower_lows": lower_lows,
+            "max_hh_streak": max_hh_streak,
+            "max_hl_streak": max_hl_streak,
+            "max_lh_streak": max_lh_streak,
+            "max_ll_streak": max_ll_streak,
+            "data_points": len(highs),
         }
 
     def _analyze_ema_slope(self, df: pd.DataFrame) -> dict[str, Any]:
-        """Analyze EMA50 vs EMA200 slope for trend confirmation."""
+        """Analyze EMA50 vs EMA200 slope with robust NaN handling."""
         try:
-            # Calculate EMAs
-            closes = df["Close"].values
-            ema50 = talib.EMA(closes, timeperiod=50)
-            ema200 = talib.EMA(closes, timeperiod=200)
+            # Robust NaN handling for close prices per project guidelines
+            closes = np.nan_to_num(df["Close"].values, nan=0.0)
 
-            # Get recent values (non-NaN)
-            recent_ema50 = ema50[-10:]  # Last 10 days
+            # Filter out zero values (converted NaNs)
+            valid_closes = closes[closes > 0]
+            if len(valid_closes) < 200:  # Need minimum data for EMA200
+                return {
+                    "state": "NEUTRAL",
+                    "score": 0.3,
+                    "reason": "Insufficient price data for EMA calculation",
+                }
+
+            # Calculate EMAs with cleaned data
+            ema50 = talib.EMA(valid_closes, timeperiod=50)
+            ema200 = talib.EMA(valid_closes, timeperiod=200)
+
+            # Apply project guideline NaN handling to EMA results
+            ema50 = np.nan_to_num(ema50, nan=0.0)
+            ema200 = np.nan_to_num(ema200, nan=0.0)
+
+            # Get recent non-zero values
+            recent_ema50 = ema50[-10:]
             recent_ema200 = ema200[-10:]
 
-            # Remove NaN values
-            valid_ema50 = recent_ema50[~np.isnan(recent_ema50)]
-            valid_ema200 = recent_ema200[~np.isnan(recent_ema200)]
+            valid_ema50 = recent_ema50[recent_ema50 > 0]
+            valid_ema200 = recent_ema200[recent_ema200 > 0]
 
             if len(valid_ema50) < 5 or len(valid_ema200) < 5:
                 return {
                     "state": "NEUTRAL",
                     "score": 0.3,
-                    "reason": "Insufficient EMA data",
+                    "reason": "Insufficient valid EMA data",
                 }
 
             # Calculate slopes (recent trend in EMAs)
             ema50_slope = (valid_ema50[-1] - valid_ema50[0]) / len(valid_ema50)
             ema200_slope = (valid_ema200[-1] - valid_ema200[0]) / len(valid_ema200)
-            current_price = df["Close"].iloc[-1]
 
-            # Trend determination
+            # Robust current price extraction with NaN handling
+            current_price = np.nan_to_num(df["Close"].iloc[-1], nan=0.0)
+            if current_price == 0:
+                return {
+                    "state": "NEUTRAL",
+                    "score": 0.3,
+                    "reason": "Invalid current price",
+                }
+
+            # Enhanced trend determination with architectural precision
+            ema50_current = valid_ema50[-1]
+            ema200_current = valid_ema200[-1]
+
             if (
-                valid_ema50[-1] > valid_ema200[-1]
-                and current_price > valid_ema50[-1]
+                ema50_current > ema200_current
+                and current_price > ema50_current
                 and ema50_slope > 0
             ):
                 state: SignalState = "UP"
                 score = 0.7
-            elif valid_ema50[-1] > valid_ema200[-1] and ema50_slope > 0:
+            elif ema50_current > ema200_current and ema50_slope > 0:
                 state = "UP"
                 score = 0.5
             elif (
-                valid_ema50[-1] < valid_ema200[-1]
-                and current_price < valid_ema50[-1]
+                ema50_current < ema200_current
+                and current_price < ema50_current
                 and ema50_slope < 0
             ):
                 state = "DOWN"
                 score = 0.7
-            elif valid_ema50[-1] < valid_ema200[-1] and ema50_slope < 0:
+            elif ema50_current < ema200_current and ema50_slope < 0:
                 state = "DOWN"
                 score = 0.5
             else:
@@ -213,8 +292,9 @@ class TrendAnalyzer:
                 "score": score,
                 "ema50_slope": ema50_slope,
                 "ema200_slope": ema200_slope,
-                "ema50_current": valid_ema50[-1],
-                "ema200_current": valid_ema200[-1],
+                "ema50_current": ema50_current,
+                "ema200_current": ema200_current,
+                "valid_data_points": len(valid_closes),
             }
 
         except Exception as e:

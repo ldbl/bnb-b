@@ -91,6 +91,9 @@ coverage.xml
 .pre-commit-config.yaml.backup
 .coverage.*
 
+# Test files (keep production tests, ignore development tests)
+tests/analysis/
+
 # Environment variables
 .env
 .env.local
