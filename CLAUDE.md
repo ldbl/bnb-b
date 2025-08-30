@@ -182,6 +182,23 @@ quality_over_quantity = true
 -   **Quality focus**: Better selective high-quality signals than quantity
 -   **Performance tracking**: All changes documented with before/after metrics
 
+### Pull Request Validation Rules
+
+**MANDATORY for every PR**:
+
+1. **Run commands** before creating PR:
+
+    ```bash
+    ruff check && ruff format
+    python3 run_enhanced_backtest.py
+    ```
+
+2. **Copy/paste results** into PR template - exact output from backtest
+
+3. **100% LONG accuracy requirement**: Any PR that breaks 21/21 LONG signals is immediately rejected
+
+4. **No exceptions**: Signal accuracy is THE ONLY metric that matters for merge approval
+
 ## Performance Status & Achievements
 
 ### 🏆 PERFECT LONG SYSTEM STATUS ✅ (2025-08-30)
