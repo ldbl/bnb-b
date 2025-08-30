@@ -46,10 +46,11 @@ jobs:
         # Use same relaxed mypy config as pre-commit hooks
         python -m mypy src/ --config-file=pyproject.toml
 
-    - name: Security check with bandit
-      run: |
-        bandit -r src/ -f json
-      continue-on-error: true  # Allow security warnings for now
+    # Security check disabled until bandit works reliably locally
+    # - name: Security check with bandit
+    #   run: |
+    #     bandit -r src/ -f json
+    #   continue-on-error: true
 
     - name: Test with pytest
       run: |

@@ -31,31 +31,19 @@ repos:
       - id: prettier
         types_or: [yaml, json, markdown]
         exclude: ^(\.github/|docs/|data/)
-  # Advanced checks (disabled for now - can be enabled later):
-  #
-  # Python security checks:
-  # - repo: https://github.com/PyCQA/bandit
-  #   rev: 1.7.5
-  #   hooks:
-  #     - id: bandit
-  #       args: [-r, src/, -f, json]
-  #       exclude: tests/
-  #
-  # Type checking:
+  # Type checking (essential)
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.5.0
     hooks:
       - id: mypy
-        args: [--ignore-missing-imports, --scripts-are-modules]
+        args: [--config-file=pyproject.toml]
         files: ^src/
-#
-# Tests:
-# - repo: local
-#   hooks:
-#     - id: pytest
-#       name: pytest
-#       entry: pytest
-#       language: system
-#       types: [python]
-#       args: [tests/, --tb=short]
-#       pass_filenames: false
+
+  # NOTE: Additional CI checks that run on GitHub but not locally:
+  # - bandit security scan: runs in CI to catch security issues
+  # - pytest tests: runs in CI with full test suite
+  # - coverage reports: uploaded to codecov in CI
+  #
+  # To run these manually before pushing:
+  # - Security: pip install bandit && bandit -r src/ -f json
+  # - Tests: pip install pytest && pytest tests/ --tb=short

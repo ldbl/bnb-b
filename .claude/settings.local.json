@@ -32,7 +32,9 @@
       "Bash(timeout:*)",
       "Bash(find:*)",
       "Bash(cat:*)",
-      "Bash(pre-commit run:*)"
+      "Bash(pre-commit run:*)",
+      "Bash(mypy:*)",
+      "Bash(pre-commit:*)"
     ],
     "deny": [],
     "ask": []
