@@ -279,7 +279,7 @@ class FibonacciAnalyzer:
         try:
             proximity_info = {
                 "nearest_level": None,
-                "nearest_distance": float("in"),
+                "nearest_distance": float("inf"),
                 "nearest_percentage": None,
                 "active_levels": [],
                 "key_level_proximity": {},

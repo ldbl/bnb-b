@@ -130,15 +130,16 @@ weekly_tails_confirmation = true    # Weekly tails потвърждение за
 trend_consistency_threshold = 0.7   # Минимална консистентност за бонус
 
 [signals]
-fibonacci_weight = 0.35  # Намалено за баланс
-weekly_tails_weight = 0.40  # УВЕЛИЧЕНО значително за по-силни LONG сигнали от долни опашки
-ma_weight = 0.10  # Намалено
-rsi_weight = 0.08  # Намалено
-macd_weight = 0.07  # Намалено
-bb_weight = 0.00  # Премахнато - ще се използва само като филтър
+# NORMALIZED WEIGHTS - Must sum to 1.0
+fibonacci_weight = 0.35  # Primary support/resistance analysis
+weekly_tails_weight = 0.40  # Weekly tail pattern analysis
+ma_weight = 0.10  # Moving averages crossover
+rsi_weight = 0.08  # RSI momentum
+macd_weight = 0.07  # MACD trend following
+bb_weight = 0.00  # Bollinger Bands (filter only)
 min_confirmations = 1
-confidence_threshold = 0.8  # Увеличено за по-висока LONG точност
-fib_tail_required = true
+confidence_threshold = 0.3  # Main confidence threshold
+fib_tail_required = false  # Временно изключено за историческо тестване
 ath_weight = 0.15  # Нов ATH proximity бонус за SHORT сигнали
 
 # Балансирани параметри за 75%+ точност

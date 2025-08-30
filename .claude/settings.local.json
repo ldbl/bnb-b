@@ -24,7 +24,14 @@
       "Bash(isort:*)",
       "Bash(autopep8:*)",
       "Bash(python:*)",
-      "Bash(pip3 install:*)"
+      "Bash(pip3 install:*)",
+      "Bash(~/.local/bin/mypy src/bnb_trading/weekly_tails.py --no-error-summary)",
+      "Bash(~/.local/bin/mypy src/bnb_trading/indicators.py --no-error-summary)",
+      "Bash(~/.local/bin/mypy src/bnb_trading/fibonacci.py --no-error-summary)",
+      "Bash(ruff check:*)",
+      "Bash(timeout:*)",
+      "Bash(find:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

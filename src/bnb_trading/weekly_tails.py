@@ -218,7 +218,12 @@ class WeeklyTailsAnalyzer:
             tails_analysis = []
 
             for date, row in recent_weeks.iterrows():
-                tail_info = self._analyze_single_tail(row, date)
+                # Convert date to string first, then to Timestamp
+                if isinstance(date, pd.Timestamp):
+                    timestamp = date
+                else:
+                    timestamp = pd.Timestamp(str(date))
+                tail_info = self._analyze_single_tail(row, timestamp)
                 if tail_info:
                     tails_analysis.append(tail_info)
 
@@ -766,7 +771,9 @@ class WeeklyTailsAnalyzer:
 
             for tail in tails_analysis:
                 weighted_tail = tail.copy()
-                original_strength = tail.get("strength", 0)
+                original_strength = tail.get(
+                    "signal_strength", 0
+                )  # Use signal_strength instead of strength
                 tail_type = tail.get("signal", "NONE")
 
                 # Apply trend-based weighting logic
@@ -776,7 +783,7 @@ class WeeklyTailsAnalyzer:
                         new_strength = min(
                             original_strength * self.long_tail_amplification, 1.0
                         )
-                        weighted_tail["strength"] = new_strength
+                        weighted_tail["signal_strength"] = new_strength
                         weighted_tail["trend_adjustment"] = "BULL_AMPLIFIED"
                         weighted_tail["reason"] = (
                             f"{tail.get('reason', '')} (Amplified in bull market)"
@@ -786,13 +793,13 @@ class WeeklyTailsAnalyzer:
                         new_strength = original_strength * self.short_tail_suppression
                         if new_strength < self.min_tail_size:
                             weighted_tail["signal"] = "NONE"
-                            weighted_tail["strength"] = 0
+                            weighted_tail["signal_strength"] = 0
                             weighted_tail["trend_adjustment"] = "BULL_SUPPRESSED"
                             weighted_tail["reason"] = (
                                 "SHORT tail suppressed in bull market"
                             )
                         else:
-                            weighted_tail["strength"] = new_strength
+                            weighted_tail["signal_strength"] = new_strength
                             weighted_tail["trend_adjustment"] = "BULL_REDUCED"
                             weighted_tail["reason"] = (
                                 f"{tail.get('reason', '')} (Reduced in bull market)"
@@ -804,7 +811,7 @@ class WeeklyTailsAnalyzer:
                         new_strength = min(
                             original_strength * self.long_tail_amplification, 1.0
                         )
-                        weighted_tail["strength"] = new_strength
+                        weighted_tail["signal_strength"] = new_strength
                         weighted_tail["trend_adjustment"] = "BEAR_AMPLIFIED"
                         weighted_tail["reason"] = (
                             f"{tail.get('reason', '')} (Amplified in bear market)"
@@ -812,7 +819,7 @@ class WeeklyTailsAnalyzer:
                     elif tail_type == "LONG":
                         # Reduce LONG tail signals in bear markets
                         new_strength = original_strength * 0.7
-                        weighted_tail["strength"] = new_strength
+                        weighted_tail["signal_strength"] = new_strength
                         weighted_tail["trend_adjustment"] = "BEAR_REDUCED"
                         weighted_tail["reason"] = (
                             f"{tail.get('reason', '')} (Reduced confidence in bear market)"
@@ -823,7 +830,7 @@ class WeeklyTailsAnalyzer:
 
                 # Update strength category after weighting
                 weighted_tail["strength_category"] = self._categorize_strength(
-                    weighted_tail["strength"]
+                    weighted_tail["signal_strength"]
                 )
                 weighted_tails.append(weighted_tail)
 

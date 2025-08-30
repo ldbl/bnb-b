@@ -284,7 +284,8 @@ class TechnicalIndicators:
         """
         try:
             rsi = talib.RSI(prices.values, timeperiod=self.rsi_period)
-            return pd.Series(rsi, index=prices.index)
+            result = pd.Series(rsi, index=prices.index)
+            return result
         except Exception as e:
             logger.exception(f"Грешка при изчисляване на RSI: {e}")
             return pd.Series(index=prices.index)
