@@ -455,10 +455,16 @@ class IchimokuAnalyzer:
             signals["strength"] -= 1
 
         # 3. Cloud analysis
-        cloud_top = max(senkou_a_current, senkou_b_current)
-        cloud_bottom = min(senkou_a_current, senkou_b_current)
+        if senkou_a_current is None or senkou_b_current is None:
+            cloud_top = cloud_bottom = None
+        else:
+            cloud_top = max(senkou_a_current, senkou_b_current)
+            cloud_bottom = min(senkou_a_current, senkou_b_current)
 
-        if current_price > cloud_top:
+        if cloud_top is None or cloud_bottom is None:
+            signals["cloud_status"] = "UNKNOWN"
+            signals["signals"].append("☁️❓ Cloud data insufficient for analysis")
+        elif current_price > cloud_top:
             signals["cloud_status"] = "ABOVE_CLOUD"
             signals["signals"].append("☁️⬆️ Price above Cloud - Strong bullish trend")
             signals["strength"] += 3
@@ -471,12 +477,15 @@ class IchimokuAnalyzer:
             signals["signals"].append("☁️🔄 Price in Cloud - Consolidation/uncertainty")
 
         # 4. Cloud color (Span A vs Span B)
-        if senkou_a_current > senkou_b_current:
-            signals["signals"].append("🟢☁️ Green Cloud - Bullish cloud formation")
-            signals["strength"] += 1
+        if senkou_a_current is not None and senkou_b_current is not None:
+            if senkou_a_current > senkou_b_current:
+                signals["signals"].append("🟢☁️ Green Cloud - Bullish cloud formation")
+                signals["strength"] += 1
+            else:
+                signals["signals"].append("🔴☁️ Red Cloud - Bearish cloud formation")
+                signals["strength"] -= 1
         else:
-            signals["signals"].append("🔴☁️ Red Cloud - Bearish cloud formation")
-            signals["strength"] -= 1
+            signals["signals"].append("☁️❓ Cloud color analysis unavailable")
 
         # 5. Chikou Span analysis
         if chikou_current:

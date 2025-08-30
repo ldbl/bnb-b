@@ -194,7 +194,7 @@ follow_imports = "skip"  # Skip imports to avoid stub issues
 disable_error_code = [
     "union-attr", "attr-defined", "no-any-return", "return-value", "return",
     "import", "assignment", "arg-type", "operator", "index",
-    "call-overload", "var-annotated", "misc", "no-redef", "type-var"
+    "call-overload", "var-annotated", "misc", "no-redef"
 ]
 
 # Gradual typing по директории
