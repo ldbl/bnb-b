@@ -226,6 +226,29 @@ git add -A && git commit --amend --no-edit
 
 **Never ignore pre-commit changes** - they ensure code quality standards.
 
+### 📋 Pre-PR Checklist
+
+**MANDATORY: Before creating any PR**
+
+```bash
+# 1. Check for uncommitted changes
+git status                    # Must show "working tree clean"
+git diff                      # Review all changes that will be in PR
+
+# 2. Ensure all relevant changes are included
+git add -A                    # Add any missed files
+git status                    # Verify all changes are staged
+
+# 3. Create proper commit
+git commit -m "Descriptive message"
+git push -u origin branch-name
+
+# 4. Only then create PR
+gh pr create --title "..." --body "..."
+```
+
+**CRITICAL:** Never create PR with untracked local changes - they cause merge conflicts and missing features in PRs.
+
 ### 🛡️ Merge Conflict Prevention
 
 **CRITICAL: Always sync before commit to avoid divergent branches**

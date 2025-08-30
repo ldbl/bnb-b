@@ -1,25 +1,32 @@
 """
-Unified Decision Logic for LONG Precision ≥85%
-Single source of truth for live and backtest modes
+PR #5: Unified Decision Engine - Single source of truth for LONG decisions
+ModuleResult-based decision logic with health gates and proper confidence calculation
 """
 
 import logging
-from typing import Any
 
 import pandas as pd
 
+from ..analysis.trend.analyzer import PatternTrendAnalyzer
 from ..analysis.weekly_tails.analyzer import WeeklyTailsAnalyzer
-from ..core.models import DecisionContext, DecisionResult
+from ..core.models import DecisionContext, DecisionResult, ModuleResult
+from ..fibonacci import FibonacciAnalyzer
+from ..moving_averages import MovingAveragesAnalyzer
 
 logger = logging.getLogger(__name__)
 
 
 def decide_long(ctx: DecisionContext) -> DecisionResult:
     """
-    Unified LONG decision function - used by both live and backtest
+    PR #5: Unified Decision Engine - Single source of truth for LONG decisions
 
-    Focus: Weekly tails dominant (60% weight), simple but accurate
-    No look-ahead: only closed candles, proper MTF sync
+    ModuleResult-based decision logic:
+    1. Health gate - critical modules must be OK
+    2. Collect ModuleResults from all analyzers
+    3. Weekly tails gate - if tails_pass=False → HOLD
+    4. confidence = sum(contrib_i) for all OK modules
+    5. if confidence >= 0.85 → LONG else HOLD
+    6. Return detailed breakdown
 
     Args:
         ctx: DecisionContext with closed data and config
@@ -32,80 +39,178 @@ def decide_long(ctx: DecisionContext) -> DecisionResult:
         if not _validate_no_lookahead(ctx):
             return _empty_decision("Look-ahead validation failed", ctx.timestamp)
 
-        # Initialize analyzers
+        # 1. Initialize all analyzers
         tails_analyzer = WeeklyTailsAnalyzer(ctx.config)
+        trend_analyzer = PatternTrendAnalyzer(ctx.config)
+        fibonacci_analyzer = FibonacciAnalyzer(ctx.config)
+        moving_avg_analyzer = MovingAveragesAnalyzer(ctx.config)
 
-        # Component weights from config
-        weights = ctx.config.get("signals", {})
-        weekly_tails_weight = weights.get("weekly_tails_weight", 0.60)
-        fibonacci_weight = weights.get("fibonacci_weight", 0.20)
-        trend_weight = weights.get("trend_weight", 0.10)
-        volume_weight = weights.get("volume_weight", 0.10)
-        confidence_threshold = weights.get("confidence_threshold", 0.88)
+        # 2. Collect ModuleResults from all analyzers
+        module_results = {}
 
-        # Core analysis: Weekly Tails (dominant)
-        tails_result = tails_analyzer.calculate_tail_strength(ctx.closed_weekly_df)
+        # Weekly tails (gate function)
+        try:
+            tails_result = tails_analyzer.analyze(
+                ctx.closed_daily_df, ctx.closed_weekly_df
+            )
+            module_results["weekly_tails"] = tails_result
+        except Exception as e:
+            logger.exception(f"Weekly tails analysis failed: {e}")
+            module_results["weekly_tails"] = ModuleResult(
+                status="ERROR",
+                state="NEUTRAL",
+                score=0.0,
+                contrib=0.0,
+                reason=f"Weekly tails error: {e}",
+            )
 
-        # Quick filters
-        if not _pass_basic_filters(ctx, tails_result):
-            return _empty_decision("Basic filters failed", ctx.timestamp)
+        # Trend analysis
+        try:
+            trend_result = trend_analyzer.analyze(
+                ctx.closed_daily_df, ctx.closed_weekly_df
+            )
+            module_results["trend"] = trend_result
+        except Exception as e:
+            logger.exception(f"Trend analysis failed: {e}")
+            module_results["trend"] = ModuleResult(
+                status="ERROR",
+                state="NEUTRAL",
+                score=0.0,
+                contrib=0.0,
+                reason=f"Trend analysis error: {e}",
+            )
 
-        # Calculate weighted confidence
-        tail_confidence = tails_result.get("confidence", 0.0)
+        # Fibonacci analysis
+        try:
+            fibonacci_result = fibonacci_analyzer.analyze(
+                ctx.closed_daily_df, ctx.closed_weekly_df
+            )
+            module_results["fibonacci"] = fibonacci_result
+        except Exception as e:
+            logger.exception(f"Fibonacci analysis failed: {e}")
+            module_results["fibonacci"] = ModuleResult(
+                status="ERROR",
+                state="NEUTRAL",
+                score=0.0,
+                contrib=0.0,
+                reason=f"Fibonacci error: {e}",
+            )
 
-        # Simple confidence calculation (weekly tails dominant)
-        weighted_confidence = (
-            tail_confidence * weekly_tails_weight
-            + _get_fibonacci_confidence(ctx) * fibonacci_weight
-            + _get_trend_confidence(ctx) * trend_weight
-            + _get_volume_confidence(ctx) * volume_weight
+        # Moving averages analysis
+        try:
+            moving_avg_result = moving_avg_analyzer.analyze(
+                ctx.closed_daily_df, ctx.closed_weekly_df
+            )
+            module_results["moving_avg"] = moving_avg_result
+        except Exception as e:
+            logger.exception(f"Moving averages analysis failed: {e}")
+            module_results["moving_avg"] = ModuleResult(
+                status="ERROR",
+                state="NEUTRAL",
+                score=0.0,
+                contrib=0.0,
+                reason=f"Moving averages error: {e}",
+            )
+
+        # 3. Health gate - critical modules must be OK
+        critical_modules = [
+            "weekly_tails"
+        ]  # Weekly tails is critical for 100% LONG accuracy
+        for module_name in critical_modules:
+            if module_name in module_results:
+                if module_results[module_name].status != "OK":
+                    return DecisionResult(
+                        signal="HOLD",
+                        confidence=0.0,
+                        reasons=[
+                            f"Critical module {module_name} not healthy: {module_results[module_name].reason}"
+                        ],
+                        metrics={"failed_health_gate": module_name},
+                        price_level=0.0,
+                        analysis_timestamp=ctx.timestamp,
+                    )
+
+        # 4. Weekly tails gate - specific LONG signal requirement
+        tails_result = module_results.get("weekly_tails")
+        if not tails_result or tails_result.state != "LONG":
+            return DecisionResult(
+                signal="HOLD",
+                confidence=0.0,
+                reasons=[
+                    f"Weekly tails gate failed: {tails_result.reason if tails_result else 'No tails result'}"
+                ],
+                metrics={"failed_tails_gate": True},
+                price_level=0.0,
+                analysis_timestamp=ctx.timestamp,
+            )
+
+        # 5. Calculate total confidence = sum(contrib_i) for all OK modules
+        total_confidence = 0.0
+        ok_modules = []
+
+        for module_name, result in module_results.items():
+            if result.status == "OK":
+                total_confidence += result.contrib
+                ok_modules.append(module_name)
+
+        # Get threshold from config
+        confidence_threshold = (
+            ctx.config.get("signals", {})
+            .get("thresholds", {})
+            .get("confidence_min", 0.85)
         )
 
-        # Decision logic
-        if (
-            tails_result.get("signal") == "LONG"
-            and weighted_confidence >= confidence_threshold
-            and tail_confidence >= 0.05
-        ):  # Minimum tail strength (LOWERED for testing)
+        # 6. Decision logic
+        if total_confidence >= confidence_threshold:
+            # LONG signal
             reasons = [
-                f"Strong weekly tail (strength: {tails_result.get('strength', 0.0):.2f})",
-                f"Weighted confidence: {weighted_confidence:.3f}",
+                f"Weekly tails LONG signal: {tails_result.reason}",
+                f"Total confidence: {total_confidence:.3f} >= {confidence_threshold:.3f}",
+                f"OK modules: {', '.join(ok_modules)}",
             ]
 
             metrics = {
-                "tail_strength": tails_result.get("strength", 0.0),
-                "tail_confidence": tail_confidence,
-                "weighted_confidence": weighted_confidence,
-                "fibonacci_confidence": _get_fibonacci_confidence(ctx),
-                "trend_confidence": _get_trend_confidence(ctx),
-                "volume_confidence": _get_volume_confidence(ctx),
-                "weights_used": {
-                    "weekly_tails": weekly_tails_weight,
-                    "fibonacci": fibonacci_weight,
-                    "trend": trend_weight,
-                    "volume": volume_weight,
+                "total_confidence": total_confidence,
+                "threshold": confidence_threshold,
+                "module_results": {
+                    name: {
+                        "status": result.status,
+                        "state": result.state,
+                        "score": result.score,
+                        "contrib": result.contrib,
+                        "reason": result.reason,
+                    }
+                    for name, result in module_results.items()
                 },
+                "ok_modules": ok_modules,
             }
 
             return DecisionResult(
                 signal="LONG",
-                confidence=weighted_confidence,
+                confidence=total_confidence,
                 reasons=reasons,
                 metrics=metrics,
-                price_level=tails_result.get("price_level", 0.0),
+                price_level=ctx.closed_daily_df["Close"].iloc[-1],
                 analysis_timestamp=ctx.timestamp,
             )
 
-        # No signal
+        # HOLD signal
+        reasons = [
+            f"Below threshold: {total_confidence:.3f} < {confidence_threshold:.3f}",
+            f"Weekly tails: {tails_result.reason}",
+        ]
+
         return DecisionResult(
             signal="HOLD",
-            confidence=weighted_confidence,
-            reasons=[
-                f"Below threshold: {weighted_confidence:.3f} < {confidence_threshold:.3f}"
-            ],
+            confidence=total_confidence,
+            reasons=reasons,
             metrics={
-                "weighted_confidence": weighted_confidence,
+                "total_confidence": total_confidence,
                 "threshold": confidence_threshold,
+                "module_results": {
+                    name: {"status": result.status, "contrib": result.contrib}
+                    for name, result in module_results.items()
+                },
             },
             price_level=0.0,
             analysis_timestamp=ctx.timestamp,
@@ -136,75 +241,7 @@ def _validate_no_lookahead(ctx: DecisionContext) -> bool:
         return False
 
 
-def _pass_basic_filters(ctx: DecisionContext, tails_result: dict[str, Any]) -> bool:
-    """Basic signal filters"""
-    try:
-        # Must have tail signal
-        if tails_result.get("signal") != "LONG":
-            return False
-
-        # Must have minimum strength (UPDATED for new formula)
-        if tails_result.get("strength", 0.0) < 0.3:
-            return False
-
-        # Data quality check
-        if len(ctx.closed_weekly_df) < 8 or len(ctx.closed_daily_df) < 50:
-            return False
-
-        return True
-
-    except Exception as e:
-        logger.exception(f"Error in basic filters: {e}")
-        return False
-
-
-def _get_fibonacci_confidence(ctx: DecisionContext) -> float:
-    """Get Fibonacci analysis confidence - placeholder"""
-    try:
-        # TODO: Implement Fibonacci analysis integration
-        # For now, return neutral confidence
-        return 0.5
-    except Exception as e:
-        logger.exception(f"Error getting Fibonacci confidence: {e}")
-        return 0.0
-
-
-def _get_trend_confidence(ctx: DecisionContext) -> float:
-    """Get trend analysis confidence - placeholder"""
-    try:
-        # Simple trend check: close > MA50
-        if len(ctx.closed_daily_df) >= 50:
-            close_prices = ctx.closed_daily_df.get(
-                "close", ctx.closed_daily_df.get("Close")
-            )
-            if close_prices is not None and not close_prices.empty:
-                ma50 = close_prices.rolling(50).mean().iloc[-1]
-                current_price = close_prices.iloc[-1]
-                return 0.8 if current_price > ma50 else 0.2
-
-        return 0.5
-    except Exception as e:
-        logger.exception(f"Error getting trend confidence: {e}")
-        return 0.0
-
-
-def _get_volume_confidence(ctx: DecisionContext) -> float:
-    """Get volume analysis confidence - placeholder"""
-    try:
-        # Simple volume check: current > MA20
-        if len(ctx.closed_daily_df) >= 20:
-            volume = ctx.closed_daily_df.get(
-                "volume", ctx.closed_daily_df.get("Volume")
-            )
-            if volume is not None and not volume.empty:
-                ma20 = volume.rolling(20).mean().iloc[-1]
-                current_volume = volume.iloc[-1]
-                return 0.7 if current_volume > ma20 * 1.3 else 0.3
-
-        return 0.5
-    except Exception as e:
-        logger.exception(f"Error getting volume confidence: {e}")
-        return 0.0
+# Removed old helper functions - now using ModuleResult system
 
 
 def _empty_decision(reason: str, timestamp: pd.Timestamp) -> DecisionResult:
