@@ -224,6 +224,20 @@ git add -A && git commit --amend --no-edit
 
 **Never ignore pre-commit changes** - they ensure code quality standards.
 
+### 🛡️ Merge Conflict Prevention
+
+**CRITICAL: Always sync before commit to avoid divergent branches**
+
+```bash
+# Винаги преди commit:
+git fetch                # Провери за remote changes
+git status              # Трябва да показва "up to date"
+git pull               # Ако има changes, pull първо
+git add && git commit  # Чак тогава commit
+```
+
+**This prevents merge conflicts from simultaneous commits on same branch.**
+
 ### Branch Management Rules
 
 **CRITICAL: Always verify branch before git operations**
