@@ -95,3 +95,4 @@ coverage.xml
 .env
 .env.local
 .env.*.local
+bandit-report.json
