@@ -259,6 +259,26 @@ git branch --show-current
 -   ❌ **NEVER `git push --force-with-lease` to main branch**
 -   ✅ **Always use regular `git push` for main branch**
 -   ✅ **If push fails, use `git pull` then `git push`**
+-   🎯 **ALWAYS base feature branches on latest main**
+
+### Feature Branch Workflow
+
+**MANDATORY: Always base on main and sync regularly**
+
+```bash
+# Before creating any feature branch:
+git checkout main
+git pull origin main          # Ensure we have latest main
+git checkout -b feature-name  # Create branch from latest main
+
+# If branch exists and needs sync with main:
+git fetch origin              # Get latest remote changes
+git checkout main
+git pull origin main          # Update local main
+git checkout feature-branch
+git rebase origin/main        # Rebase on latest main
+git push --force-with-lease   # ONLY for feature branches
+```
 
 ### Clean Repository Rules
 
