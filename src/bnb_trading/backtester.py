@@ -161,7 +161,8 @@ def _try_imports():
     # Strategy 3: Add src to path and try absolute (CI fallback)
     try:
         current_file = Path(__file__).resolve()
-        src_path = current_file.parent.parent.parent  # Go up to src/
+        # Go up from src/bnb_trading/backtester.py to src/
+        src_path = current_file.parent.parent
         if src_path.name == "src" and str(src_path) not in sys.path:
             sys.path.insert(0, str(src_path))
 
@@ -180,6 +181,49 @@ def _try_imports():
         )
     except ImportError as e:
         errors.append(f"Path-adjusted imports failed: {e}")
+
+    # Strategy 4: Try project root path (CI environment)
+    try:
+        current_file = Path(__file__).resolve()
+        project_root = current_file.parent.parent.parent  # Go up to project root
+        src_path = project_root / "src"
+        if src_path.exists() and str(src_path) not in sys.path:
+            sys.path.insert(0, str(src_path))
+
+        from bnb_trading.data.fetcher import BNBDataFetcher
+        from bnb_trading.fibonacci import FibonacciAnalyzer
+        from bnb_trading.indicators import TechnicalIndicators
+        from bnb_trading.signals.generator import SignalGenerator
+        from bnb_trading.weekly_tails import WeeklyTailsAnalyzer
+
+        return (
+            BNBDataFetcher,
+            FibonacciAnalyzer,
+            TechnicalIndicators,
+            SignalGenerator,
+            WeeklyTailsAnalyzer,
+        )
+    except ImportError as e:
+        errors.append(f"Project root path imports failed: {e}")
+
+    # Strategy 5: Use PYTHONPATH if available (CI PYTHONPATH=src)
+    try:
+        # PYTHONPATH should already be in sys.path, just try the imports
+        from bnb_trading.data.fetcher import BNBDataFetcher
+        from bnb_trading.fibonacci import FibonacciAnalyzer
+        from bnb_trading.indicators import TechnicalIndicators
+        from bnb_trading.signals.generator import SignalGenerator
+        from bnb_trading.weekly_tails import WeeklyTailsAnalyzer
+
+        return (
+            BNBDataFetcher,
+            FibonacciAnalyzer,
+            TechnicalIndicators,
+            SignalGenerator,
+            WeeklyTailsAnalyzer,
+        )
+    except ImportError as e:
+        errors.append(f"PYTHONPATH imports failed: {e}")
 
     # If all strategies fail, raise comprehensive error
     error_msg = "All import strategies failed:\n" + "\n".join(

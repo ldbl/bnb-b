@@ -4,6 +4,9 @@
 # Code formatting and linting (unified with Ruff)
 ruff==0.12.11
 
+# Security scanning
+bandit>=1.7.5
+
 # Development tools
 ipython>=8.14.0
 jupyter>=1.0.0
