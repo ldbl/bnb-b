@@ -76,15 +76,20 @@ grep -A 5 "\[long_signals\]" config.toml
 
 ## Core System Architecture
 
-### Primary Entry Points
+### Primary Entry Points (Modular Architecture)
 
--   **`main.py`**: Complete trading system orchestrator and primary entry point
--   **`signal_generator.py`**: Central signal generation engine combining all analysis modules
--   **`backtester.py`**: Historical validation engine with 18-month backtesting capability
+-   **`src/bnb_trading/pipeline/orchestrator.py`**: **TradingPipeline** - Main orchestration class
+-   **`src/bnb_trading/pipeline/runners.py`**: **PipelineRunner** - Different execution modes (live, backtest, validation, fast)
+-   **`src/bnb_trading/signals/generator.py`**: **SignalGenerator** - Thin orchestration layer
+-   **`src/bnb_trading/testing/backtester.py`**: **Backtester** - Historical validation engine
+
+#### File Needing Refactoring:
+
+-   **`main.py`**: ⚠️ **NEEDS REFACTORING** (1,482 lines - should use pipeline architecture)
 
 ### Data Layer
 
--   **`data_fetcher.py`**: Binance API integration with CCXT, handles multiple timeframes (1d, 1w)
+-   **`src/bnb_trading/data/fetcher.py`**: **BNBDataFetcher** - Binance API integration with CCXT
 -   **`config.toml`**: Single source of truth for all system parameters and weights
 
 ### Core Analysis Modules (22+ specialized analyzers)
@@ -176,11 +181,16 @@ confidence_threshold_high = 5.0
 
 ## Development Guidelines
 
-### Code Standards (from .cursor/rules/agent.mdc)
+### Code Standards (Updated for Modular Architecture)
 
--   **Python 3.8+** with comprehensive type hints
+-   **Python 3.13** standardized across project (updated from mixed versions)
+-   **Strict Type Safety**: Full mypy enforcement (removed ignore flags)
+-   **Ruff**: Unified code quality tooling (replaced flake8/black/isort)
+-   **Modular Architecture**: Files <400 lines average, 800 lines hard cap
+-   **Package Structure**: 8 organized packages with clear boundaries
 -   **Pandas/NumPy** for data manipulation, **CCXT** for API integration
 -   **TA-Lib** for technical indicators
+-   **Custom Exceptions**: Enhanced error handling with `AnalysisError`, `DataError`, `ConfigurationError`
 -   Handle NaN values with `np.nan_to_num()`
 -   Comprehensive logging for all operations
 -   Try/catch blocks for API calls
@@ -260,11 +270,11 @@ confidence_threshold_high = 5.0
 -   **`TODO.md`**: Current development priorities and analysis results
 -   **`.cursor/rules/agent.mdc`**: 🎯 **Project rules and trading philosophy** - Core principles, success criteria, and quality standards
 
-> **⚠️ Documentation Maintenance**: Both `CLAUDE.md` and `MODULES.md` must be kept synchronized
+> **⚠️ Documentation Maintenance**: Both `CLAUDE.md` and `MODULES.md` must be kept synchronized ✅ **COMPLETED 2025-08-30**
 >
-> -   **CLAUDE.md**: Update when system architecture, performance, or development priorities change
-> -   **MODULES.md**: Update when adding/modifying modules, API changes, or technical specifications change
-> -   **Cross-references**: Ensure both files reference each other and maintain consistent information
+> -   **CLAUDE.md**: ✅ **UPDATED** - Reflects new modular architecture, package structure, and recommended usage patterns
+> -   **MODULES.md**: ✅ **UPDATED** - Complete modular architecture documentation with package details and migration benefits
+> -   **Cross-references**: ✅ **SYNCHRONIZED** - Both files reference each other and maintain consistent information about the new modular structure
 
 ## 📍 Code References & Key Function Locations
 

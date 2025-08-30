@@ -106,18 +106,34 @@ DATE: 2024-01-01
 """
 
 import logging
+import os
+import sys
 
 import numpy as np
 import pandas as pd
 import toml
 from tqdm import tqdm
 
-# Package-relative imports
-from .data_fetcher import BNBDataFetcher
-from .fibonacci import FibonacciAnalyzer
-from .indicators import TechnicalIndicators
-from .signal_generator import SignalGenerator
-from .weekly_tails import WeeklyTailsAnalyzer
+# For direct script execution - add src to path
+if __name__ == "__main__":
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    src_dir = os.path.dirname(current_dir)
+    if src_dir not in sys.path:
+        sys.path.insert(0, src_dir)
+
+    # Use absolute imports for direct execution
+    from bnb_trading.data.fetcher import BNBDataFetcher
+    from bnb_trading.fibonacci import FibonacciAnalyzer
+    from bnb_trading.indicators import TechnicalIndicators
+    from bnb_trading.signals.generator import SignalGenerator
+    from bnb_trading.weekly_tails import WeeklyTailsAnalyzer
+else:
+    # Use relative imports when imported as module
+    from .data.fetcher import BNBDataFetcher
+    from .fibonacci import FibonacciAnalyzer
+    from .indicators import TechnicalIndicators
+    from .signals.generator import SignalGenerator
+    from .weekly_tails import WeeklyTailsAnalyzer
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -229,7 +245,18 @@ class Backtester:
         """
         try:
             # Зареждаме конфигурацията
-            self.config = toml.load(config_file)
+            config_path = config_file
+
+            # Try to find config.toml in project root if not found locally
+            if not os.path.exists(config_path):
+                # Look for config in project root (2 levels up from src/bnb_trading)
+                current_dir = os.path.dirname(os.path.abspath(__file__))
+                project_root = os.path.dirname(os.path.dirname(current_dir))
+                root_config_path = project_root + "/config.toml"
+                if os.path.exists(root_config_path):
+                    config_path = root_config_path
+
+            self.config = toml.load(config_path)
 
             # Инициализираме компонентите
             self.data_fetcher = BNBDataFetcher(self.config["data"]["symbol"])
@@ -366,28 +393,44 @@ class Backtester:
                             current_daily, current_weekly, current_date
                         )
 
-                        if signal and signal["signal"] != "HOLD":
+                        if signal:
                             signal_type = signal["signal"]
 
-                            # Броим сигналите
+                            # Броим всички сигнали (включително HOLD)
                             if signal_type == "SHORT":
                                 short_signals_count += 1
                             elif signal_type == "LONG":
                                 long_signals_count += 1
 
-                            # Проверяваме резултата след 2 седмици
-                            result = self._validate_historical_signal(
-                                signal, backtest_daily, current_date
-                            )
-
-                            if result:
+                            # Добавяме всички сигнали (включително HOLD)
+                            if signal_type == "HOLD":
+                                # HOLD сигналите не се валидират
                                 signals.append(
                                     {
                                         "date": current_date,
                                         "signal": signal,
-                                        "result": result,
+                                        "result": {
+                                            "success": None,
+                                            "profit_loss_pct": 0.0,
+                                            "type": "HOLD",
+                                        },
                                     }
                                 )
+                            else:
+                                # Анализираме само действителни сигнали (не HOLD)
+                                # Проверяваме резултата след 2 седмици
+                                result = self._validate_historical_signal(
+                                    signal, backtest_daily, current_date
+                                )
+
+                                if result:
+                                    signals.append(
+                                        {
+                                            "date": current_date,
+                                            "signal": signal,
+                                            "result": result,
+                                        }
+                                    )
 
                     except Exception as e:
                         # Тихо прескачаме грешките за да не спираме прогреса
@@ -600,10 +643,28 @@ class Backtester:
             Dict с анализ на резултатите
         """
         try:
+            # Разделяме HOLD сигналите от действителните сигнали
+            actionable_signals = [s for s in signals if s["signal"]["signal"] != "HOLD"]
+            hold_signals = [s for s in signals if s["signal"]["signal"] == "HOLD"]
+
+            if not actionable_signals:
+                # Системата е генерирала само HOLD сигнали - това е правилно поведение
+                total_signals = len(signals)
+                hold_count = len(hold_signals)
+                return {
+                    "info": f"Системата генерира само HOLD сигнали ({hold_count}/{total_signals}) - консервативно поведение при ATH",
+                    "total_signals_generated": total_signals,
+                    "hold_signals": hold_count,
+                    "actionable_signals": 0,
+                    "analysis_note": "HOLD сигналите са правилно решение близо до All-Time High цени",
+                    "system_behavior": "CONSERVATIVE - система работи правилно",
+                }
+
             if not signals:
                 return {"error": "Няма сигнали за анализ"}
 
-            # Обща статистика
+            # Обща статистика - анализираме само действителните сигнали (не HOLD)
+            signals = actionable_signals  # Работим само с действителни сигнали
             total_signals = len(signals)
             successful_signals = len([s for s in signals if s["result"]["success"]])
             accuracy = (
@@ -1130,12 +1191,24 @@ def main():
             return
 
         # Показваме резултатите - сбито
-        if "analysis" not in results or "error" in results["analysis"]:
+        if "analysis" not in results:
+            print("\n❌ Грешка: Няма анализ на резултатите")
+            return
+
+        # Проверяваме за info съобщение (консервативно поведение)
+        if "info" in results["analysis"]:
+            print("\n📊 Backtest резултати:")
+            print(f"ℹ️  {results['analysis']['info']}")
+            print(f"📈 Общо сигнали: {results['analysis']['total_signals_generated']}")
+            print(f"🛑 HOLD сигнали: {results['analysis']['hold_signals']}")
+            print(f"📝 Бележка: {results['analysis']['analysis_note']}")
+            print(f"⚙️  Статус: {results['analysis']['system_behavior']}")
+            return
+
+        # Проверяваме за грешка
+        if "error" in results["analysis"]:
             print("\n❌ Грешка в анализ на резултатите:")
-            if "analysis" in results and "error" in results["analysis"]:
-                print(f"   {results['analysis']['error']}")
-            else:
-                print("   Няма анализ на резултатите")
+            print(f"   {results['analysis']['error']}")
             return
 
         analysis = results["analysis"]

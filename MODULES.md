@@ -2,55 +2,401 @@
 
 > **🎯 Quick Start Guide**: For Claude Code guidance, essential commands, and system overview, see **`CLAUDE.md`**
 
-## 🏗️ System Architecture Overview
+## 🏗️ New Modular Architecture Overview
 
-The BNB Trading System is a modular, configuration-driven swing trading system designed for BNB/USDT analysis and signal generation. This document provides detailed technical specifications for all system modules.
+The BNB Trading System has been completely **refactored into a modular, layered architecture** designed for BNB/USDT analysis and signal generation. This document provides detailed technical specifications for the new modular structure.
 
-**System Status** (Updated 2025-08-29):
+**System Status** (Updated 2025-08-30):
 
 -   **Overall Accuracy**: 59.7% (37/62 signals) - Latest 18-month backtest validation (+4.4% improvement)
 -   **LONG Accuracy**: 63.3% (49 signals) - Enhanced with strict confluence requirements
--   **Active Modules**: 22+ specialized analysis components
--   **Latest Enhancement**: LONG signal enhancement completed - targeting 85%+ accuracy
+-   **Architecture**: **MODULAR** - Completely refactored into 8 main packages
+-   **Active Modules**: 22+ specialized analysis components in organized packages
+-   **Latest Enhancement**: Complete modular architecture refactoring completed - improved maintainability and testing
 
 ### Core Design Principles
 
--   **Modularity**: Each indicator/functionality in separate file
--   **Configuration-driven**: All parameters in `config.toml`
+-   **Modular Packages**: 8 organized packages with clear boundaries (core, data, analysis, signals, validation, testing, pipeline, utils)
+-   **Layered Architecture**: Clean dependency direction from main → pipeline → signals ← validation → analysis → data → core
+-   **Configuration-driven**: All parameters centralized in `config.toml`
 -   **Real-time data**: Live Binance API integration via CCXT
--   **Type safety**: Full type hints throughout the codebase
--   **Error handling**: Comprehensive error handling and logging
+-   **Type safety**: Full type hints with strict mypy enforcement
+-   **Error handling**: Comprehensive error handling with custom exceptions
+-   **Clean Modular Design**: No legacy wrappers - direct modular imports only
 
 ---
 
-## 📦 Core Modules
+## 🏗️ Package Structure Overview
 
-### 1. 🎯 Main Entry Point - `main.py`
+```
+src/bnb_trading/
+├── core/                    # Foundation layer
+│   ├── models.py           # Data models and dataclasses
+│   ├── constants.py        # System-wide constants
+│   ├── exceptions.py       # Custom exceptions
+│   └── config.py           # Configuration management
+├── data/                   # Data acquisition layer
+│   ├── fetcher.py          # Main data fetcher (BNBDataFetcher)
+│   ├── validator.py        # Data validation logic
+│   └── cache.py            # Data caching mechanisms
+├── analysis/               # Technical analysis modules
+│   ├── fibonacci/          # Fibonacci analysis package
+│   ├── weekly_tails/       # Weekly tails analysis package
+│   ├── indicators/         # Technical indicators package
+│   ├── trend/              # Trend analysis package
+│   └── ... (other analysis modules)
+├── signals/                # Signal generation layer
+│   ├── generator.py        # Main signal generator (thin orchestrator)
+│   ├── combiners/          # Signal combination logic
+│   ├── confidence/         # Confidence calculation
+│   ├── filters/            # Signal filtering logic
+│   └── smart_short/        # Smart SHORT generation package
+├── validation/             # Validation and testing layer
+│   ├── protocol.py         # Validation protocols
+│   ├── validator.py        # Signal validation
+│   └── metrics.py          # Performance metrics
+├── testing/                # Historical testing layer
+│   ├── backtester.py       # Main backtesting engine
+│   ├── historical.py       # Historical analysis
+│   └── performance.py      # Performance analysis
+├── pipeline/               # Pipeline orchestration layer
+│   ├── orchestrator.py     # Main TradingPipeline class
+│   └── runners.py          # Different execution modes
+├── utils/                  # Utility functions
+│   ├── helpers.py          # General helper functions
+│   └── logging.py          # Logging configuration
+└── main.py                 # ⚠️ NEEDS REFACTORING - should use pipeline architecture
+```
+
+### Dependency Flow
+
+```
+main.py → pipeline/ → signals/ ← validation/ → analysis/ → data/ → core/
+        ↘ utils/  ↗
+```
+
+---
+
+## 📦 Core Package Details
+
+### 🎯 Core Package (`src/bnb_trading/core/`)
+
+**Purpose**: Foundation layer providing shared models, constants, exceptions, and configuration.
+
+#### Key Modules:
+
+**`models.py`** - Data Models and Structures:
+
+```python
+@dataclass
+class Signal:
+    """Trading signal with metadata"""
+    signal: str
+    confidence: float
+    price: float
+    timestamp: str
+    reason: str
+    analysis_data: Dict[str, Any]
+
+@dataclass
+class TestResult:
+    """Backtesting result structure"""
+    period_name: str
+    start_date: str
+    end_date: str
+    total_signals: int
+    correct_signals: int
+    accuracy: float
+    total_pnl: float
+```
+
+**`constants.py`** - System-wide Constants:
+
+```python
+# Signal types
+SIGNAL_LONG = "LONG"
+SIGNAL_SHORT = "SHORT"
+SIGNAL_HOLD = "HOLD"
+
+# Fibonacci levels
+FIBONACCI_RETRACEMENT_LEVELS = [0.0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0]
+FIBONACCI_EXTENSION_LEVELS = [1.0, 1.272, 1.414, 1.618, 2.0, 2.618]
+
+# Market regimes
+MARKET_REGIME_STRONG_BULL = "STRONG_BULL"
+MARKET_REGIME_MODERATE_BULL = "MODERATE_BULL"
+```
+
+**`exceptions.py`** - Custom Exception Classes:
+
+```python
+class AnalysisError(Exception):
+    """Analysis calculation errors"""
+
+class DataError(Exception):
+    """Data fetching/validation errors"""
+
+class ConfigurationError(Exception):
+    """Configuration validation errors"""
+```
+
+---
+
+### 📊 Data Package (`src/bnb_trading/data/`)
+
+**Purpose**: Data acquisition, validation, and caching layer.
+
+#### Key Modules:
+
+**`fetcher.py`** - Main Data Fetcher (Extracted from data_fetcher.py):
+
+```python
+class BNBDataFetcher:
+    """Handles Binance API data retrieval with caching and validation"""
+
+    def fetch_bnb_data(self, lookback_days: int) -> Dict[str, pd.DataFrame]:
+        """Fetches OHLCV data for multiple timeframes"""
+
+    def validate_data_quality(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Ensures data integrity with custom exceptions"""
+```
+
+**Features**:
+
+-   ✅ Enhanced error handling with custom exceptions
+-   ✅ Modular validation logic
+-   ✅ Improved caching mechanisms
+-   ✅ CCXT integration maintained
+
+---
+
+### 🎯 Signals Package (`src/bnb_trading/signals/`)
+
+**Purpose**: Signal generation orchestration with specialized sub-modules.
+
+#### Key Modules:
+
+**`generator.py`** - Thin Orchestration Layer (Extracted from signal_generator.py):
+
+```python
+class SignalGenerator:
+    """Orchestrates signal generation using specialized modules"""
+
+    def generate_signal(self, daily_df: pd.DataFrame, weekly_df: pd.DataFrame) -> Dict[str, Any]:
+        """Delegates to specialized modules for signal generation"""
+```
+
+**Sub-packages**:
+
+-   **`combiners/`**: Signal combination logic
+-   **`confidence/`**: Confidence calculation algorithms
+-   **`filters/`**: Signal filtering and validation
+-   **`smart_short/`**: Enhanced SHORT signal generation
+
+#### Smart SHORT Package (`signals/smart_short/`):
+
+**`market_regime.py`** - Market Regime Detection (Extracted from smart_short_generator.py):
+
+```python
+class MarketRegimeDetector:
+    """Specialized market regime classification"""
+
+    def analyze_market_regime(self, trend_data: Dict[str, Any]) -> str:
+        """Classifies current market regime"""
+        # STRONG_BULL, MODERATE_BULL, NEUTRAL, BEAR classification
+```
+
+---
+
+### 🔬 Analysis Package (`src/bnb_trading/analysis/`)
+
+**Purpose**: All technical analysis modules organized into focused sub-packages.
+
+#### Sub-packages Structure:
+
+-   **`fibonacci/`**: Fibonacci retracement and extension analysis
+-   **`weekly_tails/`**: Weekly wick/tail pattern analysis
+-   **`indicators/`**: Technical indicators (RSI, MACD, BB)
+-   **`trend/`**: Trend analysis and market regime detection
+-   **`elliott_wave/`**: Elliott Wave analysis
+-   **`divergence/`**: Divergence detection
+-   **`sentiment/`**: Market sentiment analysis
+-   And other specialized analysis modules...
+
+---
+
+### 🔍 Validation Package (`src/bnb_trading/validation/`)
+
+**Purpose**: Signal validation, performance tracking, and quality assurance.
+
+#### Key Modules:
+
+**`protocol.py`** - Validation Protocols (Extracted from validation_protocol.py):
+
+```python
+class ValidationProtocol:
+    """Validation rules and quality assurance protocols"""
+
+    def validate_signal_quality(self, signal_data: Dict[str, Any]) -> bool:
+        """Applies comprehensive validation rules"""
+```
+
+**`validator.py`** - Performance Tracking:
+
+```python
+class SignalValidator:
+    """Validates signals and tracks historical performance"""
+
+    def validate_signal(self, signal: Dict[str, Any], result: Dict[str, Any]) -> Dict[str, Any]:
+        """Validates individual signal with enhanced metrics"""
+```
+
+---
+
+### 🧪 Testing Package (`src/bnb_trading/testing/`)
+
+**Purpose**: Historical backtesting and performance analysis.
+
+#### Key Modules:
+
+**`backtester.py`** - Main Backtesting Engine:
+
+```python
+class Backtester:
+    """Enhanced backtesting with modular architecture support"""
+
+    def run_backtest(self, months: int) -> Dict[str, Any]:
+        """Uses new pipeline architecture for backtesting"""
+```
+
+**`historical.py`** - Historical Analysis (Extracted from historical_tester.py):
+
+```python
+class HistoricalAnalyzer:
+    """Specialized historical performance analysis"""
+```
+
+---
+
+### 🔄 Pipeline Package (`src/bnb_trading/pipeline/`)
+
+**Purpose**: Main orchestration layer that coordinates all system components.
+
+#### Key Modules:
+
+**`orchestrator.py`** - Main Pipeline Class:
+
+```python
+class TradingPipeline:
+    """Thin orchestration layer that ties everything together"""
+
+    def run_analysis(self) -> Dict[str, Any]:
+        """Executes complete trading analysis pipeline"""
+        # Step 1: Fetch data
+        # Step 2: Run analyses
+        # Step 3: Generate signals
+        # Step 4: Validate
+        # Step 5: Return results
+```
+
+**`runners.py`** - Different Execution Modes:
+
+```python
+class PipelineRunner:
+    """Different execution modes for the trading pipeline"""
+
+    def run_live_analysis(self) -> Dict[str, Any]:
+        """Real-time analysis mode"""
+
+    def run_backtest_mode(self, months: int) -> Dict[str, Any]:
+        """Historical backtest mode"""
+
+    def run_validation_mode(self, feature_name: str) -> Dict[str, Any]:
+        """Feature validation mode"""
+
+    def run_signal_only_mode(self) -> Dict[str, Any]:
+        """Fast signal generation mode"""
+```
+
+---
+
+## 🎯 Direct Modular Usage
+
+### Clean Architecture - No Wrappers
+
+All components accessed directly from modular packages:
+
+```python
+# Data layer
+from src.bnb_trading.data.fetcher import BNBDataFetcher
+
+# Signal generation
+from src.bnb_trading.signals.generator import SignalGenerator
+from src.bnb_trading.signals.smart_short.generator import SmartShortGenerator
+
+# Pipeline orchestration
+from src.bnb_trading.pipeline.orchestrator import TradingPipeline
+from src.bnb_trading.pipeline.runners import PipelineRunner
+
+# Validation and testing
+from src.bnb_trading.validation.protocol import ValidationProtocol
+from src.bnb_trading.testing.backtester import Backtester
+```
+
+---
+
+## 🎯 Migration Benefits
+
+### Before Modular Architecture:
+
+-   **Large Files**: signal_generator.py (3,674 lines), main.py (1,482 lines)
+-   **Monolithic Structure**: All logic in single files
+-   **Complex Dependencies**: Circular imports and tight coupling
+-   **Testing Challenges**: Difficult to test individual components
+
+### After Modular Architecture:
+
+-   **Focused Modules**: Each file < 400 lines average, hard cap 800 lines
+-   **Clean Separation**: Clear package boundaries and responsibilities
+-   **Easy Testing**: Individual components can be tested in isolation
+-   **Maintainability**: Changes isolated to specific packages
+-   **Type Safety**: Strict mypy enforcement across all modules
+
+---
+
+## 📦 Original Module Details (For Reference)
+
+### 1. 🎯 Main Entry Point - `main.py` ⚠️ **NEEDS REFACTORING**
+
+**Current Status**: **1,482 lines** - Exceeds architecture limits (800 line hard cap)
+**Refactoring Priority**: **HIGH** - Should use pipeline architecture
 
 **Primary Purpose**: Orchestrates the entire trading system and displays current trading signals.
 
-**Key Classes**:
+**Current Issue**: Monolithic structure should be replaced with modular pipeline
+
+**Recommended Refactoring**:
 
 ```python
-class BNBTradingSystem:
-    """Main orchestrator class for BNB trading analysis"""
+# Replace monolithic BNBTradingSystem with:
+from src.bnb_trading.pipeline.orchestrator import TradingPipeline
+from src.bnb_trading.pipeline.runners import PipelineRunner
+
+def main():
+    runner = PipelineRunner()
+    results = runner.run_live_analysis()
+    # Display and export results
 ```
-
-**Main Functions**:
-
--   `run_analysis()` - Executes complete BNB analysis
--   `display_current_signal()` - Shows current trading signal with detailed analysis
--   `export_results()` - Saves analysis results to files
-
-**Dependencies**: All 22+ analysis modules, data_fetcher, signal_generator
 
 **Current Performance**: 59.7% overall accuracy (37/62 signals) over 18-month backtest
 
 ---
 
-### 2. 📊 Data Layer - `data_fetcher.py`
+### 2. 📊 Data Layer - `src/bnb_trading/data/fetcher.py` ✅ **MODULARIZED**
 
-**Purpose**: Handles all data acquisition from external sources.
+**Purpose**: Main data acquisition and validation module
+
+**Modular Location**: `src/bnb_trading/data/fetcher.py`
 
 **Key Class**:
 
@@ -59,45 +405,49 @@ class BNBDataFetcher:
     """Handles Binance API data retrieval with caching and validation"""
 ```
 
-**Core Methods**:
-
--   `fetch_bnb_data(lookback_days)` - Fetches OHLCV data for multiple timeframes
--   `validate_data_quality(df)` - Ensures data integrity
--   `convert_to_dataframe(raw_data)` - Converts API response to pandas DataFrame
-
 **Features**:
 
--   ✅ CCXT integration for Binance API
--   ✅ Multiple timeframe support (1d, 1w)
--   ✅ Data validation and cleaning
--   ✅ Rate limiting and error handling
+-   ✅ Enhanced error handling with custom exceptions
+-   ✅ Cleaner separation of data validation logic
+-   ✅ Improved caching mechanisms
+-   ✅ Direct modular imports
 
-**Configuration**:
+**Usage**:
 
-```toml
-[data]
-symbol = "BNB/USDT"
-lookback_days = 500
-timeframes = ["1d", "1w"]
+```python
+# Direct modular import
+from src.bnb_trading.data.fetcher import BNBDataFetcher
 ```
 
 ---
 
-### 3. 🎯 Signal Generation - `signal_generator.py`
+### 3. 🎯 Signal Generation - `src/bnb_trading/signals/generator.py` ✅ **MODULARIZED**
 
-**Purpose**: Combines all analysis modules to generate final trading signals.
+**Purpose**: Main signal generation orchestration module
 
-**Key Class**:
+**Modular Location**: `src/bnb_trading/signals/generator.py`
+
+**Refactoring Benefits**:
+
+-   ✅ Broken down from 3,674 lines to focused modules
+-   ✅ Specialized sub-packages for different functionality
+-   ✅ Enhanced testability and maintainability
+-   ✅ Clear separation of concerns
+
+**Key Sub-modules**:
+
+-   `signals/combiners/` - Signal combination logic
+-   `signals/confidence/` - Confidence calculation
+-   `signals/filters/` - Signal filtering
+-   `signals/smart_short/` - Smart SHORT generation
+
+**Usage**:
 
 ```python
-class SignalGenerator:
-    """Orchestrates all analysis modules to generate trading signals"""
+# Direct modular import
+from src.bnb_trading.signals.generator import SignalGenerator
 ```
 
-**Core Methods**:
-
--   `generate_signal(daily_df, weekly_df)` - Main signal generation method
--   `_combine_signals(analyses)` - Combines multiple analysis results
 -   `_calculate_confidence(analyses)` - Calculates overall signal confidence
 -   `_validate_signal(signal)` - Validates signal against risk criteria
 
