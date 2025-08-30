@@ -111,7 +111,7 @@ DATE: 2024-01-01
 """
 
 import logging
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -217,19 +217,23 @@ class MovingAveragesAnalyzer:
         and clean OHLCV data for accurate EMA and crossover calculations.
     """
 
-    def __init__(self, config: Dict[str, Any]) -> None:
+    def __init__(self, config: dict[str, Any]) -> None:
         self.config = config
         self.fast_period = config.get("moving_averages", {}).get("fast_period", 10)
         self.slow_period = config.get("moving_averages", {}).get("slow_period", 50)
         self.volume_confirmation = config.get("moving_averages", {}).get(
             "volume_confirmation", True
         )
-        self.volume_multiplier = config.get("moving_averages", {}).get("volume_multiplier", 1.5)
-        self.volume_lookback = config.get("moving_averages", {}).get("volume_lookback", 14)
+        self.volume_multiplier = config.get("moving_averages", {}).get(
+            "volume_multiplier", 1.5
+        )
+        self.volume_lookback = config.get("moving_averages", {}).get(
+            "volume_lookback", 14
+        )
 
         logger.info("Moving Averages анализатор инициализиран")
 
-    def calculate_emas(self, price_data: pd.DataFrame) -> Dict:
+    def calculate_emas(self, price_data: pd.DataFrame) -> dict:
         """
         Изчислява Exponential Moving Averages
 
@@ -241,7 +245,9 @@ class MovingAveragesAnalyzer:
         """
         try:
             if len(price_data) < self.slow_period:
-                return {"error": f"Недостатъчно данни. Нужни са поне {self.slow_period} периода"}
+                return {
+                    "error": f"Недостатъчно данни. Нужни са поне {self.slow_period} периода"
+                }
 
             closes = (
                 price_data["close"].values
@@ -297,7 +303,7 @@ class MovingAveragesAnalyzer:
             logger.error(f"Грешка при изчисляване на EMA: {e}")
             return np.array([])
 
-    def _detect_crossover(self, fast_ema: np.ndarray, slow_ema: np.ndarray) -> Dict:
+    def _detect_crossover(self, fast_ema: np.ndarray, slow_ema: np.ndarray) -> dict:
         """
         Открива crossover между fast и slow EMA
 
@@ -310,7 +316,11 @@ class MovingAveragesAnalyzer:
         """
         try:
             if len(fast_ema) < 2 or len(slow_ema) < 2:
-                return {"signal": "NONE", "confidence": 0, "reason": "Недостатъчно данни"}
+                return {
+                    "signal": "NONE",
+                    "confidence": 0,
+                    "reason": "Недостатъчно данни",
+                }
 
             # Текущи стойности
             fast_current = fast_ema[-1]
@@ -328,9 +338,9 @@ class MovingAveragesAnalyzer:
                     "signal": "BULLISH_CROSS",
                     "confidence": confidence,
                     "reason": (
-                        f"Fast EMA ({
-                            self.fast_period}) пресича нагоре Slow EMA ({
-                            self.slow_period})"
+                        f"Fast EMA ({self.fast_period}) пресича нагоре Slow EMA ({
+                            self.slow_period
+                        })"
                     ),
                     "crossover_strength": crossover_strength,
                     "fast_ema": fast_current,
@@ -338,7 +348,7 @@ class MovingAveragesAnalyzer:
                 }
 
             # Проверяваме за bearish crossover
-            elif fast_previous >= slow_previous and fast_current < slow_current:
+            if fast_previous >= slow_previous and fast_current < slow_current:
                 # Fast EMA пресича надолу slow EMA
                 crossover_strength = abs(fast_current - slow_current) / slow_current
                 confidence = min(95, 60 + crossover_strength * 100)
@@ -347,9 +357,9 @@ class MovingAveragesAnalyzer:
                     "signal": "BEARISH_CROSS",
                     "confidence": confidence,
                     "reason": (
-                        f"Fast EMA ({
-                            self.fast_period}) пресича надолу Slow EMA ({
-                            self.slow_period})"
+                        f"Fast EMA ({self.fast_period}) пресича надолу Slow EMA ({
+                            self.slow_period
+                        })"
                     ),
                     "crossover_strength": crossover_strength,
                     "fast_ema": fast_current,
@@ -357,37 +367,35 @@ class MovingAveragesAnalyzer:
                 }
 
             # Проверяваме за текущо състояние
-            else:
-                if fast_current > slow_current:
-                    # Fast EMA е над slow EMA - bullish
-                    distance = (fast_current - slow_current) / slow_current
-                    confidence = min(80, 50 + distance * 100)
+            if fast_current > slow_current:
+                # Fast EMA е над slow EMA - bullish
+                distance = (fast_current - slow_current) / slow_current
+                confidence = min(80, 50 + distance * 100)
 
-                    return {
-                        "signal": "BULLISH_ABOVE",
-                        "confidence": confidence,
-                        "reason": (
-                            f"Fast EMA ({self.fast_period}) е над Slow EMA ({self.slow_period})"
-                        ),
-                        "distance": distance,
-                        "fast_ema": fast_current,
-                        "slow_ema": slow_current,
-                    }
-                else:
-                    # Fast EMA е под slow EMA - bearish
-                    distance = (slow_current - fast_current) / slow_current
-                    confidence = min(80, 50 + distance * 100)
+                return {
+                    "signal": "BULLISH_ABOVE",
+                    "confidence": confidence,
+                    "reason": (
+                        f"Fast EMA ({self.fast_period}) е над Slow EMA ({self.slow_period})"
+                    ),
+                    "distance": distance,
+                    "fast_ema": fast_current,
+                    "slow_ema": slow_current,
+                }
+            # Fast EMA е под slow EMA - bearish
+            distance = (slow_current - fast_current) / slow_current
+            confidence = min(80, 50 + distance * 100)
 
-                    return {
-                        "signal": "BEARISH_BELOW",
-                        "confidence": confidence,
-                        "reason": (
-                            f"Fast EMA ({self.fast_period}) е под Slow EMA ({self.slow_period})"
-                        ),
-                        "distance": distance,
-                        "fast_ema": fast_current,
-                        "slow_ema": slow_current,
-                    }
+            return {
+                "signal": "BEARISH_BELOW",
+                "confidence": confidence,
+                "reason": (
+                    f"Fast EMA ({self.fast_period}) е под Slow EMA ({self.slow_period})"
+                ),
+                "distance": distance,
+                "fast_ema": fast_current,
+                "slow_ema": slow_current,
+            }
 
         except Exception as e:
             logger.error(f"Грешка при откриване на crossover: {e}")
@@ -413,7 +421,7 @@ class MovingAveragesAnalyzer:
                 return False
 
             # Изчисляваме среден обем за последните volume_lookback периода
-            recent_volumes = volumes[-self.volume_lookback:]
+            recent_volumes = volumes[-self.volume_lookback :]
             avg_volume = np.mean(recent_volumes)
 
             # Проверяваме дали текущият обем е над средния
@@ -426,7 +434,7 @@ class MovingAveragesAnalyzer:
             logger.error(f"Грешка при проверка на volume confirmation: {e}")
             return False
 
-    def get_ma_trading_signals(self, ma_analysis: Dict) -> Dict:
+    def get_ma_trading_signals(self, ma_analysis: dict) -> dict:
         """
         Генерира trading сигнали базирани на Moving Averages
 
@@ -459,53 +467,52 @@ class MovingAveragesAnalyzer:
                 return {
                     "signal": "BUY",
                     "confidence": confidence,
-                    "reason": f'Bullish EMA Crossover: {crossover.get("reason", "")}',
+                    "reason": f"Bullish EMA Crossover: {crossover.get('reason', '')}",
                     "risk_level": "MEDIUM" if volume_confirmed else "HIGH",
                     "entry_price": "Current price",
-                    "stop_loss": f'Below {ma_analysis.get("slow_ema_current", 0):.2f}',
-                    "target": f'Above {ma_analysis.get("fast_ema_current", 0):.2f}',
+                    "stop_loss": f"Below {ma_analysis.get('slow_ema_current', 0):.2f}",
+                    "target": f"Above {ma_analysis.get('fast_ema_current', 0):.2f}",
                 }
 
-            elif signal_type == "BEARISH_CROSS":
+            if signal_type == "BEARISH_CROSS":
                 return {
                     "signal": "SELL",
                     "confidence": confidence,
-                    "reason": f'Bearish EMA Crossover: {crossover.get("reason", "")}',
+                    "reason": f"Bearish EMA Crossover: {crossover.get('reason', '')}",
                     "risk_level": "MEDIUM" if volume_confirmed else "HIGH",
                     "entry_price": "Current price",
-                    "stop_loss": f'Above {ma_analysis.get("slow_ema_current", 0):.2f}',
-                    "target": f'Below {ma_analysis.get("fast_ema_current", 0):.2f}',
+                    "stop_loss": f"Above {ma_analysis.get('slow_ema_current', 0):.2f}",
+                    "target": f"Below {ma_analysis.get('fast_ema_current', 0):.2f}",
                 }
 
-            elif signal_type == "BULLISH_ABOVE":
+            if signal_type == "BULLISH_ABOVE":
                 return {
                     "signal": "HOLD_LONG",
                     "confidence": confidence,
-                    "reason": f'Bullish Trend: {crossover.get("reason", "")}',
+                    "reason": f"Bullish Trend: {crossover.get('reason', '')}",
                     "risk_level": "LOW",
                     "entry_price": "Pullback to slow EMA",
-                    "stop_loss": f'Below {ma_analysis.get("slow_ema_current", 0):.2f}',
+                    "stop_loss": f"Below {ma_analysis.get('slow_ema_current', 0):.2f}",
                     "target": "Continue trend",
                 }
 
-            elif signal_type == "BEARISH_BELOW":
+            if signal_type == "BEARISH_BELOW":
                 return {
                     "signal": "HOLD_SHORT",
                     "confidence": confidence,
-                    "reason": f'Bearish Trend: {crossover.get("reason", "")}',
+                    "reason": f"Bearish Trend: {crossover.get('reason', '')}",
                     "risk_level": "LOW",
                     "entry_price": "Bounce to slow EMA",
-                    "stop_loss": f'Above {ma_analysis.get("slow_ema_current", 0):.2f}',
+                    "stop_loss": f"Above {ma_analysis.get('slow_ema_current', 0):.2f}",
                     "target": "Continue trend",
                 }
 
-            else:
-                return {
-                    "signal": "WAIT",
-                    "confidence": 50,
-                    "reason": "Няма ясен MA сигнал",
-                    "risk_level": "LOW",
-                }
+            return {
+                "signal": "WAIT",
+                "confidence": 50,
+                "reason": "Няма ясен MA сигнал",
+                "risk_level": "LOW",
+            }
 
         except Exception as e:
             logger.error(f"Грешка при генериране на MA trading сигнали: {e}")
@@ -516,7 +523,7 @@ class MovingAveragesAnalyzer:
                 "risk_level": "UNKNOWN",
             }
 
-    def analyze_ma_strength(self, ma_analysis: Dict) -> Dict:
+    def analyze_ma_strength(self, ma_analysis: dict) -> dict:
         """
         Анализира силата на Moving Average сигнала
 

@@ -115,7 +115,6 @@ DATE: 2024-01-01
 
 import logging
 from datetime import datetime, timedelta
-from typing import Dict, List
 
 import requests
 
@@ -242,7 +241,7 @@ class WhaleTracker:
             "unusual_activity_score": 8,  # High unusual activity score
         }
 
-    def get_current_price_and_volume(self) -> Dict:
+    def get_current_price_and_volume(self) -> dict:
         """Get current BNB price and volume data"""
         try:
             # 24h ticker
@@ -267,7 +266,7 @@ class WhaleTracker:
 
         return {}
 
-    def get_whale_activity_summary(self, days_back: int = 1) -> Dict:
+    def get_whale_activity_summary(self, days_back: int = 1) -> dict:
         """Get whale activity summary using klines data (much more efficient)"""
         try:
             # Determine appropriate interval based on period
@@ -350,7 +349,9 @@ class WhaleTracker:
                                     "volume_ratio": period["volume"] / avg_volume,
                                     "price_change": period["price_change"],
                                     "whale_signal": self.classify_whale_signal(
-                                        period["volume"], period["price_change"], avg_volume
+                                        period["volume"],
+                                        period["price_change"],
+                                        avg_volume,
                                     ),
                                 }
                             )
@@ -367,48 +368,45 @@ class WhaleTracker:
 
         return {}
 
-    def classify_whale_signal(self, volume: float, price_change: float, avg_volume: float) -> str:
+    def classify_whale_signal(
+        self, volume: float, price_change: float, avg_volume: float
+    ) -> str:
         """Classify whale signal based on volume and price action"""
         volume_ratio = volume / avg_volume
 
         if volume_ratio >= 5:
             if price_change > 2:
                 return "🐋 MEGA WHALE BUY"
-            elif price_change < -2:
+            if price_change < -2:
                 return "🐋 MEGA WHALE SELL"
-            else:
-                return "🐋 MEGA WHALE ACTIVITY"
-        elif volume_ratio >= 3:
+            return "🐋 MEGA WHALE ACTIVITY"
+        if volume_ratio >= 3:
             if price_change > 1:
                 return "🐳 WHALE BUY"
-            elif price_change < -1:
+            if price_change < -1:
                 return "🐳 WHALE SELL"
-            else:
-                return "🐳 WHALE ACTIVITY"
-        elif volume_ratio >= 2:
+            return "🐳 WHALE ACTIVITY"
+        if volume_ratio >= 2:
             if price_change > 0.5:
                 return "🦈 LARGE BUY"
-            elif price_change < -0.5:
+            if price_change < -0.5:
                 return "🦈 LARGE SELL"
-            else:
-                return "🦈 LARGE ACTIVITY"
-        else:
-            return "📊 VOLUME SPIKE"
+            return "🦈 LARGE ACTIVITY"
+        return "📊 VOLUME SPIKE"
 
     def categorize_whale(self, quantity: float) -> str:
         """Categorize whale based on transaction size"""
         if quantity >= self.whale_thresholds["mega_whale"]:
             return "🐋 MEGA WHALE"
-        elif quantity >= self.whale_thresholds["whale"]:
+        if quantity >= self.whale_thresholds["whale"]:
             return "🐳 WHALE"
-        elif quantity >= self.whale_thresholds["large_holder"]:
+        if quantity >= self.whale_thresholds["large_holder"]:
             return "🦈 LARGE HOLDER"
-        elif quantity >= self.whale_thresholds["medium_holder"]:
+        if quantity >= self.whale_thresholds["medium_holder"]:
             return "🐟 MEDIUM HOLDER"
-        else:
-            return "🐠 SMALL HOLDER"
+        return "🐠 SMALL HOLDER"
 
-    def analyze_order_book_whales(self) -> Dict:
+    def analyze_order_book_whales(self) -> dict:
         """Analyze order book for whale walls"""
         try:
             orderbook_response = requests.get(
@@ -439,8 +437,12 @@ class WhaleTracker:
                 total_whale_resistance = sum(price * qty for price, qty in whale_asks)
 
                 # Find largest walls
-                largest_bid_wall = max(whale_bids, key=lambda x: x[1]) if whale_bids else None
-                largest_ask_wall = max(whale_asks, key=lambda x: x[1]) if whale_asks else None
+                largest_bid_wall = (
+                    max(whale_bids, key=lambda x: x[1]) if whale_bids else None
+                )
+                largest_ask_wall = (
+                    max(whale_asks, key=lambda x: x[1]) if whale_asks else None
+                )
 
                 return {
                     "whale_bids": whale_bids,
@@ -458,7 +460,7 @@ class WhaleTracker:
 
         return {}
 
-    def get_exchange_flows(self) -> Dict:
+    def get_exchange_flows(self) -> dict:
         """Simulate exchange flow analysis (would need real API)"""
         # This would normally connect to exchange APIs or on-chain data
         # For demo purposes, we'll simulate some data
@@ -468,18 +470,38 @@ class WhaleTracker:
         # Simulated large movements
         simulated_flows = {
             "inflows_24h": [
-                {"exchange": "Binance", "amount": 45000, "time": current_time - timedelta(hours=2)},
+                {
+                    "exchange": "Binance",
+                    "amount": 45000,
+                    "time": current_time - timedelta(hours=2),
+                },
                 {
                     "exchange": "Coinbase",
                     "amount": 23000,
                     "time": current_time - timedelta(hours=5),
                 },
-                {"exchange": "Kraken", "amount": 15000, "time": current_time - timedelta(hours=8)},
+                {
+                    "exchange": "Kraken",
+                    "amount": 15000,
+                    "time": current_time - timedelta(hours=8),
+                },
             ],
             "outflows_24h": [
-                {"exchange": "Binance", "amount": 67000, "time": current_time - timedelta(hours=1)},
-                {"exchange": "Huobi", "amount": 34000, "time": current_time - timedelta(hours=4)},
-                {"exchange": "OKEx", "amount": 18000, "time": current_time - timedelta(hours=7)},
+                {
+                    "exchange": "Binance",
+                    "amount": 67000,
+                    "time": current_time - timedelta(hours=1),
+                },
+                {
+                    "exchange": "Huobi",
+                    "amount": 34000,
+                    "time": current_time - timedelta(hours=4),
+                },
+                {
+                    "exchange": "OKEx",
+                    "amount": 18000,
+                    "time": current_time - timedelta(hours=7),
+                },
             ],
         }
 
@@ -497,11 +519,13 @@ class WhaleTracker:
             "flow_sentiment": (
                 "🟢 BULLISH"
                 if net_flow > 0
-                else "🔴 BEARISH" if net_flow < -50000 else "🟡 NEUTRAL"
+                else "🔴 BEARISH"
+                if net_flow < -50000
+                else "🟡 NEUTRAL"
             ),
         }
 
-    def analyze_whale_sentiment(self, large_trades: List[Dict]) -> Dict:
+    def analyze_whale_sentiment(self, large_trades: list[dict]) -> dict:
         """Analyze whale sentiment from recent large trades"""
         if not large_trades:
             return {"sentiment": "UNKNOWN", "confidence": 0}
@@ -559,13 +583,16 @@ class WhaleTracker:
         }
 
     def detect_unusual_activity(
-        self, market_data: Dict, high_volume_periods: List[Dict]
-    ) -> List[str]:
+        self, market_data: dict, high_volume_periods: list[dict]
+    ) -> list[str]:
         """Detect unusual whale activity patterns"""
         alerts = []
 
         # Price movement alerts
-        if abs(market_data.get("price_change_24h", 0)) > self.price_change_threshold * 100:
+        if (
+            abs(market_data.get("price_change_24h", 0))
+            > self.price_change_threshold * 100
+        ):
             change = market_data["price_change_24h"]
             alerts.append(f"🚨 Large price movement: {change:+.2f}% in 24h")
 
@@ -580,18 +607,24 @@ class WhaleTracker:
                 p for p in high_volume_periods if "MEGA WHALE" in p["whale_signal"]
             ]
             if mega_whale_signals:
-                alerts.append(f"🐋 {len(mega_whale_signals)} mega whale signal(s) detected!")
+                alerts.append(
+                    f"🐋 {len(mega_whale_signals)} mega whale signal(s) detected!"
+                )
 
             # Recent whale activity (last 4 hours)
             recent_time = datetime.now() - timedelta(hours=4)
-            recent_signals = [p for p in high_volume_periods if p["timestamp"] > recent_time]
+            recent_signals = [
+                p for p in high_volume_periods if p["timestamp"] > recent_time
+            ]
             if len(recent_signals) > 2:
                 alerts.append(f"⚡ {len(recent_signals)} whale signals in last 4 hours")
 
             # Very high volume ratios
             extreme_signals = [p for p in high_volume_periods if p["volume_ratio"] > 5]
             if extreme_signals:
-                alerts.append(f"🔥 {len(extreme_signals)} extreme volume spike(s) detected!")
+                alerts.append(
+                    f"🔥 {len(extreme_signals)} extreme volume spike(s) detected!"
+                )
 
         return alerts
 
@@ -618,13 +651,18 @@ class WhaleTracker:
 
                     # Count whale signal types
                     mega_whale_signals = len(
-                        [p for p in high_vol_periods if "MEGA WHALE" in p["whale_signal"]]
+                        [
+                            p
+                            for p in high_vol_periods
+                            if "MEGA WHALE" in p["whale_signal"]
+                        ]
                     )
                     whale_signals = len(
                         [
                             p
                             for p in high_vol_periods
-                            if "🐳 WHALE" in p["whale_signal"] and "MEGA" not in p["whale_signal"]
+                            if "🐳 WHALE" in p["whale_signal"]
+                            and "MEGA" not in p["whale_signal"]
                         ]
                     )
                     large_signals = len(
@@ -632,8 +670,12 @@ class WhaleTracker:
                     )
 
                     # Analyze sentiment
-                    buy_signals = len([p for p in high_vol_periods if "BUY" in p["whale_signal"]])
-                    sell_signals = len([p for p in high_vol_periods if "SELL" in p["whale_signal"]])
+                    buy_signals = len(
+                        [p for p in high_vol_periods if "BUY" in p["whale_signal"]]
+                    )
+                    sell_signals = len(
+                        [p for p in high_vol_periods if "SELL" in p["whale_signal"]]
+                    )
                     total_signals = buy_signals + sell_signals
 
                     if total_signals > 0:
@@ -641,7 +683,9 @@ class WhaleTracker:
                         sentiment_level = (
                             "🟢 BULLISH"
                             if buy_ratio > 60
-                            else "🔴 BEARISH" if buy_ratio < 40 else "🟡 NEUTRAL"
+                            else "🔴 BEARISH"
+                            if buy_ratio < 40
+                            else "🟡 NEUTRAL"
                         )
                     else:
                         buy_ratio = 50
@@ -681,8 +725,7 @@ class WhaleTracker:
                         time_str = biggest["timestamp"].strftime("%m/%d %H:%M")
                         print(f"   Biggest Signal: {biggest['whale_signal']}")
                         print(
-                            f"     📊 {
-                                biggest['volume']:,.0f} BNB ({
+                            f"     📊 {biggest['volume']:,.0f} BNB ({
                                 biggest['volume_ratio']:.1f}x) | {time_str}"
                         )
 
@@ -702,7 +745,11 @@ class WhaleTracker:
                 if data.get("signals_count", 0) > 0:
                     sentiment = data["sentiment"]
                     emoji = (
-                        "🟢" if "BULLISH" in sentiment else "🔴" if "BEARISH" in sentiment else "🟡"
+                        "🟢"
+                        if "BULLISH" in sentiment
+                        else "🔴"
+                        if "BEARISH" in sentiment
+                        else "🟡"
                     )
                     print(
                         f"   {period_name}: {emoji} {data['signals_count']} signals | {sentiment}"
@@ -769,7 +816,9 @@ class WhaleTracker:
                 print("-" * 40)
                 print(f"   Average Volume: {vol_analysis['average_volume']:,.0f} BNB")
                 print(f"   Max Volume: {vol_analysis['max_volume']:,.0f} BNB")
-                print(f"   Spike Threshold: {vol_analysis['volume_spike_threshold']:,.0f} BNB")
+                print(
+                    f"   Spike Threshold: {vol_analysis['volume_spike_threshold']:,.0f} BNB"
+                )
 
             # High volume periods (whale activity)
             high_vol_periods = whale_summary.get("high_volume_periods", [])
@@ -785,13 +834,19 @@ class WhaleTracker:
                     signal = period["whale_signal"]
 
                     print(f"{i + 1:2}. {signal}")
-                    print(f"    📊 Volume: {period['volume']:,.0f} BNB ({volume_ratio:.1f}x avg)")
+                    print(
+                        f"    📊 Volume: {period['volume']:,.0f} BNB ({volume_ratio:.1f}x avg)"
+                    )
                     print(f"    📈 Price Change: {price_change:+.2f}% | ⏰ {time_str}")
                     print()
 
                 # Analyze whale sentiment from volume patterns
-                buy_signals = len([p for p in high_vol_periods if "BUY" in p["whale_signal"]])
-                sell_signals = len([p for p in high_vol_periods if "SELL" in p["whale_signal"]])
+                buy_signals = len(
+                    [p for p in high_vol_periods if "BUY" in p["whale_signal"]]
+                )
+                sell_signals = len(
+                    [p for p in high_vol_periods if "SELL" in p["whale_signal"]]
+                )
                 total_signals = buy_signals + sell_signals
 
                 if total_signals > 0:
@@ -867,7 +922,9 @@ class WhaleTracker:
             print("\n📤 Recent Large Outflows:")
             for flow in flows["outflows_24h"][:3]:
                 time_str = flow["time"].strftime("%H:%M")
-                print(f"   • {flow['exchange']}: {flow['amount']:,.0f} BNB @ {time_str}")
+                print(
+                    f"   • {flow['exchange']}: {flow['amount']:,.0f} BNB @ {time_str}"
+                )
 
         # Unusual activity detection
         print("\n🚨 UNUSUAL ACTIVITY ALERTS:")
@@ -908,9 +965,13 @@ class WhaleTracker:
         # Net flow implications
         if flows.get("net_flow"):
             if flows["net_flow"] > 50000:
-                print("   🏦 Strong exchange outflows - Whales moving to cold storage (Bullish)")
+                print(
+                    "   🏦 Strong exchange outflows - Whales moving to cold storage (Bullish)"
+                )
             elif flows["net_flow"] < -50000:
-                print("   🏦 Strong exchange inflows - Whales preparing to sell (Bearish)")
+                print(
+                    "   🏦 Strong exchange inflows - Whales preparing to sell (Bearish)"
+                )
 
         print("\n" + "=" * 60)
 
@@ -923,7 +984,7 @@ class WhaleTracker:
             "alerts": alerts,
         }
 
-    def check_critical_whale_activity(self, days_back: int = 1) -> Dict:
+    def check_critical_whale_activity(self, days_back: int = 1) -> dict:
         """Check if there's critical whale activity that should be shown automatically"""
 
         try:
@@ -942,11 +1003,15 @@ class WhaleTracker:
                 1 for p in high_vol_periods if "MEGA WHALE" in p.get("whale_signal", "")
             )
             extreme_whale_count = sum(
-                1 for p in high_vol_periods if "EXTREME WHALE" in p.get("whale_signal", "")
+                1
+                for p in high_vol_periods
+                if "EXTREME WHALE" in p.get("whale_signal", "")
             )
 
             if extreme_whale_count > 0:
-                critical_signals.append(f"🚨 {extreme_whale_count} EXTREME WHALE signal(s)")
+                critical_signals.append(
+                    f"🚨 {extreme_whale_count} EXTREME WHALE signal(s)"
+                )
                 alert_score += 10
 
             if mega_whale_count >= 2:
@@ -957,7 +1022,8 @@ class WhaleTracker:
             volume_spikes = [
                 p
                 for p in high_vol_periods
-                if p.get("volume_multiplier", 1) >= self.alert_thresholds["critical_volume_spike"]
+                if p.get("volume_multiplier", 1)
+                >= self.alert_thresholds["critical_volume_spike"]
             ]
             if len(volume_spikes) > 0:
                 max_spike = max(p.get("volume_multiplier", 1) for p in volume_spikes)
@@ -968,17 +1034,22 @@ class WhaleTracker:
             significant_moves = [
                 p
                 for p in high_vol_periods
-                if abs(p.get("price_change_pct", 0)) >= self.alert_thresholds["price_impact"] * 100
+                if abs(p.get("price_change_pct", 0))
+                >= self.alert_thresholds["price_impact"] * 100
             ]
             if len(significant_moves) > 0:
-                max_move = max(abs(p.get("price_change_pct", 0)) for p in significant_moves)
+                max_move = max(
+                    abs(p.get("price_change_pct", 0)) for p in significant_moves
+                )
                 critical_signals.append(f"💥 Price impact: {max_move:.1f}%")
                 alert_score += 4
 
             # Check multiple signals
             total_whale_signals = mega_whale_count + extreme_whale_count
             if total_whale_signals >= self.alert_thresholds["multiple_whale_signals"]:
-                critical_signals.append(f"⚡ Multiple whale signals: {total_whale_signals}")
+                critical_signals.append(
+                    f"⚡ Multiple whale signals: {total_whale_signals}"
+                )
                 alert_score += 3
 
             # Determine if alert should be shown
@@ -998,9 +1069,12 @@ class WhaleTracker:
             }
 
         except Exception as e:
-            return {"show_alert": False, "reason": f"Error checking whale activity: {e}"}
+            return {
+                "show_alert": False,
+                "reason": f"Error checking whale activity: {e}",
+            }
 
-    def get_critical_whale_alert_text(self, alert_data: Dict) -> str:
+    def get_critical_whale_alert_text(self, alert_data: dict) -> str:
         """Generate formatted alert text for critical whale activity"""
 
         if not alert_data.get("show_alert"):

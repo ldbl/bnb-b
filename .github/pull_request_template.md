@@ -4,7 +4,7 @@
 <!-- Select the appropriate category -->
 - [ ] **Phase Foundation** - Core infrastructure & cleanup
 - [ ] **Signal Enhancement** - LONG/SHORT signal accuracy improvements
-- [ ] **Market Intelligence** - Smart filtering & regime detection  
+- [ ] **Market Intelligence** - Smart filtering & regime detection
 - [ ] **Testing Framework** - Performance validation & backtesting
 - [ ] **Bug Fix** - Critical error resolution
 - [ ] **Documentation** - Updates to CLAUDE.md, MODULES.md, TODO.md
@@ -14,17 +14,17 @@
 
 ### Key Components
 <!-- List the main files/modules being modified -->
-- **Modified Files**: 
-- **New Features**: 
-- **Bug Fixes**: 
-- **Performance Impact**: 
+- **Modified Files**:
+- **New Features**:
+- **Bug Fixes**:
+- **Performance Impact**:
 
 ## 📈 Performance Impact
 <!-- Include backtesting results if applicable -->
 
 ### Before & After Metrics
 - **Overall Accuracy**: X% → Y% (target: 59.7%+)
-- **LONG Accuracy**: X% → Y% (target: 85%+) 
+- **LONG Accuracy**: X% → Y% (target: 85%+)
 - **SHORT Accuracy**: X% → Y% (target: 75%+)
 - **Average P&L**: X% → Y% per signal
 
@@ -40,15 +40,15 @@ Performance metrics...
 
 ### Core Module Updates
 <!-- List significant changes to core modules -->
-- **signal_generator.py**: 
-- **trend_analyzer.py**: 
-- **smart_short_generator.py**: 
-- **config.toml**: 
+- **signal_generator.py**:
+- **trend_analyzer.py**:
+- **smart_short_generator.py**:
+- **config.toml**:
 
 ### New Features
 <!-- Describe new functionality -->
 - [ ] Market regime detection enhancements
-- [ ] Enhanced signal confluence requirements  
+- [ ] Enhanced signal confluence requirements
 - [ ] Improved risk management filters
 - [ ] Multi-timeframe coordination improvements
 
@@ -92,7 +92,7 @@ parameter = new_value  # Description of change
 ### Performance Targets
 - [ ] Overall accuracy maintained/improved (>59.7%)
 - [ ] LONG accuracy progress toward 85% target
-- [ ] SHORT accuracy progress toward 75% target  
+- [ ] SHORT accuracy progress toward 75% target
 - [ ] No performance regression in backtesting
 
 ### Code Quality
@@ -119,7 +119,7 @@ parameter = new_value  # Description of change
 
 ### Files Updated
 - [ ] **CLAUDE.md** - System overview and commands
-- [ ] **MODULES.md** - Technical documentation  
+- [ ] **MODULES.md** - Technical documentation
 - [ ] **TODO.md** - Development priorities
 - [ ] **README.md** - User-facing documentation
 
@@ -144,7 +144,7 @@ parameter = new_value  # Description of change
 ### Immediate Benefits
 <!-- What this PR accomplishes immediately -->
 
-### Long-term Impact  
+### Long-term Impact
 <!-- How this contributes to overall system goals -->
 
 ### Next Steps
@@ -158,7 +158,7 @@ parameter = new_value  # Description of change
 
 ---
 
-<!-- 
+<!--
 PR Template Guidelines:
 1. Fill out ALL relevant sections
 2. Include backtesting results for performance changes

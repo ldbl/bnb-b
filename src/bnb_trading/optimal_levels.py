@@ -94,7 +94,7 @@ DATE: 2024-01-01
 
 import logging
 from collections import defaultdict
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -188,7 +188,7 @@ class OptimalLevelsAnalyzer:
         for statistically significant level identification.
     """
 
-    def __init__(self, config: Dict[str, Any]) -> None:
+    def __init__(self, config: dict[str, Any]) -> None:
         """
         Initialize the Optimal Levels Analyzer with configuration parameters.
 
@@ -224,7 +224,9 @@ class OptimalLevelsAnalyzer:
 
         logger.info("Optimal Levels анализатор инициализиран")
 
-    def analyze_optimal_levels(self, daily_df: pd.DataFrame, weekly_df: pd.DataFrame) -> Dict:
+    def analyze_optimal_levels(
+        self, daily_df: pd.DataFrame, weekly_df: pd.DataFrame
+    ) -> dict:
         """
         Анализира оптимални trading нива
 
@@ -267,14 +269,16 @@ class OptimalLevelsAnalyzer:
             logger.error(f"Грешка при анализ на оптимални нива: {e}")
             return {"error": f"Грешка: {e}"}
 
-    def _create_price_levels(self, df: pd.DataFrame) -> List[float]:
+    def _create_price_levels(self, df: pd.DataFrame) -> list[float]:
         """Създава ценови нива за анализ"""
         try:
             min_price = df["Low"].min()
             max_price = df["High"].max()
 
             # Създаваме нива на всеки $25
-            base_levels = list(np.arange(min_price - 100, max_price + 100, self.price_interval))
+            base_levels = list(
+                np.arange(min_price - 100, max_price + 100, self.price_interval)
+            )
 
             # Добавяме нива около текущата цена
             current_price = df["Close"].iloc[-1]
@@ -292,7 +296,9 @@ class OptimalLevelsAnalyzer:
             logger.error(f"Грешка при създаване на ценови нива: {e}")
             return []
 
-    def _count_level_touches(self, df: pd.DataFrame, price_levels: List[float]) -> Dict[float, int]:
+    def _count_level_touches(
+        self, df: pd.DataFrame, price_levels: list[float]
+    ) -> dict[float, int]:
         """Брои докосванията на всяко ценово ниво"""
         try:
             level_touches = defaultdict(int)
@@ -312,11 +318,15 @@ class OptimalLevelsAnalyzer:
             logger.error(f"Грешка при броене на докосвания: {e}")
             return {}
 
-    def _find_optimal_levels(self, level_touches: Dict[float, int], current_price: float) -> Dict:
+    def _find_optimal_levels(
+        self, level_touches: dict[float, int], current_price: float
+    ) -> dict:
         """Намира оптимални entry/exit нива"""
         try:
             # Сортираме нивата по брой докосвания
-            sorted_levels = sorted(level_touches.items(), key=lambda x: x[1], reverse=True)
+            sorted_levels = sorted(
+                level_touches.items(), key=lambda x: x[1], reverse=True
+            )
 
             # Намираме support нива (под текущата цена)
             support_levels = [
@@ -359,20 +369,28 @@ class OptimalLevelsAnalyzer:
             logger.error(f"Грешка при намиране на оптимални нива: {e}")
             return {}
 
-    def _calculate_averaged_support(self, support_levels: List[Tuple[float, int]]) -> Dict:
+    def _calculate_averaged_support(
+        self, support_levels: list[tuple[float, int]]
+    ) -> dict:
         """Изчислява усреднено support ниво"""
         try:
             if not support_levels:
                 return {}
 
             avg_price = sum(level[0] for level in support_levels) / len(support_levels)
-            avg_touches = sum(level[1] for level in support_levels) / len(support_levels)
+            avg_touches = sum(level[1] for level in support_levels) / len(
+                support_levels
+            )
 
             return {
                 "price": avg_price,
                 "touches": avg_touches,
                 "reliability": (
-                    "HIGH" if avg_touches >= 10 else "MEDIUM" if avg_touches >= 5 else "LOW"
+                    "HIGH"
+                    if avg_touches >= 10
+                    else "MEDIUM"
+                    if avg_touches >= 5
+                    else "LOW"
                 ),
             }
 
@@ -380,7 +398,7 @@ class OptimalLevelsAnalyzer:
             logger.error(f"Грешка при изчисляване на усреднено support: {e}")
             return {}
 
-    def get_trading_recommendations(self, optimal_levels: Dict) -> Dict:
+    def get_trading_recommendations(self, optimal_levels: dict) -> dict:
         """Генерира trading препоръки"""
         try:
             if not optimal_levels or "best_support" not in optimal_levels:
@@ -417,7 +435,8 @@ class OptimalLevelsAnalyzer:
                     "risk_reward": risk_reward,
                     "entry_type": (
                         "averaged"
-                        if averaged_support and averaged_support["reliability"] == "HIGH"
+                        if averaged_support
+                        and averaged_support["reliability"] == "HIGH"
                         else "individual"
                     ),
                 }
@@ -426,7 +445,9 @@ class OptimalLevelsAnalyzer:
             if best_resistance and best_support:
                 entry_price = best_resistance[0]
                 stop_loss = entry_price + 50
-                target = averaged_support["price"] if averaged_support else best_support[0]
+                target = (
+                    averaged_support["price"] if averaged_support else best_support[0]
+                )
 
                 risk = stop_loss - entry_price
                 reward = entry_price - target
@@ -443,13 +464,16 @@ class OptimalLevelsAnalyzer:
             if recommendations["long_strategy"]:
                 recommendations["risk_reward_analysis"] = {
                     "long_risk_reward": recommendations["long_strategy"]["risk_reward"],
-                    "short_risk_reward": recommendations["short_strategy"].get("risk_reward", 0),
+                    "short_risk_reward": recommendations["short_strategy"].get(
+                        "risk_reward", 0
+                    ),
                     "recommended_strategy": (
                         "LONG"
                         if recommendations["long_strategy"]["risk_reward"] > 2
                         else (
                             "SHORT"
-                            if recommendations["short_strategy"].get("risk_reward", 0) > 2
+                            if recommendations["short_strategy"].get("risk_reward", 0)
+                            > 2
                             else "HOLD"
                         )
                     ),

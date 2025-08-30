@@ -14,7 +14,7 @@ Version: 1.0
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -33,7 +33,7 @@ class ShortSignalCandidate:
     timestamp: pd.Timestamp
     price: float
     confidence: float
-    reasons: List[str]
+    reasons: list[str]
     confluence_score: int
     risk_reward_ratio: float
     stop_loss_price: float
@@ -43,7 +43,7 @@ class ShortSignalCandidate:
     volume_divergence: bool
     timeframe_alignment: bool
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for signal processing"""
         return {
             "timestamp": self.timestamp,
@@ -77,7 +77,7 @@ class MarketRegimeDetector:
 
     def detect_market_regime(
         self, daily_df: pd.DataFrame, weekly_df: pd.DataFrame
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Детектира текущия пазарен режим базирано на:
         - Trend strength (daily & weekly)
@@ -98,7 +98,9 @@ class MarketRegimeDetector:
                 else 0
             )
             weekly_volume_trend = (
-                self._analyze_volume_trend(weekly_df, 4) if weekly_df is not None else "unknown"
+                self._analyze_volume_trend(weekly_df, 4)
+                if weekly_df is not None
+                else "unknown"
             )
 
             # ATH proximity
@@ -132,8 +134,12 @@ class MarketRegimeDetector:
                 "weekly_volume_trend": weekly_volume_trend,
                 "ath_distance_pct": ath_distance_pct,
                 "rsi_current": rsi_current,
-                "short_signals_allowed": self._are_short_signals_allowed(regime, ath_distance_pct),
-                "confidence": self._calculate_regime_confidence(daily_trend, weekly_trend),
+                "short_signals_allowed": self._are_short_signals_allowed(
+                    regime, ath_distance_pct
+                ),
+                "confidence": self._calculate_regime_confidence(
+                    daily_trend, weekly_trend
+                ),
             }
 
         except Exception as e:
@@ -145,7 +151,9 @@ class MarketRegimeDetector:
                 "confidence": 0.0,
             }
 
-    def _calculate_trend_strength(self, df: pd.DataFrame, column: str, lookback: int) -> float:
+    def _calculate_trend_strength(
+        self, df: pd.DataFrame, column: str, lookback: int
+    ) -> float:
         """Изчислява сила на тренда (от -3 до +3)"""
         try:
             # Check if column exists with different case
@@ -191,16 +199,15 @@ class MarketRegimeDetector:
 
             # Simple trend analysis
             first_half = volumes[: lookback // 2].mean()
-            second_half = volumes[lookback // 2:].mean()
+            second_half = volumes[lookback // 2 :].mean()
 
             ratio = second_half / first_half if first_half > 0 else 1.0
 
             if ratio > 1.2:
                 return "increasing"
-            elif ratio < 0.8:
+            if ratio < 0.8:
                 return "decreasing"
-            else:
-                return "stable"
+            return "stable"
 
         except Exception as e:
             logger.error(f"Грешка при volume trend analysis: {e}")
@@ -222,26 +229,40 @@ class MarketRegimeDetector:
             return "STRONG_BULL"
 
         # Moderate bull
-        elif daily_trend > 0.8 and weekly_trend > 0.5 and ath_distance < 15.0 and rsi > 60:
+        if (
+            daily_trend > 0.8
+            and weekly_trend > 0.5
+            and ath_distance < 15.0
+            and rsi > 60
+        ):
             return "MODERATE_BULL"
 
         # Neutral
-        elif abs(daily_trend) < 0.5 and abs(weekly_trend) < 0.5 and 40 <= rsi <= 60:
+        if abs(daily_trend) < 0.5 and abs(weekly_trend) < 0.5 and 40 <= rsi <= 60:
             return "NEUTRAL"
 
         # Moderate bear
-        elif daily_trend < -0.8 and weekly_trend < -0.5 and ath_distance > 10.0 and rsi < 40:
+        if (
+            daily_trend < -0.8
+            and weekly_trend < -0.5
+            and ath_distance > 10.0
+            and rsi < 40
+        ):
             return "MODERATE_BEAR"
 
         # Strong bear
-        elif daily_trend < -1.5 and weekly_trend < -1.0 and ath_distance > 20.0 and rsi < 30:
+        if (
+            daily_trend < -1.5
+            and weekly_trend < -1.0
+            and ath_distance > 20.0
+            and rsi < 30
+        ):
             return "STRONG_BEAR"
 
-        else:
-            return "NEUTRAL"
+        return "NEUTRAL"
 
     def _are_short_signals_allowed(
-        self, regime: str, ath_distance: float, short_thresholds: Dict = None
+        self, regime: str, ath_distance: float, short_thresholds: dict = None
     ) -> bool:
         """Определя дали SHORT сигнали са позволени базирано на конфигурацията"""
         # Use provided thresholds or fallback to LESS conservative defaults
@@ -260,7 +281,8 @@ class MarketRegimeDetector:
 
         # MORE PERMISSIVE regime rules
         regime_rules = {
-            "STRONG_BULL": ath_distance > 15.0,  # Allow SHORT if >15% from ATH even in strong bull
+            "STRONG_BULL": ath_distance
+            > 15.0,  # Allow SHORT if >15% from ATH even in strong bull
             "MODERATE_BULL": ath_distance > 8.0,  # Allow SHORT if >8% from ATH
             "NEUTRAL": True,  # Always allow SHORT in neutral
             "MODERATE_BEAR": True,  # Always allow SHORT in bear
@@ -269,7 +291,9 @@ class MarketRegimeDetector:
 
         return regime_rules.get(regime, False)
 
-    def _calculate_regime_confidence(self, daily_trend: float, weekly_trend: float) -> float:
+    def _calculate_regime_confidence(
+        self, daily_trend: float, weekly_trend: float
+    ) -> float:
         """Изчислява увереността в regime detection"""
         # Higher confidence when daily and weekly trends align
         alignment = 1.0 - abs(daily_trend - weekly_trend) / 6.0  # Max difference is 6
@@ -283,7 +307,7 @@ class SmartShortSignalGenerator:
     Основен клас за интелигентна SHORT сигнал генерация
     """
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         """
         Инициализация на Smart SHORT Generator
 
@@ -314,8 +338,12 @@ class SmartShortSignalGenerator:
             "min_confluence_score": short_config.get("min_confluence_score", 3),
             "min_risk_reward_ratio": short_config.get("min_risk_reward_ratio", 1.5),
             "max_stop_loss_pct": short_config.get("max_stop_loss_pct", 5.0),
-            "volume_divergence_required": short_config.get("volume_divergence_required", True),
-            "timeframe_alignment_required": short_config.get("timeframe_alignment_required", True),
+            "volume_divergence_required": short_config.get(
+                "volume_divergence_required", True
+            ),
+            "timeframe_alignment_required": short_config.get(
+                "timeframe_alignment_required", True
+            ),
             "technical_indicators_required": short_config.get(
                 "technical_indicators_required", True
             ),
@@ -328,8 +356,8 @@ class SmartShortSignalGenerator:
         logger.info("🧠 SmartShortSignalGenerator инициализиран")
 
     def generate_short_signals(
-        self, daily_df: pd.DataFrame, weekly_df: Optional[pd.DataFrame] = None
-    ) -> List[ShortSignalCandidate]:
+        self, daily_df: pd.DataFrame, weekly_df: pd.DataFrame | None = None
+    ) -> list[ShortSignalCandidate]:
         """
         Основен метод за генерация на SHORT сигнали
 
@@ -366,28 +394,31 @@ class SmartShortSignalGenerator:
 
                 logger.info(
                     f"📊 Enhanced Market Regime: {
-                        market_regime['regime']} (confidence: {
-                        market_regime['confidence']:.2f})"
+                        market_regime['regime']
+                    } (confidence: {market_regime['confidence']:.2f})"
                 )
 
             else:
                 # Fallback към старата система
-                market_regime = self.market_detector.detect_market_regime(daily_df, weekly_df)
+                market_regime = self.market_detector.detect_market_regime(
+                    daily_df, weekly_df
+                )
                 market_regime["enhanced"] = False
                 logger.info(
-                    f"📊 Basic Market Regime: {
-                        market_regime['regime']} (confidence: {
+                    f"📊 Basic Market Regime: {market_regime['regime']} (confidence: {
                         market_regime['confidence']:.2f})"
                 )
 
             # КРИТИЧНА ЛОГИКА: Блокиране на SHORT в STRONG_BULL
-            market_regime["short_signals_allowed"] = self._should_allow_short_signals(market_regime)
+            market_regime["short_signals_allowed"] = self._should_allow_short_signals(
+                market_regime
+            )
 
             if not market_regime["short_signals_allowed"]:
                 logger.info(
                     f"🚫 SHORT сигнали блокирани: {
-                        market_regime['regime']} regime (confidence: {
-                        market_regime['confidence']:.2f})"
+                        market_regime['regime']
+                    } regime (confidence: {market_regime['confidence']:.2f})"
                 )
                 return []
 
@@ -398,14 +429,18 @@ class SmartShortSignalGenerator:
 
             # Step 3: Validate each setup through 3-layer validation
             for setup in potential_setups:
-                candidate = self._validate_short_setup(setup, daily_df, weekly_df, market_regime)
+                candidate = self._validate_short_setup(
+                    setup, daily_df, weekly_df, market_regime
+                )
                 if candidate:
                     candidates.append(candidate)
 
             logger.info(f"✅ Генерирани {len(candidates)} валидни SHORT сигнали")
 
             # Step 4: Sort by quality (confidence and confluence)
-            candidates.sort(key=lambda x: (x.confidence, x.confluence_score), reverse=True)
+            candidates.sort(
+                key=lambda x: (x.confidence, x.confluence_score), reverse=True
+            )
 
             return candidates[:10]  # Return top 10 candidates
 
@@ -413,7 +448,7 @@ class SmartShortSignalGenerator:
             logger.error(f"❌ Грешка при SHORT сигнал генерация: {e}")
             return []
 
-    def _scan_for_short_setups(self, daily_df: pd.DataFrame) -> List[Dict[str, Any]]:
+    def _scan_for_short_setups(self, daily_df: pd.DataFrame) -> list[dict[str, Any]]:
         """
         Сканира за потенциални SHORT setups базирано на:
         - Price action patterns
@@ -431,7 +466,9 @@ class SmartShortSignalGenerator:
                 candle_data = daily_df.iloc[i]
 
                 # Check for bearish price action
-                if self._is_bearish_price_action(daily_df.iloc[i - lookback_period: i + 1]):
+                if self._is_bearish_price_action(
+                    daily_df.iloc[i - lookback_period : i + 1]
+                ):
                     setup = {
                         "timestamp": candle_data.name,
                         "price": candle_data["Close"],
@@ -446,7 +483,6 @@ class SmartShortSignalGenerator:
                     and candle_data["RSI"] > 75
                     and candle_data["Close"] > candle_data["Open"]
                 ):  # Shooting star like
-
                     setup = {
                         "timestamp": candle_data.name,
                         "price": candle_data["Close"],
@@ -469,8 +505,12 @@ class SmartShortSignalGenerator:
             # Check for shooting star pattern
             last_candle = candles_df.iloc[-1]
             body_size = abs(last_candle["Close"] - last_candle["Open"])
-            upper_wick = last_candle["High"] - max(last_candle["Close"], last_candle["Open"])
-            lower_wick = min(last_candle["Close"], last_candle["Open"]) - last_candle["Low"]
+            upper_wick = last_candle["High"] - max(
+                last_candle["Close"], last_candle["Open"]
+            )
+            lower_wick = (
+                min(last_candle["Close"], last_candle["Open"]) - last_candle["Low"]
+            )
 
             # Shooting star: small body, long upper wick, small lower wick
             if (
@@ -488,11 +528,11 @@ class SmartShortSignalGenerator:
 
     def _validate_short_setup(
         self,
-        setup: Dict[str, Any],
+        setup: dict[str, Any],
         daily_df: pd.DataFrame,
-        weekly_df: Optional[pd.DataFrame],
-        market_regime: Dict[str, Any],
-    ) -> Optional[ShortSignalCandidate]:
+        weekly_df: pd.DataFrame | None,
+        market_regime: dict[str, Any],
+    ) -> ShortSignalCandidate | None:
         """
         SIMPLIFIED 3-Layer Validation за SHORT setup:
 
@@ -522,7 +562,9 @@ class SmartShortSignalGenerator:
                 confluence_score += 1
 
             # Layer 3: Risk/Reward Assessment (minimum 1:1.5)
-            risk_reward = self._calculate_risk_reward(setup["price"], daily_df, setup["index"])
+            risk_reward = self._calculate_risk_reward(
+                setup["price"], daily_df, setup["index"]
+            )
             if risk_reward < 1.5:  # Minimum risk/reward
                 return None
 
@@ -575,9 +617,13 @@ class SmartShortSignalGenerator:
             price_trend = (price_end - price_start) / price_start
 
             # Volume trend (should be down for bearish divergence)
-            volume_start = df[volume_col].iloc[index - lookback: index - lookback + 5].mean()
-            volume_end = df[volume_col].iloc[index - 5: index].mean()
-            volume_trend = (volume_end - volume_start) / volume_start if volume_start > 0 else 0
+            volume_start = (
+                df[volume_col].iloc[index - lookback : index - lookback + 5].mean()
+            )
+            volume_end = df[volume_col].iloc[index - 5 : index].mean()
+            volume_trend = (
+                (volume_end - volume_start) / volume_start if volume_start > 0 else 0
+            )
 
             # Bearish divergence: price up, volume down
             return price_trend > 0.02 and volume_trend < -0.1
@@ -586,7 +632,9 @@ class SmartShortSignalGenerator:
             logger.error(f"Грешка при volume divergence check: {e}")
             return False
 
-    def _check_technical_alignment(self, df: pd.DataFrame, index: int) -> Dict[str, Any]:
+    def _check_technical_alignment(
+        self, df: pd.DataFrame, index: int
+    ) -> dict[str, Any]:
         """Проверява alignment на technical indicators"""
         try:
             reasons = []
@@ -625,12 +673,14 @@ class SmartShortSignalGenerator:
             return {"aligned": False, "reasons": []}
 
     def _check_timeframe_alignment(
-        self, daily_df: pd.DataFrame, weekly_df: Optional[pd.DataFrame], index: int
+        self, daily_df: pd.DataFrame, weekly_df: pd.DataFrame | None, index: int
     ) -> bool:
         """Проверява multi-timeframe alignment"""
         try:
             # Daily weakness check
-            daily_trend = self.market_detector._calculate_trend_strength(daily_df, "Close", 5)
+            daily_trend = self.market_detector._calculate_trend_strength(
+                daily_df, "Close", 5
+            )
             daily_weakness = daily_trend < -0.5
 
             if not daily_weakness:
@@ -638,17 +688,20 @@ class SmartShortSignalGenerator:
 
             # Weekly neutrality check (if weekly data available)
             if weekly_df is not None and len(weekly_df) > 0:
-                weekly_trend = self.market_detector._calculate_trend_strength(weekly_df, "Close", 2)
+                weekly_trend = self.market_detector._calculate_trend_strength(
+                    weekly_df, "Close", 2
+                )
                 weekly_neutral = abs(weekly_trend) < 0.8
                 return daily_weakness and weekly_neutral
-            else:
-                return daily_weakness
+            return daily_weakness
 
         except Exception as e:
             logger.error(f"Грешка при timeframe alignment check: {e}")
             return False
 
-    def _calculate_risk_reward(self, entry_price: float, df: pd.DataFrame, index: int) -> float:
+    def _calculate_risk_reward(
+        self, entry_price: float, df: pd.DataFrame, index: int
+    ) -> float:
         """Изчислява Risk/Reward ratio за SHORT позиция"""
         try:
             # Stop loss based on recent volatility
@@ -657,10 +710,12 @@ class SmartShortSignalGenerator:
             # Take profit based on technical levels
             # Look for support levels or Fibonacci retracements
             lookback = min(20, index)
-            recent_lows = df["Low"].iloc[index - lookback: index]
+            recent_lows = df["Low"].iloc[index - lookback : index]
 
             # Target profit at 50% retracement of recent range
-            recent_range = df["High"].iloc[index - lookback: index].max() - recent_lows.min()
+            recent_range = (
+                df["High"].iloc[index - lookback : index].max() - recent_lows.min()
+            )
             target_price = entry_price - (recent_range * 0.5)
 
             risk = entry_price * (stop_distance_pct / 100)
@@ -672,7 +727,7 @@ class SmartShortSignalGenerator:
             logger.error(f"Грешка при risk/reward calculation: {e}")
             return 0
 
-    def _should_allow_short_signals(self, market_regime: Dict[str, Any]) -> bool:
+    def _should_allow_short_signals(self, market_regime: dict[str, Any]) -> bool:
         """
         КРИТИЧНА ЛОГИКА: Определя дали SHORT сигнали са позволени
 
@@ -688,7 +743,9 @@ class SmartShortSignalGenerator:
 
             # STRONG_BULL блокиране - ключовата логика от TODO
             if regime == "STRONG_BULL" and confidence > 0.7:
-                logger.info(f"🛡️ STRONG_BULL блокиране: {regime} с confidence {confidence:.2f}")
+                logger.info(
+                    f"🛡️ STRONG_BULL блокиране: {regime} с confidence {confidence:.2f}"
+                )
                 return False
 
             # MODERATE_BULL с ограничения
@@ -701,9 +758,8 @@ class SmartShortSignalGenerator:
                             ath_distance:.1f}% от ATH (минимум: {min_ath_correction}%)"
                     )
                     return False
-                else:
-                    logger.info(f"✅ MODERATE_BULL позволен: {ath_distance:.1f}% от ATH")
-                    return True
+                logger.info(f"✅ MODERATE_BULL позволен: {ath_distance:.1f}% от ATH")
+                return True
 
             # WEAK_BULL с ограничения
             if regime == "WEAK_BULL":
@@ -715,9 +771,8 @@ class SmartShortSignalGenerator:
                             ath_distance:.1f}% от ATH (минимум: {min_ath_correction}%)"
                     )
                     return False
-                else:
-                    logger.info(f"✅ WEAK_BULL позволен: {ath_distance:.1f}% от ATH")
-                    return True
+                logger.info(f"✅ WEAK_BULL позволен: {ath_distance:.1f}% от ATH")
+                return True
 
             # VOLATILE_BULL - обработване на волатилен бик пазар
             if regime == "VOLATILE_BULL":
@@ -729,12 +784,17 @@ class SmartShortSignalGenerator:
                             ath_distance:.1f}% от ATH (минимум: {min_ath_correction}%)"
                     )
                     return False
-                else:
-                    logger.info(f"✅ VOLATILE_BULL позволен: {ath_distance:.1f}% от ATH")
-                    return True
+                logger.info(f"✅ VOLATILE_BULL позволен: {ath_distance:.1f}% от ATH")
+                return True
 
             # NEUTRAL, CORRECTION, BEAR - винаги позволени
-            if regime in ["NEUTRAL", "CORRECTION", "BEAR", "MODERATE_BEAR", "STRONG_BEAR"]:
+            if regime in [
+                "NEUTRAL",
+                "CORRECTION",
+                "BEAR",
+                "MODERATE_BEAR",
+                "STRONG_BEAR",
+            ]:
                 logger.info(f"✅ {regime} режим: SHORT сигнали позволени")
                 return True
 
@@ -748,7 +808,7 @@ class SmartShortSignalGenerator:
 
 
 # Utility functions for integration
-def create_short_signal_dict(candidate: ShortSignalCandidate) -> Dict[str, Any]:
+def create_short_signal_dict(candidate: ShortSignalCandidate) -> dict[str, Any]:
     """Convert ShortSignalCandidate to signal dictionary"""
     signal_dict = candidate.to_dict()
     signal_dict.update(

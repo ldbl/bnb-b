@@ -117,7 +117,6 @@ DATE: 2024-01-01
 
 import logging
 import os
-from typing import Dict, Optional
 
 import numpy as np
 import pandas as pd
@@ -265,30 +264,29 @@ class SignalValidator:
                 df["validation_date"] = pd.to_datetime(df["validation_date"])
                 logger.info(f"Заредени {len(df)} съществуващи резултата")
                 return df
-            else:
-                # Създаваме нов DataFrame
-                columns = [
-                    "signal_date",
-                    "signal_type",
-                    "signal_price",
-                    "confidence",
-                    "priority",
-                    "fibonacci_level",
-                    "weekly_tail_strength",
-                    "reason",
-                    "risk_level",
-                    "validation_date",
-                    "validation_price",
-                    "profit_loss",
-                    "profit_loss_pct",
-                    "success",
-                    "failure_reason",
-                    "days_to_target",
-                    "target_reached",
-                ]
-                df = pd.DataFrame(columns=columns)
-                logger.info("Създаден нов файл за резултати")
-                return df
+            # Създаваме нов DataFrame
+            columns = [
+                "signal_date",
+                "signal_type",
+                "signal_price",
+                "confidence",
+                "priority",
+                "fibonacci_level",
+                "weekly_tail_strength",
+                "reason",
+                "risk_level",
+                "validation_date",
+                "validation_price",
+                "profit_loss",
+                "profit_loss_pct",
+                "success",
+                "failure_reason",
+                "days_to_target",
+                "target_reached",
+            ]
+            df = pd.DataFrame(columns=columns)
+            logger.info("Създаден нов файл за резултати")
+            return df
 
         except Exception as e:
             logger.error(f"Грешка при зареждане на резултати: {e}")
@@ -314,7 +312,7 @@ class SignalValidator:
             ]
             return pd.DataFrame(columns=columns)
 
-    def save_signal(self, signal_data: Dict) -> bool:
+    def save_signal(self, signal_data: dict) -> bool:
         """
         Записва нов сигнал в резултатите
 
@@ -328,7 +326,9 @@ class SignalValidator:
             # Извличаме данните от сигнала
             signal_date = signal_data.get("analysis_date", pd.Timestamp.now())
             signal_type = signal_data.get("signal", "HOLD")
-            signal_price = signal_data.get("fibonacci_analysis", {}).get("current_price", 0)
+            signal_price = signal_data.get("fibonacci_analysis", {}).get(
+                "current_price", 0
+            )
             confidence = signal_data.get("confidence", 0.0)
             priority = signal_data.get("priority", "UNKNOWN")
 
@@ -394,8 +394,11 @@ class SignalValidator:
             return False
 
     def check_signal_result(
-        self, signal_date: pd.Timestamp, current_price: float, target_price: Optional[float] = None
-    ) -> Dict[str, any]:
+        self,
+        signal_date: pd.Timestamp,
+        current_price: float,
+        target_price: float | None = None,
+    ) -> dict[str, any]:
         """
         Проверява резултата на сигнал след 2 седмици
 
@@ -411,7 +414,9 @@ class SignalValidator:
             # Намираме сигнала в резултатите
             signal_mask = self.results_df["signal_date"] == signal_date
             if not signal_mask.any():
-                return {"error": f'Сигнал за {signal_date.strftime("%Y-%m-%d")} не е намерен'}
+                return {
+                    "error": f"Сигнал за {signal_date.strftime('%Y-%m-%d')} не е намерен"
+                }
 
             signal_idx = signal_mask.idxmax()
             signal_row = self.results_df.loc[signal_idx]
@@ -420,8 +425,9 @@ class SignalValidator:
             if pd.notna(signal_row["validation_date"]):
                 return {
                     "error": (
-                        f'Сигналът вече е валидиран на {
-                            signal_row["validation_date"].strftime("%Y-%m-%d")}'
+                        f"Сигналът вече е валидиран на {
+                            signal_row['validation_date'].strftime('%Y-%m-%d')
+                        }"
                     )
                 }
 
@@ -464,9 +470,7 @@ class SignalValidator:
                         f"Цената падна от ${signal_price:,.2f} до ${current_price:,.2f}"
                     )
                 elif signal_type == "SHORT":
-                    failure_reason = (
-                        f"Цената се повиши от ${signal_price:,.2f} до ${current_price:,.2f}"
-                    )
+                    failure_reason = f"Цената се повиши от ${signal_price:,.2f} до ${current_price:,.2f}"
 
             # Обновяваме резултата
             self.results_df.loc[signal_idx, "validation_date"] = pd.Timestamp.now()
@@ -494,8 +498,12 @@ class SignalValidator:
                 "target_reached": target_reached,
             }
 
-            logger.info(f"Сигнал валидиран: {signal_type} на {signal_date.strftime('%Y-%m-%d')}")
-            logger.info(f"Резултат: {'УСПЕХ' if success else 'НЕУСПЕХ'} ({profit_loss_pct:+.2f}%)")
+            logger.info(
+                f"Сигнал валидиран: {signal_type} на {signal_date.strftime('%Y-%m-%d')}"
+            )
+            logger.info(
+                f"Резултат: {'УСПЕХ' if success else 'НЕУСПЕХ'} ({profit_loss_pct:+.2f}%)"
+            )
 
             return validation_result
 
@@ -503,7 +511,7 @@ class SignalValidator:
             logger.error(f"Грешка при валидация на сигнал: {e}")
             return {"error": f"Грешка: {e}"}
 
-    def get_accuracy_stats(self, lookback_days: int = 30) -> Dict[str, any]:
+    def get_accuracy_stats(self, lookback_days: int = 30) -> dict[str, any]:
         """
         Връща статистика за точността на сигналите
 
@@ -522,12 +530,16 @@ class SignalValidator:
             ].copy()
 
             if recent_signals.empty:
-                return {"error": f"Няма валидирани сигнали за последните {lookback_days} дни"}
+                return {
+                    "error": f"Няма валидирани сигнали за последните {lookback_days} дни"
+                }
 
             # Обща статистика
             total_signals = len(recent_signals)
             successful_signals = len(recent_signals[recent_signals["success"]])
-            accuracy = (successful_signals / total_signals) * 100 if total_signals > 0 else 0
+            accuracy = (
+                (successful_signals / total_signals) * 100 if total_signals > 0 else 0
+            )
 
             # Статистика по тип сигнал
             long_signals = recent_signals[recent_signals["signal_type"] == "LONG"]
@@ -547,8 +559,12 @@ class SignalValidator:
             priority_stats = {}
             for priority in recent_signals["priority"].unique():
                 if pd.notna(priority):
-                    priority_signals = recent_signals[recent_signals["priority"] == priority]
-                    priority_success = len(priority_signals[priority_signals["success"]])
+                    priority_signals = recent_signals[
+                        recent_signals["priority"] == priority
+                    ]
+                    priority_success = len(
+                        priority_signals[priority_signals["success"]]
+                    )
                     priority_accuracy = (
                         (priority_success / len(priority_signals)) * 100
                         if len(priority_signals) > 0
@@ -577,7 +593,9 @@ class SignalValidator:
                 "long_signals": {
                     "total": len(long_signals),
                     "success": (
-                        len(long_signals[long_signals["success"]]) if len(long_signals) > 0 else 0
+                        len(long_signals[long_signals["success"]])
+                        if len(long_signals) > 0
+                        else 0
                     ),
                     "accuracy": long_accuracy,
                 },
@@ -675,14 +693,18 @@ class SignalValidator:
                     recent_stats = self.get_accuracy_stats(30)
                     if "error" not in recent_stats:
                         f.write("Статистика за последните 30 дни:\n")
-                        f.write(f"  Обща точност: {recent_stats['overall_accuracy']:.1f}%\n")
+                        f.write(
+                            f"  Обща точност: {recent_stats['overall_accuracy']:.1f}%\n"
+                        )
                         f.write(
                             f"  LONG сигнали: {recent_stats['long_signals']['accuracy']:.1f}%\n"
                         )
                         f.write(
                             f"  SHORT сигнали: {recent_stats['short_signals']['accuracy']:.1f}%\n"
                         )
-                        f.write(f"  Среден P&L: {recent_stats['avg_profit_loss_pct']:+.2f}%\n\n")
+                        f.write(
+                            f"  Среден P&L: {recent_stats['avg_profit_loss_pct']:+.2f}%\n\n"
+                        )
 
                     # Последните сигнали
                     recent_signals = self.get_recent_signals(10)
@@ -691,9 +713,8 @@ class SignalValidator:
                         f.write("-" * 80 + "\n")
                         for _, row in recent_signals.iterrows():
                             signal_info = f"{
-                                row['signal_date'].strftime('%Y-%m-%d')} | {
-                                row['signal_type']} | ${
-                                row['signal_price']:,.2f}"
+                                row['signal_date'].strftime('%Y-%m-%d')
+                            } | {row['signal_type']} | ${row['signal_price']:,.2f}"
                             if pd.notna(row["validation_date"]):
                                 result = "✓" if row["success"] else "✗"
                                 pnl = f"{row['profit_loss_pct']:+.2f}%"
@@ -702,7 +723,9 @@ class SignalValidator:
                                 signal_info += " | Очаква валидация"
                             f.write(f"{signal_info}\n")
 
-                f.write(f"\nГенерирано на: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                f.write(
+                    f"\nГенерирано на: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+                )
 
             logger.info(f"Обобщение експортирано в {output_file}")
             return True

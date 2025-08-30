@@ -23,6 +23,43 @@ Simple, modular BNB swing trading system with technical analysis. Target: **75%+
 - Try/catch for API calls
 - Save everything in CSV for analysis
 
+### 📏 Line Length & Code Quality Rules
+**Why Long Lines (E501) are the Hardest to Fix:**
+
+1. **Trading Logic Complexity**: Financial calculations often require complex formulas that don't break naturally:
+   ```python
+   # Complex formula that's hard to split meaningfully
+   confidence_score = (fibonacci_weight * fib_strength +
+                      volume_weight * volume_confirmation +
+                      trend_weight * trend_alignment) / total_weights
+   ```
+
+2. **F-String Formatting**: Trading systems use detailed logging with multiple variables:
+   ```python
+   # Hard to break without losing readability
+   logger.info(f"Signal: {signal_type} at ${price:.2f} with confidence {confidence:.1f}% - Fib: {fib_level:.1f}%, Volume: {volume_ratio:.2f}x")
+   ```
+
+3. **Nested Dictionary Access**: Financial data structures are deeply nested:
+   ```python
+   # Breaking this makes code harder to understand
+   analysis_result = signal["fibonacci_analysis"]["confluence_points"][0]["resistance_levels"]
+   ```
+
+4. **Why We Don't Write Short Lines from Start:**
+   - **Development Speed**: During rapid prototyping, we focus on functionality over formatting
+   - **Readability Priority**: Sometimes a long line is more readable than broken lines
+   - **Business Logic First**: Trading logic clarity is more important than line length
+   - **Complex Domain**: Financial calculations naturally create longer expressions
+
+**✅ Acceptable E501 Cases in Trading Systems:**
+- Complex financial formulas that lose meaning when split
+- Detailed logging messages with multiple trading parameters
+- Nested financial data structure access
+- Configuration parameter chains for trading indicators
+
+**🎯 Strategy**: Focus on fixing critical issues first (F841, E203, E127), then accept reasonable E501 cases in complex trading logic. Production systems with 70 E501 issues are acceptable when functionality and reliability are maintained.
+
 ## 🎯 Trading Signals Philosophy
 
 ### ✅ УСПЕХ е генерирането на сигнали!
@@ -59,5 +96,3 @@ Simple, modular BNB swing trading system with technical analysis. Target: **75%+
 - **Accuracy > 75%** - повече печеливши от губещи
 - **Profit Factor > 1.0** - брутна печалба > брутна загуба
 - **Max Drawdown < 10%** - контролирана волатилност
-
-

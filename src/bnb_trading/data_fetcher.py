@@ -67,7 +67,6 @@ DATE: 2024-01-01
 """
 
 import logging
-from typing import Dict, List
 
 import ccxt
 import numpy as np
@@ -173,10 +172,12 @@ class BNBDataFetcher:
             immediately fetch data. Use fetch_bnb_data() method for data retrieval.
         """
         self.symbol = symbol
-        self.exchange = ccxt.binance({"enableRateLimit": True, "options": {"defaultType": "spot"}})
+        self.exchange = ccxt.binance(
+            {"enableRateLimit": True, "options": {"defaultType": "spot"}}
+        )
         logger.info(f"Инициализиран Binance API за {symbol}")
 
-    def fetch_bnb_data(self, lookback_days: int = 500) -> Dict[str, pd.DataFrame]:
+    def fetch_bnb_data(self, lookback_days: int = 500) -> dict[str, pd.DataFrame]:
         """
         Извлича BNB данни за daily и weekly timeframes
 
@@ -201,8 +202,7 @@ class BNBDataFetcher:
 
             # Извличаме weekly данни (Binance limit е max 1000)
             weekly_limit = min(lookback_days // 7, 1000)
-            if weekly_limit < 1:
-                weekly_limit = 1
+            weekly_limit = max(weekly_limit, 1)
 
             weekly_data = self.exchange.fetch_ohlcv(
                 symbol=self.symbol, timeframe="1w", since=start_time, limit=weekly_limit
@@ -216,9 +216,9 @@ class BNBDataFetcher:
             daily_df = self.add_ath_analysis(daily_df)
 
             logger.info(
-                f"Успешно извлечени данни: Daily={
-                    len(daily_df)} редове, Weekly={
-                    len(weekly_df)} редове"
+                f"Успешно извлечени данни: Daily={len(daily_df)} редове, Weekly={
+                    len(weekly_df)
+                } редове"
             )
 
             return {"daily": daily_df, "weekly": weekly_df}
@@ -273,7 +273,7 @@ class BNBDataFetcher:
             logger.error(f"Грешка при ATH анализ: {e}")
             return df
 
-    def _convert_to_dataframe(self, ohlcv_data: List, timeframe: str) -> pd.DataFrame:
+    def _convert_to_dataframe(self, ohlcv_data: list, timeframe: str) -> pd.DataFrame:
         """
         Конвертира OHLCV данни в pandas DataFrame
 
@@ -322,7 +322,7 @@ class BNBDataFetcher:
             logger.error(f"Грешка при извличане на последната цена: {e}")
             return None
 
-    def validate_data_quality(self, df: pd.DataFrame) -> Dict[str, any]:
+    def validate_data_quality(self, df: pd.DataFrame) -> dict[str, any]:
         """
         Валидира качеството на данните
 
@@ -349,14 +349,16 @@ class BNBDataFetcher:
             "avg_price": avg_price,
             "price_volatility": price_volatility,
             "data_quality_score": (
-                (total_rows - missing_data - duplicate_dates) / total_rows if total_rows > 0 else 0
+                (total_rows - missing_data - duplicate_dates) / total_rows
+                if total_rows > 0
+                else 0
             ),
         }
 
         logger.info(f"Качество на данните: {quality_report['data_quality_score']:.2%}")
         return quality_report
 
-    def _fetch_bnb_burn_dates(self, config: Dict) -> List[pd.Timestamp]:
+    def _fetch_bnb_burn_dates(self, config: dict) -> list[pd.Timestamp]:
         """
         Phase 1.5: Извлича BNB burn дати от конфигурацията
 
@@ -385,7 +387,9 @@ class BNBDataFetcher:
                         # Конвертираме string в Timestamp
                         burn_date = pd.to_datetime(date_str)
                         burn_dates.append(burn_date)
-                        logger.info(f"Добавена burn дата: {burn_date.strftime('%Y-%m-%d')}")
+                        logger.info(
+                            f"Добавена burn дата: {burn_date.strftime('%Y-%m-%d')}"
+                        )
                     except ValueError as e:
                         logger.warning(f"Невалидна burn дата: {date_str} - {e}")
 
@@ -396,7 +400,7 @@ class BNBDataFetcher:
             logger.error(f"Грешка при извличане на burn дати: {e}")
             return []
 
-    def add_bnb_burn_columns(self, df: pd.DataFrame, config: Dict) -> pd.DataFrame:
+    def add_bnb_burn_columns(self, df: pd.DataFrame, config: dict) -> pd.DataFrame:
         """
         Phase 1.5: Добавя BNB burn колони към DataFrame
 

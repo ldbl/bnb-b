@@ -23,7 +23,7 @@ Version: 2.0
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 # Import our testing framework
 from historical_tester import HistoricalTester, TestResult
@@ -56,7 +56,7 @@ class ValidationResult:
     passed_points: int
     failed_points: int
     critical_failures: int
-    results: Dict[str, Dict[str, Any]]
+    results: dict[str, dict[str, Any]]
     deployment_ready: bool
     summary: str
 
@@ -87,7 +87,7 @@ class ValidationProtocol:
 
         logger.info("🛡️ Validation Protocol инициализиран със 7-point checklist")
 
-    def _define_validation_points(self) -> List[ValidationPoint]:
+    def _define_validation_points(self) -> list[ValidationPoint]:
         """Дефинира 7-те validation точки"""
 
         return [
@@ -150,7 +150,7 @@ class ValidationProtocol:
         ]
 
     def validate_feature(
-        self, feature_name: str, test_periods: Optional[List[str]] = None
+        self, feature_name: str, test_periods: list[str] | None = None
     ) -> ValidationResult:
         """
         Изпълнява пълна 7-point validation за дадена функционалност
@@ -165,7 +165,9 @@ class ValidationProtocol:
         logger.info(f"🛡️ Започвам 7-point validation за: {feature_name}")
 
         # Run historical testing first
-        test_results = self.historical_tester.test_new_feature(feature_name, test_periods)
+        test_results = self.historical_tester.test_new_feature(
+            feature_name, test_periods
+        )
 
         # Initialize results
         validation_results = {}
@@ -203,7 +205,9 @@ class ValidationProtocol:
                     )
 
             except Exception as e:
-                logger.error(f"💥 Грешка при validation на {validation_point.name}: {e}")
+                logger.error(
+                    f"💥 Грешка при validation на {validation_point.name}: {e}"
+                )
                 validation_results[validation_point.name] = {
                     "passed": False,
                     "details": {},
@@ -248,9 +252,9 @@ class ValidationProtocol:
     def _validate_long_accuracy(
         self,
         feature_name: str,
-        test_results: Dict[str, TestResult],
+        test_results: dict[str, TestResult],
         validation_point: ValidationPoint,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Проверява дали LONG accuracy е запазена (трябва да е >= 95%)
         """
@@ -284,9 +288,9 @@ class ValidationProtocol:
     def _validate_pnl_stability(
         self,
         feature_name: str,
-        test_results: Dict[str, TestResult],
+        test_results: dict[str, TestResult],
         validation_point: ValidationPoint,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Проверява дали P&L не се е влошил значително
         """
@@ -325,9 +329,9 @@ class ValidationProtocol:
     def _validate_drawdown_control(
         self,
         feature_name: str,
-        test_results: Dict[str, TestResult],
+        test_results: dict[str, TestResult],
         validation_point: ValidationPoint,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Проверява дали max drawdown не се е увеличил значително
         """
@@ -365,9 +369,9 @@ class ValidationProtocol:
     def _validate_short_signal_logic(
         self,
         feature_name: str,
-        test_results: Dict[str, TestResult],
+        test_results: dict[str, TestResult],
         validation_point: ValidationPoint,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Проверява дали SHORT сигнали имат логична структура
         """
@@ -376,7 +380,11 @@ class ValidationProtocol:
         short_accuracies = []
 
         for period_name, result in test_results.items():
-            if result and hasattr(result, "short_signals") and hasattr(result, "total_signals"):
+            if (
+                result
+                and hasattr(result, "short_signals")
+                and hasattr(result, "total_signals")
+            ):
                 total_short_signals += result.short_signals
                 total_signals += result.total_signals
                 if hasattr(result, "short_accuracy"):
@@ -392,12 +400,22 @@ class ValidationProtocol:
         # В bear/correction период SHORT сигналите трябва да са 10-40%
 
         # Анализираме сигналите (Fix: Use separate variable to avoid corrupting total_signals)
-        total_periods = len([r for r in test_results.values() if r and hasattr(r, "total_signals")])
+        total_periods = len(
+            [r for r in test_results.values() if r and hasattr(r, "total_signals")]
+        )
         long_signals = sum(
-            [r.long_signals for r in test_results.values() if r and hasattr(r, "long_signals")]
+            [
+                r.long_signals
+                for r in test_results.values()
+                if r and hasattr(r, "long_signals")
+            ]
         )
         short_signals = sum(
-            [r.short_signals for r in test_results.values() if r and hasattr(r, "short_signals")]
+            [
+                r.short_signals
+                for r in test_results.values()
+                if r and hasattr(r, "short_signals")
+            ]
         )
 
         # Дефинираме reasonable_range в началото
@@ -428,19 +446,18 @@ class ValidationProtocol:
                 "short_accuracies": short_accuracies,
             },
             "message": (
-                f"SHORT signals: {
-                    short_percentage:.1f}% (expected: {
-                    reasonable_range[0]}-{
-                    reasonable_range[1]}%)"
+                f"SHORT signals: {short_percentage:.1f}% (expected: {
+                    reasonable_range[0]
+                }-{reasonable_range[1]}%)"
             ),
         }
 
     def _validate_configuration(
         self,
         feature_name: str,
-        test_results: Dict[str, TestResult],
+        test_results: dict[str, TestResult],
         validation_point: ValidationPoint,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Проверява дали всички нови параметри са документирани
         """
@@ -479,22 +496,29 @@ class ValidationProtocol:
     def _validate_edge_cases(
         self,
         feature_name: str,
-        test_results: Dict[str, TestResult],
+        test_results: dict[str, TestResult],
         validation_point: ValidationPoint,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Проверява дали edge cases са обработени
         """
         # Проверяваме дали има тестове за различни периоди
         tested_periods = list(test_results.keys())
-        expected_periods = ["bull_market", "correction_phase", "recovery_phase", "recent_data"]
+        expected_periods = [
+            "bull_market",
+            "correction_phase",
+            "recovery_phase",
+            "recent_data",
+        ]
 
         missing_periods = [p for p in expected_periods if p not in tested_periods]
         failed_periods = [p for p, r in test_results.items() if r is None]
 
         # Успех ако имаме поне 1 успешен период с достатъчно сигнали
         # или поне 2 успешни периода (за по-добра coverage)
-        successful_periods = len(tested_periods) - len(failed_periods) - len(missing_periods)
+        successful_periods = (
+            len(tested_periods) - len(failed_periods) - len(missing_periods)
+        )
 
         # Проверяваме дали имаме поне един период с сигнали (дори 1 сигнал е достатъчно за тест)
         has_signals = False
@@ -523,16 +547,18 @@ class ValidationProtocol:
     def _validate_performance_impact(
         self,
         feature_name: str,
-        test_results: Dict[str, TestResult],
+        test_results: dict[str, TestResult],
         validation_point: ValidationPoint,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Проверява performance impact
         """
         # Това е опростена проверка за performance
         # В реалността би трябвало да се измерва execution time
 
-        total_signals = sum(result.total_signals for result in test_results.values() if result)
+        total_signals = sum(
+            result.total_signals for result in test_results.values() if result
+        )
 
         # Ако имаме поне някакви сигнали, performance е OK (за development)
         reasonable_signal_count = total_signals > 0
@@ -540,12 +566,20 @@ class ValidationProtocol:
 
         return {
             "passed": passed,
-            "details": {"total_signals_generated": total_signals, "reasonable_threshold": 10},
+            "details": {
+                "total_signals_generated": total_signals,
+                "reasonable_threshold": 10,
+            },
             "message": f"Performance check: {total_signals} signals generated",
         }
 
     def _generate_validation_summary(
-        self, feature_name: str, passed: int, failed: int, critical_failures: int, total: int
+        self,
+        feature_name: str,
+        passed: int,
+        failed: int,
+        critical_failures: int,
+        total: int,
     ) -> str:
         """
         Генерира summary на validation резултатите
@@ -574,7 +608,9 @@ class ValidationProtocol:
         return "\n".join(lines)
 
     def save_validation_report(
-        self, validation_result: ValidationResult, output_file: str = "validation_report.txt"
+        self,
+        validation_result: ValidationResult,
+        output_file: str = "validation_report.txt",
     ):
         """
         Запазва детайлен validation report
@@ -612,7 +648,9 @@ class ValidationProtocol:
 
 
 # Utility functions
-def quick_validation(feature_name: str, config_path: str = "config.toml") -> Dict[str, Any]:
+def quick_validation(
+    feature_name: str, config_path: str = "config.toml"
+) -> dict[str, Any]:
     """
     Бърза validation за development purposes
 

@@ -69,7 +69,7 @@ DATE: 2024-01-01
 """
 
 import logging
-from typing import Any, Dict, Tuple
+from typing import Any
 
 import pandas as pd
 
@@ -136,7 +136,7 @@ class FibonacciAnalyzer:
         and validates swing size to ensure meaningful Fibonacci analysis.
     """
 
-    def __init__(self, config: Dict[str, Any]) -> None:
+    def __init__(self, config: dict[str, Any]) -> None:
         """
         Initialize the Fibonacci Analyzer with configuration parameters.
 
@@ -178,7 +178,7 @@ class FibonacciAnalyzer:
         logger.info(f"Ключови нива: {self.key_levels}")
         logger.info(f"Минимален swing размер: {self.min_swing_size:.1%}")
 
-    def find_swing_points(self, df: pd.DataFrame) -> Tuple[float, float, int, int]:
+    def find_swing_points(self, df: pd.DataFrame) -> tuple[float, float, int, int]:
         """
         Намира последния swing high и swing low
 
@@ -222,7 +222,9 @@ class FibonacciAnalyzer:
             logger.error(f"Грешка при търсене на swing points: {e}")
             return None, None, None, None
 
-    def calculate_fibonacci_levels(self, swing_high: float, swing_low: float) -> Dict[float, float]:
+    def calculate_fibonacci_levels(
+        self, swing_high: float, swing_low: float
+    ) -> dict[float, float]:
         """
         Изчислява всички Fibonacci retracement нива
 
@@ -262,8 +264,8 @@ class FibonacciAnalyzer:
             return {}
 
     def check_fib_proximity(
-        self, current_price: float, fib_levels: Dict[float, float]
-    ) -> Dict[str, any]:
+        self, current_price: float, fib_levels: dict[float, float]
+    ) -> dict[str, any]:
         """
         Проверява дали текущата цена е близо до Fibonacci ниво
 
@@ -327,9 +329,7 @@ class FibonacciAnalyzer:
                 logger.info("Активни Fibonacci нива:")
                 for level_info in proximity_info["active_levels"]:
                     logger.info(
-                        f"  {
-                            level_info['level'] *
-                            100:5.1f}%: ${
+                        f"  {level_info['level'] * 100:5.1f}%: ${
                             level_info['price']:,.2f} (±{
                             level_info['distance_percentage']:.2%})"
                     )
@@ -341,8 +341,8 @@ class FibonacciAnalyzer:
             return {}
 
     def get_fibonacci_signal(
-        self, current_price: float, fib_levels: Dict[float, float]
-    ) -> Dict[str, any]:
+        self, current_price: float, fib_levels: dict[float, float]
+    ) -> dict[str, any]:
         """
         Генерира Fibonacci сигнал базиран на текущата цена
 
@@ -357,7 +357,10 @@ class FibonacciAnalyzer:
             proximity_info = self.check_fib_proximity(current_price, fib_levels)
 
             if not proximity_info:
-                return {"signal": "HOLD", "reason": "Неуспешно изчисляване на Fibonacci нива"}
+                return {
+                    "signal": "HOLD",
+                    "reason": "Неуспешно изчисляване на Fibonacci нива",
+                }
 
             signal_info = {
                 "signal": "HOLD",
@@ -378,7 +381,9 @@ class FibonacciAnalyzer:
 
             # Сортираме по близост до текущата цена
             signal_info["support_levels"].sort(key=lambda x: abs(x[1] - current_price))
-            signal_info["resistance_levels"].sort(key=lambda x: abs(x[1] - current_price))
+            signal_info["resistance_levels"].sort(
+                key=lambda x: abs(x[1] - current_price)
+            )
 
             # Phase 1.2: Подобрена логика за SHORT сигнали
             if proximity_info["active_levels"]:
@@ -388,12 +393,8 @@ class FibonacciAnalyzer:
                 if level in [0.236, 0.382]:  # Support нива - LONG сигнали
                     signal_info["signal"] = "LONG"
                     signal_info["strength"] = 0.8 if level == 0.382 else 0.6
-                    signal_info["reason"] = (
-                        f"LONG: Цената е над Fibonacci support {
-                            level *
-                            100:.1f}% (${
-                            active_level['price']:.2f})"
-                    )
+                    signal_info["reason"] = f"LONG: Цената е над Fibonacci support {
+                        level * 100:.1f}% (${active_level['price']:.2f})"
 
                 elif level in [
                     0.618,
@@ -408,32 +409,32 @@ class FibonacciAnalyzer:
                         if rejection_confirmed:
                             signal_info["signal"] = "SHORT"
                             signal_info["strength"] = 0.8 if level == 0.618 else 0.7
-                            signal_info["reason"] = (
-                                f"SHORT: Отскок от Fibonacci resistance {
-                                    level *
-                                    100:.1f}% (${
-                                    active_level['price']:.2f}) - цена под ниво и rejection потвърден"
-                            )
+                            signal_info[
+                                "reason"
+                            ] = f"SHORT: Отскок от Fibonacci resistance {
+                                level * 100:.1f}% (${
+                                active_level[
+                                    'price'
+                                ]:.2f}) - цена под ниво и rejection потвърден"
                         else:
                             signal_info["signal"] = "HOLD"
                             signal_info["strength"] = 0.3
-                            signal_info["reason"] = (
-                                f"HOLD: Близо до resistance {
-                                    level * 100:.1f}% но няма rejection - изчакай потвърждение"
-                            )
+                            signal_info["reason"] = f"HOLD: Близо до resistance {
+                                level
+                                * 100:.1f}% но няма rejection - изчакай потвърждение"
                     else:
                         # Цената е НАД resistance нивото - няма SHORT сигнал
                         signal_info["signal"] = "HOLD"
                         signal_info["strength"] = 0.2
-                        signal_info["reason"] = (
-                            f"HOLD: Цената е над resistance {
-                                level * 100:.1f}% - няма SHORT възможност"
-                        )
+                        signal_info["reason"] = f"HOLD: Цената е над resistance {
+                            level * 100:.1f}% - няма SHORT възможност"
 
                 elif level == 0.5:  # Средно ниво
                     signal_info["signal"] = "HOLD"
                     signal_info["strength"] = 0.4
-                    signal_info["reason"] = "HOLD: Цената е на неутрално Fibonacci 50% ниво"
+                    signal_info["reason"] = (
+                        "HOLD: Цената е на неутрално Fibonacci 50% ниво"
+                    )
 
             # Добавяме информация за следващите нива
             if signal_info["signal"] == "LONG":
@@ -443,16 +444,14 @@ class FibonacciAnalyzer:
                     else None
                 )
                 if next_resistance:
-                    signal_info["next_target"] = (
-                        f"Следващо ниво: {
-                            next_resistance[0] *
-                            100:.1f}% (${
-                            next_resistance[1]:,.2f})"
-                    )
+                    signal_info["next_target"] = f"Следващо ниво: {
+                        next_resistance[0] * 100:.1f}% (${next_resistance[1]:,.2f})"
 
             elif signal_info["signal"] == "SHORT":
                 next_support = (
-                    signal_info["support_levels"][0] if signal_info["support_levels"] else None
+                    signal_info["support_levels"][0]
+                    if signal_info["support_levels"]
+                    else None
                 )
                 if next_support:
                     signal_info["next_target"] = (
@@ -471,7 +470,10 @@ class FibonacciAnalyzer:
             return {"signal": "HOLD", "reason": f"Грешка: {e}"}
 
     def _check_resistance_rejection(
-        self, current_price: float, resistance_price: float, fib_levels: Dict[float, float]
+        self,
+        current_price: float,
+        resistance_price: float,
+        fib_levels: dict[float, float],
     ) -> bool:
         """
         Phase 1.2: Проверява дали има отскок (rejection) от resistance ниво
@@ -491,14 +493,18 @@ class FibonacciAnalyzer:
         """
         try:
             # Изчисляваме колко е отдалечена цената от resistance
-            price_distance_pct = abs(current_price - resistance_price) / resistance_price
+            price_distance_pct = (
+                abs(current_price - resistance_price) / resistance_price
+            )
 
             # Конфигурационни параметри за rejection
             config = self.config.get("short_signals", {})
             min_rejection_distance = config.get(
                 "min_rejection_distance", 0.01
             )  # 1% минимум отдалечение
-            rejection_threshold = config.get("rejection_threshold", 0.03)  # 3% за силен rejection
+            rejection_threshold = config.get(
+                "rejection_threshold", 0.03
+            )  # 3% за силен rejection
 
             # Проверка 1: Цената трябва да е достатъчно отдалечена от resistance
             if price_distance_pct < min_rejection_distance:
@@ -519,17 +525,16 @@ class FibonacciAnalyzer:
                     f"Силен rejection потвърден: Цената е {price_distance_pct:.2f}% под resistance"
                 )
                 return True
-            else:
-                logger.info(
-                    f"Слаб rejection: Цената е само {price_distance_pct:.2f}% под resistance"
-                )
-                return False
+            logger.info(
+                f"Слаб rejection: Цената е само {price_distance_pct:.2f}% под resistance"
+            )
+            return False
 
         except Exception as e:
             logger.error(f"Грешка при проверка на resistance rejection: {e}")
             return False
 
-    def analyze_fibonacci_trend(self, df: pd.DataFrame) -> Dict[str, Any]:
+    def analyze_fibonacci_trend(self, df: pd.DataFrame) -> dict[str, Any]:
         """
         Perform complete Fibonacci trend analysis on price data.
 
@@ -640,7 +645,7 @@ class FibonacciAnalyzer:
 
     def calculate_fibonacci_extensions(
         self, swing_high: float, swing_low: float
-    ) -> Dict[float, float]:
+    ) -> dict[float, float]:
         """
         Изчислява Fibonacci extension нива за целите нагоре
 

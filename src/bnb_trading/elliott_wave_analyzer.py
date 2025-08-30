@@ -132,7 +132,7 @@ DATE: 2024-01-01
 """
 
 import logging
-from typing import Any, Dict, List
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -269,16 +269,22 @@ class ElliottWaveAnalyzer:
         for reliable wave structure identification and statistical validation.
     """
 
-    def __init__(self, config: Dict[str, Any]) -> None:
+    def __init__(self, config: dict[str, Any]) -> None:
         self.config = config
-        self.lookback_periods = config.get("elliott_wave", {}).get("lookback_periods", 50)
-        self.min_wave_strength = config.get("elliott_wave", {}).get("min_wave_strength", 0.02)
+        self.lookback_periods = config.get("elliott_wave", {}).get(
+            "lookback_periods", 50
+        )
+        self.min_wave_strength = config.get("elliott_wave", {}).get(
+            "min_wave_strength", 0.02
+        )
 
         # Phase 2.3: Trend momentum filter configuration
         self.trend_momentum_filter = config.get("elliott_wave", {}).get(
             "trend_momentum_filter", True
         )
-        self.momentum_threshold = config.get("elliott_wave", {}).get("momentum_threshold", 0.7)
+        self.momentum_threshold = config.get("elliott_wave", {}).get(
+            "momentum_threshold", 0.7
+        )
 
         # Initialize TrendAnalyzer for momentum confirmation
         self.trend_analyzer = TrendAnalyzer(config) if TrendAnalyzer else None
@@ -304,7 +310,9 @@ class ElliottWaveAnalyzer:
 
         logger.info("Elliott Wave анализатор инициализиран")
 
-    def analyze_elliott_wave(self, daily_df: pd.DataFrame, weekly_df: pd.DataFrame) -> Dict:
+    def analyze_elliott_wave(
+        self, daily_df: pd.DataFrame, weekly_df: pd.DataFrame
+    ) -> dict:
         """
         Анализира Elliott Wave структурите
 
@@ -336,7 +344,7 @@ class ElliottWaveAnalyzer:
             logger.error(f"Грешка при Elliott Wave анализ: {e}")
             return {"error": f"Грешка: {e}"}
 
-    def _analyze_timeframe(self, df: pd.DataFrame, timeframe: str) -> Dict:
+    def _analyze_timeframe(self, df: pd.DataFrame, timeframe: str) -> dict:
         """Анализира конкретен timeframe"""
         try:
             # Извличаме цените
@@ -381,7 +389,7 @@ class ElliottWaveAnalyzer:
             logger.error(f"Грешка при анализ на {timeframe}: {e}")
             return {"error": f"Грешка при {timeframe} анализ: {e}"}
 
-    def _find_pivot_points(self, prices: np.ndarray, lookback: int = 2) -> List[Dict]:
+    def _find_pivot_points(self, prices: np.ndarray, lookback: int = 2) -> list[dict]:
         """Намира local highs и lows (pivot точки)"""
         if len(prices) < lookback * 2 + 1:
             return []
@@ -390,22 +398,22 @@ class ElliottWaveAnalyzer:
 
         for i in range(lookback, len(prices) - lookback):
             # Проверяваме за local high
-            if prices[i] > max(prices[i - lookback: i]) and prices[i] > max(
-                prices[i + 1: i + lookback + 1]
+            if prices[i] > max(prices[i - lookback : i]) and prices[i] > max(
+                prices[i + 1 : i + lookback + 1]
             ):
                 pivots.append({"type": "HIGH", "price": prices[i], "index": i})
 
             # Проверяваме за local low
-            elif prices[i] < min(prices[i - lookback: i]) and prices[i] < min(
-                prices[i + 1: i + lookback + 1]
+            elif prices[i] < min(prices[i - lookback : i]) and prices[i] < min(
+                prices[i + 1 : i + lookback + 1]
             ):
                 pivots.append({"type": "LOW", "price": prices[i], "index": i})
 
         return pivots
 
     def _analyze_wave_structure(
-        self, pivots: List[Dict], prices: np.ndarray, timeframe: str
-    ) -> Dict:
+        self, pivots: list[dict], prices: np.ndarray, timeframe: str
+    ) -> dict:
         """Анализира Elliott Wave структурата"""
         if len(pivots) < 3:
             return {
@@ -440,7 +448,7 @@ class ElliottWaveAnalyzer:
             "wave_count": wave_count,
         }
 
-    def _determine_trend(self, pivots: List[Dict], prices: np.ndarray) -> str:
+    def _determine_trend(self, pivots: list[dict], prices: np.ndarray) -> str:
         """Определя тренда"""
         if len(pivots) < 2:
             return "SIDEWAYS"
@@ -454,12 +462,11 @@ class ElliottWaveAnalyzer:
 
         if last_pivot["price"] > first_pivot["price"] and price_trend:
             return "UPTREND"
-        elif last_pivot["price"] < first_pivot["price"] and not price_trend:
+        if last_pivot["price"] < first_pivot["price"] and not price_trend:
             return "DOWNTREND"
-        else:
-            return "SIDEWAYS"
+        return "SIDEWAYS"
 
-    def _count_waves(self, pivots: List[Dict]) -> int:
+    def _count_waves(self, pivots: list[dict]) -> int:
         """Брои Elliott Wave вълните"""
         if len(pivots) < 2:
             return 1
@@ -474,7 +481,9 @@ class ElliottWaveAnalyzer:
                 avg_price = (pivots[i]["price"] + pivots[i - 1]["price"]) / 2
                 change_percent = (price_change / avg_price) * 100
 
-                if change_percent >= self.min_wave_strength * 100:  # Минимум 2% движение
+                if (
+                    change_percent >= self.min_wave_strength * 100
+                ):  # Минимум 2% движение
                     wave_count += 1
                     valid_alternations += 1
 
@@ -484,19 +493,21 @@ class ElliottWaveAnalyzer:
 
         return min(wave_count, 5)  # Максимум 5 вълни в impulse
 
-    def _identify_current_wave(self, pivots: List[Dict], trend: str, wave_count: int) -> int:
+    def _identify_current_wave(
+        self, pivots: list[dict], trend: str, wave_count: int
+    ) -> int:
         """Идентифицира текущата вълна"""
         if trend == "UPTREND":
             if wave_count >= 5:
                 return 5  # Wave 5 - последна вълна
-            elif wave_count >= 3:
+            if wave_count >= 3:
                 return 3  # Wave 3 - най-силната вълна
-            elif wave_count >= 1:
+            if wave_count >= 1:
                 return 1  # Wave 1 - начална вълна
         elif trend == "DOWNTREND":
             if wave_count >= 3:
                 return 3  # Wave C - последна correction вълна
-            elif wave_count >= 1:
+            if wave_count >= 1:
                 return 1  # Wave A - начална correction вълна
 
         return wave_count
@@ -508,7 +519,9 @@ class ElliottWaveAnalyzer:
                 return degree
         return "MINUTE"
 
-    def _calculate_wave_confidence(self, pivots: List[Dict], wave_count: int, degree: str) -> int:
+    def _calculate_wave_confidence(
+        self, pivots: list[dict], wave_count: int, degree: str
+    ) -> int:
         """Изчислява confidence за Elliott Wave анализа"""
         base_confidence = min(50 + (len(pivots) * 5), 90)
 
@@ -527,7 +540,7 @@ class ElliottWaveAnalyzer:
         final_confidence = int(base_confidence * degree_modifier * wave_modifier)
         return min(final_confidence, 95)
 
-    def _validate_elliott_rules(self, pivots: List[Dict]) -> Dict:
+    def _validate_elliott_rules(self, pivots: list[dict]) -> dict:
         """Валидира Elliott Wave правилата"""
         if len(pivots) < 5:
             return {"valid": False, "violations": ["Нужни са поне 5 pivot точки"]}
@@ -576,7 +589,7 @@ class ElliottWaveAnalyzer:
             "confidence_modifier": max(0, 1.0 - (len(violations) * 0.2)),
         }
 
-    def _calculate_fibonacci_projections(self, pivots: List[Dict]) -> Dict:
+    def _calculate_fibonacci_projections(self, pivots: list[dict]) -> dict:
         """Изчислява Fibonacci проекции за вълните"""
         if len(pivots) < 3:
             return {"target": None, "extension": None}
@@ -602,11 +615,11 @@ class ElliottWaveAnalyzer:
 
     def _combine_analyses(
         self,
-        daily_analysis: Dict,
-        weekly_analysis: Dict,
+        daily_analysis: dict,
+        weekly_analysis: dict,
         daily_df: pd.DataFrame = None,
         weekly_df: pd.DataFrame = None,
-    ) -> Dict:
+    ) -> dict:
         """Комбинира daily и weekly анализа"""
         try:
             # Проверяваме за грешки
@@ -659,11 +672,11 @@ class ElliottWaveAnalyzer:
 
     def _generate_trading_signals(
         self,
-        daily_analysis: Dict,
-        weekly_analysis: Dict,
+        daily_analysis: dict,
+        weekly_analysis: dict,
         daily_df: pd.DataFrame = None,
         weekly_df: pd.DataFrame = None,
-    ) -> Dict:
+    ) -> dict:
         """Генерира trading сигнали базирани на Elliott Wave анализа с trend momentum filter"""
         signals = {
             "action": "WAIT",
@@ -680,7 +693,9 @@ class ElliottWaveAnalyzer:
         # Phase 2.3: Apply trend momentum filter
         trend_momentum = (
             self._analyze_trend_momentum(daily_df, weekly_df)
-            if self.trend_momentum_filter and daily_df is not None and weekly_df is not None
+            if self.trend_momentum_filter
+            and daily_df is not None
+            and weekly_df is not None
             else {"momentum": "NEUTRAL", "strength": 0.5}
         )
 
@@ -755,7 +770,8 @@ class ElliottWaveAnalyzer:
         # Ако няма ясен сигнал, използваме confidence
         if signals["action"] == "WAIT":
             combined_conf = (
-                daily_analysis.get("confidence", 0) + weekly_analysis.get("confidence", 0)
+                daily_analysis.get("confidence", 0)
+                + weekly_analysis.get("confidence", 0)
             ) / 2
             signals["confidence"] = combined_conf
 
@@ -764,7 +780,9 @@ class ElliottWaveAnalyzer:
 
         return signals
 
-    def _analyze_trend_momentum(self, daily_df: pd.DataFrame, weekly_df: pd.DataFrame) -> Dict:
+    def _analyze_trend_momentum(
+        self, daily_df: pd.DataFrame, weekly_df: pd.DataFrame
+    ) -> dict:
         """
         Phase 2.3: Analyze trend momentum to filter wave completion signals
 
@@ -816,7 +834,8 @@ class ElliottWaveAnalyzer:
                 "confidence": regime_confidence,
                 "market_regime": market_regime,
                 "filter_active": (
-                    momentum_type == "STRONG_BULL" and momentum_strength > self.momentum_threshold
+                    momentum_type == "STRONG_BULL"
+                    and momentum_strength > self.momentum_threshold
                 ),
             }
 

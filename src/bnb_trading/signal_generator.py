@@ -49,7 +49,7 @@ LAST UPDATED: 2024-01-01
 """
 
 import logging
-from typing import Any, Dict, List
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -71,12 +71,14 @@ try:
     from smart_short_generator import (
         SmartShortSignalGenerator,
         create_short_signal_dict,
-    )  # noqa: E402
+    )
 
     SMART_SHORT_AVAILABLE = True
 except ImportError:
     SMART_SHORT_AVAILABLE = False
-    logger.warning("SmartShortSignalGenerator не е наличен - SHORT сигнали ще бъдат ограничени")
+    logger.warning(
+        "SmartShortSignalGenerator не е наличен - SHORT сигнали ще бъдат ограничени"
+    )
 
 # Additional analysis modules
 from divergence_detector import DivergenceDetector  # noqa: E402
@@ -137,7 +139,7 @@ class SignalGenerator:
         The system gracefully handles module failures and continues with available analyses.
     """
 
-    def __init__(self, config: Dict[str, Any]) -> None:
+    def __init__(self, config: dict[str, Any]) -> None:
         """
         Initialize the Signal Generator with configuration and analysis modules.
 
@@ -169,7 +171,9 @@ class SignalGenerator:
         self.config = config
         self.fibonacci_weight = config["signals"]["fibonacci_weight"]
         self.weekly_tails_weight = config["signals"]["weekly_tails_weight"]
-        self.ma_weight = config["signals"].get("ma_weight", 0.20)  # Moving Averages тегло
+        self.ma_weight = config["signals"].get(
+            "ma_weight", 0.20
+        )  # Moving Averages тегло
         self.rsi_weight = config["signals"]["rsi_weight"]
         self.macd_weight = config["signals"]["macd_weight"]
         self.bb_weight = config["signals"]["bb_weight"]
@@ -211,7 +215,9 @@ class SignalGenerator:
         logger.info(f"Минимум потвърждения: {self.min_confirmations}")
         logger.info(f"Fibonacci+Tail изискване: {self.fib_tail_required}")
 
-    def generate_signal(self, daily_df: pd.DataFrame, weekly_df: pd.DataFrame) -> Dict[str, Any]:
+    def generate_signal(
+        self, daily_df: pd.DataFrame, weekly_df: pd.DataFrame
+    ) -> dict[str, Any]:
         """
         Generate the primary trading signal by orchestrating all analysis modules.
 
@@ -298,19 +304,25 @@ class SignalGenerator:
             # 2. Weekly Tails анализ
             tails_analysis = self.tails_analyzer.analyze_weekly_tails_trend(weekly_df)
             if "error" in tails_analysis:
-                logger.warning(f"Weekly Tails анализ неуспешен: {tails_analysis['error']}")
+                logger.warning(
+                    f"Weekly Tails анализ неуспешен: {tails_analysis['error']}"
+                )
                 tails_analysis = None
 
             # 3. Технически индикатори
             daily_with_indicators = self.indicators.calculate_indicators(daily_df)
-            indicators_signals = self.indicators.get_all_indicators_signals(daily_with_indicators)
+            indicators_signals = self.indicators.get_all_indicators_signals(
+                daily_with_indicators
+            )
             if "error" in indicators_signals:
-                logger.warning(f"Индикаторни сигнали неуспешни: {indicators_signals['error']}")
+                logger.warning(
+                    f"Индикаторни сигнали неуспешни: {indicators_signals['error']}"
+                )
                 indicators_signals = None
 
             # 4. Optimal Levels анализ
-            optimal_levels_analysis = self.optimal_levels_analyzer.analyze_optimal_levels(
-                daily_df, weekly_df
+            optimal_levels_analysis = (
+                self.optimal_levels_analyzer.analyze_optimal_levels(daily_df, weekly_df)
             )
             if "error" in optimal_levels_analysis:
                 logger.warning(
@@ -329,15 +341,21 @@ class SignalGenerator:
                 daily_df, weekly_df
             )
             if "error" in elliott_wave_analysis:
-                logger.warning(f"Elliott Wave анализ неуспешен: {elliott_wave_analysis['error']}")
+                logger.warning(
+                    f"Elliott Wave анализ неуспешен: {elliott_wave_analysis['error']}"
+                )
                 elliott_wave_analysis = None
 
             # 7. Whale Tracker Analysis
             whale_analysis = None
             if self.config.get("whale_tracker", {}).get("enabled", True):
-                whale_analysis = self.whale_tracker.get_whale_activity_summary(days_back=1)
+                whale_analysis = self.whale_tracker.get_whale_activity_summary(
+                    days_back=1
+                )
                 if "error" in whale_analysis:
-                    logger.warning(f"Whale Tracker анализ неуспешен: {whale_analysis['error']}")
+                    logger.warning(
+                        f"Whale Tracker анализ неуспешен: {whale_analysis['error']}"
+                    )
                     whale_analysis = None
             else:
                 logger.debug("Whale Tracker анализ дезактивиран в конфигурацията")
@@ -353,7 +371,9 @@ class SignalGenerator:
                     )
                 )
                 if "error" in ichimoku_analysis:
-                    logger.warning(f"Ichimoku анализ неуспешен: {ichimoku_analysis['error']}")
+                    logger.warning(
+                        f"Ichimoku анализ неуспешен: {ichimoku_analysis['error']}"
+                    )
                     ichimoku_analysis = None
             else:
                 logger.debug("Ichimoku анализ дезактивиран в конфигурацията")
@@ -361,14 +381,18 @@ class SignalGenerator:
             # 9. Sentiment Analysis
             sentiment_analysis = None
             if self.config.get("sentiment", {}).get("enabled", True):
-                sentiment_analysis = self.sentiment_analyzer.calculate_composite_sentiment(
-                    self.sentiment_analyzer.get_fear_greed_index(),
-                    self.sentiment_analyzer.analyze_social_sentiment(),
-                    self.sentiment_analyzer.analyze_news_sentiment(),
-                    self.sentiment_analyzer.get_market_momentum_indicators(),
+                sentiment_analysis = (
+                    self.sentiment_analyzer.calculate_composite_sentiment(
+                        self.sentiment_analyzer.get_fear_greed_index(),
+                        self.sentiment_analyzer.analyze_social_sentiment(),
+                        self.sentiment_analyzer.analyze_news_sentiment(),
+                        self.sentiment_analyzer.get_market_momentum_indicators(),
+                    )
                 )
                 if "error" in sentiment_analysis:
-                    logger.warning(f"Sentiment анализ неуспешен: {sentiment_analysis['error']}")
+                    logger.warning(
+                        f"Sentiment анализ неуспешен: {sentiment_analysis['error']}"
+                    )
                     sentiment_analysis = None
             else:
                 logger.debug("Sentiment анализ дезактивиран в конфигурацията")
@@ -376,7 +400,9 @@ class SignalGenerator:
             # 10. Divergence Analysis (НОВО от ideas файла)
             logger.info("Стартиране на Divergence анализ...")
             logger.info(f"Daily data columns: {daily_df.columns.tolist()}")
-            logger.info(f"Daily with indicators columns: {daily_with_indicators.columns.tolist()}")
+            logger.info(
+                f"Daily with indicators columns: {daily_with_indicators.columns.tolist()}"
+            )
 
             # Проверяваме дали има RSI и MACD данни
             rsi_values = (
@@ -394,13 +420,19 @@ class SignalGenerator:
             logger.info(f"MACD values count: {len(macd_values)}")
 
             divergence_analysis = self.divergence_detector.detect_all_divergences(
-                daily_df, {"rsi": {"rsi_values": rsi_values}, "macd": {"macd_values": macd_values}}
+                daily_df,
+                {
+                    "rsi": {"rsi_values": rsi_values},
+                    "macd": {"macd_values": macd_values},
+                },
             )
 
             logger.info(f"Divergence анализ резултат: {divergence_analysis}")
 
             if divergence_analysis and "error" in divergence_analysis:
-                logger.warning(f"Divergence анализ неуспешен: {divergence_analysis['error']}")
+                logger.warning(
+                    f"Divergence анализ неуспешен: {divergence_analysis['error']}"
+                )
                 divergence_analysis = None
             elif divergence_analysis is None:
                 logger.warning("Divergence анализ е None")
@@ -411,14 +443,18 @@ class SignalGenerator:
             ma_analysis = self.ma_analyzer.calculate_emas(daily_df)
             logger.info(f"Moving Averages анализ резултат: {ma_analysis}")
             if "error" in ma_analysis:
-                logger.warning(f"Moving Averages анализ неуспешен: {ma_analysis['error']}")
+                logger.warning(
+                    f"Moving Averages анализ неуспешен: {ma_analysis['error']}"
+                )
                 ma_analysis = None
 
             # 12. Price Action Patterns Analysis (НОВО от ideas файла)
             patterns_analysis = self.patterns_analyzer.detect_all_patterns(daily_df)
             logger.info(f"Price Patterns анализ резултат: {patterns_analysis}")
             if "error" in patterns_analysis:
-                logger.warning(f"Price Patterns анализ неуспешен: {patterns_analysis['error']}")
+                logger.warning(
+                    f"Price Patterns анализ неуспешен: {patterns_analysis['error']}"
+                )
                 patterns_analysis = None
 
             # 6. Проверяваме за Fibonacci + Tails съвпадения
@@ -446,7 +482,6 @@ class SignalGenerator:
                 and daily_df is not None
                 and weekly_df is not None
             ):
-
                 try:
                     # Създаваме предварителни анализи за daily и weekly (simplified version
                     # for multi-timeframe)
@@ -476,10 +511,13 @@ class SignalGenerator:
                     )
 
                     # Проверяваме дали резултатът е успешен
-                    if multi_timeframe_result and isinstance(multi_timeframe_result, dict):
+                    if multi_timeframe_result and isinstance(
+                        multi_timeframe_result, dict
+                    ):
                         multi_timeframe_analysis = multi_timeframe_result
                         logger.info(
-                            f"Multi-timeframe alignment completed: {multi_timeframe_analysis.get('overall_alignment', 'UNKNOWN')}"
+                            f"Multi-timeframe alignment completed: "
+                            f"{multi_timeframe_analysis.get('overall_alignment', 'UNKNOWN')}"
                         )
                     else:
                         logger.warning(
@@ -555,22 +593,21 @@ class SignalGenerator:
 
                 # Добавяме multi-timeframe информация към reason
                 if confidence_bonus != 0.0:
-                    alignment_info = multi_timeframe_analysis.get("overall_alignment", "UNKNOWN")
-                    final_signal[
-                        "reason"
-                    ] += f" | Multi-Timeframe: {alignment_info} ({confidence_bonus:+.2f})"
+                    alignment_info = multi_timeframe_analysis.get(
+                        "overall_alignment", "UNKNOWN"
+                    )
+                    final_signal["reason"] += (
+                        f" | Multi-Timeframe: {alignment_info} ({confidence_bonus:+.2f})"
+                    )
 
                 logger.info(
                     f"Multi-timeframe analysis applied: {
-                        multi_timeframe_analysis.get(
-                            'overall_alignment',
-                            'UNKNOWN')} | Bonus: {
-                        confidence_bonus:+.2f}"
+                        multi_timeframe_analysis.get('overall_alignment', 'UNKNOWN')
+                    } | Bonus: {confidence_bonus:+.2f}"
                 )
 
             logger.info(
-                f"Сигнал генериран: {
-                    final_signal['signal']} (увереност: {
+                f"Сигнал генериран: {final_signal['signal']} (увереност: {
                     final_signal['confidence']:.2f})"
             )
 
@@ -587,23 +624,23 @@ class SignalGenerator:
 
     def _combine_signals(
         self,
-        fib_analysis: Dict,
-        tails_analysis: Dict,
-        indicators_signals: Dict,
-        confluence_info: Dict,
-        trend_analysis: Dict = None,
+        fib_analysis: dict,
+        tails_analysis: dict,
+        indicators_signals: dict,
+        confluence_info: dict,
+        trend_analysis: dict = None,
         daily_df: pd.DataFrame = None,
         weekly_df: pd.DataFrame = None,
-        divergence_analysis: Dict = None,
-        ichimoku_analysis: Dict = None,
-        sentiment_analysis: Dict = None,
-        whale_analysis: Dict = None,
-        price_patterns_analysis: Dict = None,
-        elliott_wave_analysis: Dict = None,
-        optimal_levels_analysis: Dict = None,
-        moving_averages_analysis: Dict = None,
-        multi_timeframe_analysis: Dict = None,
-    ) -> Dict[str, any]:
+        divergence_analysis: dict = None,
+        ichimoku_analysis: dict = None,
+        sentiment_analysis: dict = None,
+        whale_analysis: dict = None,
+        price_patterns_analysis: dict = None,
+        elliott_wave_analysis: dict = None,
+        optimal_levels_analysis: dict = None,
+        moving_averages_analysis: dict = None,
+        multi_timeframe_analysis: dict = None,
+    ) -> dict[str, any]:
         """
         Комбинира сигналите от различните източници
 
@@ -648,10 +685,7 @@ class SignalGenerator:
                             if (
                                 tails_signal["signal"] == "SHORT"
                                 and macd_signal["signal"] == "LONG"
-                            ):
-                                macd_conflict = True
-                            # Ако Weekly Tails е LONG но MACD е SHORT - има конфликт
-                            elif (
+                            ) or (
                                 tails_signal["signal"] == "LONG"
                                 and macd_signal["signal"] == "SHORT"
                             ):
@@ -659,17 +693,18 @@ class SignalGenerator:
 
                     # Ако има конфликт с MACD, намаляваме тежестта на Weekly Tails
                     if macd_conflict:
-                        adjusted_weight = self.weekly_tails_weight * 0.7  # Намаляваме с 30%
+                        adjusted_weight = (
+                            self.weekly_tails_weight * 0.7
+                        )  # Намаляваме с 30%
                         signal_reasons.append(
-                            f"Weekly Tails: {
-                                tails_signal['reason']} (сила: {
-                                tails_signal['strength']:.2f}) - тегло намалено поради MACD конфликт"
+                            f"Weekly Tails: {tails_signal['reason']} (сила: {
+                                tails_signal['strength']:.2f}) - "
+                            f"тегло намалено поради MACD конфликт"
                         )
                     else:
                         adjusted_weight = self.weekly_tails_weight
                         signal_reasons.append(
-                            f"Weekly Tails: {
-                                tails_signal['reason']} (сила: {
+                            f"Weekly Tails: {tails_signal['reason']} (сила: {
                                 tails_signal['strength']:.2f})"
                         )
 
@@ -703,25 +738,29 @@ class SignalGenerator:
                             ):
                                 adjusted_weight = base_weight * 0.6  # Намаляваме с 40%
                                 signal_reasons.append(
-                                    f"Moving Averages: {
-                                        crossover['signal']} → {ma_signal} ({
-                                        crossover['confidence']:.0f}%) - тегло намалено поради силен Weekly SHORT"
+                                    f"Moving Averages: {crossover['signal']} → {
+                                        ma_signal
+                                    } ({crossover['confidence']:.0f}%) - "
+                                    f"тегло намалено поради силен Weekly SHORT"
                                 )
                             else:
                                 adjusted_weight = base_weight
                                 signal_reasons.append(
-                                    f"Moving Averages: {
-                                        crossover['signal']} → {ma_signal} ({
-                                        crossover['confidence']:.0f}%)"
+                                    f"Moving Averages: {crossover['signal']} → {
+                                        ma_signal
+                                    } ({crossover['confidence']:.0f}%)"
                                 )
 
-                            ma_score = (crossover["confidence"] / 100.0) * adjusted_weight
+                            ma_score = (
+                                crossover["confidence"] / 100.0
+                            ) * adjusted_weight
                             signal_scores[ma_signal] += ma_score
                             total_weight += adjusted_weight
 
             # Проверяваме дали имаме силен LONG сигнал от другите анализатори
             primary_long_signal = (
-                fib_analysis and fib_analysis.get("fibonacci_signal", {}).get("signal") == "LONG"
+                fib_analysis
+                and fib_analysis.get("fibonacci_signal", {}).get("signal") == "LONG"
             ) or (weekly_tails_signal and weekly_tails_signal.get("signal") == "LONG")
 
             # PHASE 2: EMA потвърждение за LONG сигнали
@@ -732,9 +771,12 @@ class SignalGenerator:
                 and moving_averages_analysis
                 and "error" not in moving_averages_analysis
             ):
-
-                ema_fast_period = self.config.get("long_signals", {}).get("ema_fast_period", 10)
-                ema_slow_period = self.config.get("long_signals", {}).get("ema_slow_period", 50)
+                ema_fast_period = self.config.get("long_signals", {}).get(
+                    "ema_fast_period", 10
+                )
+                ema_slow_period = self.config.get("long_signals", {}).get(
+                    "ema_slow_period", 50
+                )
                 ema_confidence_bonus = self.config.get("long_signals", {}).get(
                     "ema_confidence_bonus", 0.1
                 )
@@ -746,12 +788,10 @@ class SignalGenerator:
                     and crossover.get("signal") in ["BULLISH_ABOVE", "BULLISH_CROSS"]
                     and crossover.get("confidence", 0) > 60
                 ):
-
                     # EMA потвърждава LONG сигнала - увеличаваме confidence
                     signal_scores["LONG"] += ema_confidence_bonus
                     signal_reasons.append(
-                        f"✅ EMA ПОТВЪРЖДЕНИЕ: {
-                            crossover['signal']} ({
+                        f"✅ EMA ПОТВЪРЖДЕНИЕ: {crossover['signal']} ({
                             crossover['confidence']:.0f}%) - +{
                             ema_confidence_bonus:.2f} confidence за LONG"
                     )
@@ -767,7 +807,6 @@ class SignalGenerator:
                 and daily_df is not None
                 and primary_long_signal
             ):
-
                 burn_confidence_bonus = self.config.get("long_signals", {}).get(
                     "burn_confidence_bonus", 0.15
                 )
@@ -787,11 +826,13 @@ class SignalGenerator:
                     # Увеличаваме confidence за LONG сигнали преди burn
                     signal_scores["LONG"] += burn_confidence_bonus
                     signal_reasons.append(
-                        f"🔥 BNB BURN ENHANCEMENT: {days_to_burn} дни до burn - +{burn_confidence_bonus:.2f} confidence за LONG"
+                        f"🔥 BNB BURN ENHANCEMENT: {days_to_burn} дни до burn - "
+                        f"+{burn_confidence_bonus:.2f} confidence за LONG"
                     )
                     burn_enhanced = True
                     logger.info(
-                        f"BNB Burn enhancement: +{burn_confidence_bonus} confidence ({days_to_burn} дни до burn)"
+                        f"BNB Burn enhancement: +{burn_confidence_bonus} confidence "
+                        f"({days_to_burn} дни до burn)"
                     )
 
             # PHASE 2: Stop-loss препоръки с Fibonacci нива
@@ -804,7 +845,6 @@ class SignalGenerator:
                     or signal_scores["SHORT"] > signal_scores["LONG"]
                 )
             ):
-
                 current_price = fib_analysis.get("current_price", 0)
                 fib_levels = fib_analysis.get("fibonacci_levels", {})
 
@@ -816,22 +856,29 @@ class SignalGenerator:
                         closest_support = None
                         for level_name, level_price in support_levels:
                             if level_price < current_price:
-                                if closest_support is None or level_price > closest_support:
+                                if (
+                                    closest_support is None
+                                    or level_price > closest_support
+                                ):
                                     closest_support = level_price
 
                         if closest_support:
-                            stop_loss_price = closest_support * 0.98  # Малко под support-a
+                            stop_loss_price = (
+                                closest_support * 0.98
+                            )  # Малко под support-a
                             stop_loss_recommendation = {
                                 "type": "LONG_STOP_LOSS",
                                 "price": stop_loss_price,
                                 "fib_level": f"Под {level_name}",
                                 "risk_pct": (
-                                    ((current_price - stop_loss_price) / current_price) * 100
+                                    ((current_price - stop_loss_price) / current_price)
+                                    * 100
                                 ),
                                 "reason": f"Fibonacci support на {closest_support:.2f}",
                             }
                             signal_reasons.append(
-                                f"🛡️ STOP-LOSS LONG: {stop_loss_price:.2f} ({stop_loss_recommendation['risk_pct']:.1f}% risk)"
+                                f"🛡️ STOP-LOSS LONG: {stop_loss_price:.2f} "
+                                f"({stop_loss_recommendation['risk_pct']:.1f}% risk)"
                             )
 
                 elif signal_scores["SHORT"] > signal_scores["LONG"]:
@@ -842,22 +889,29 @@ class SignalGenerator:
                         closest_resistance = None
                         for level_name, level_price in resistance_levels:
                             if level_price > current_price:
-                                if closest_resistance is None or level_price < closest_resistance:
+                                if (
+                                    closest_resistance is None
+                                    or level_price < closest_resistance
+                                ):
                                     closest_resistance = level_price
 
                         if closest_resistance:
-                            stop_loss_price = closest_resistance * 1.02  # Малко над resistance-a
+                            stop_loss_price = (
+                                closest_resistance * 1.02
+                            )  # Малко над resistance-a
                             stop_loss_recommendation = {
                                 "type": "SHORT_STOP_LOSS",
                                 "price": stop_loss_price,
                                 "fib_level": f"Над {level_name}",
                                 "risk_pct": (
-                                    ((stop_loss_price - current_price) / current_price) * 100
+                                    ((stop_loss_price - current_price) / current_price)
+                                    * 100
                                 ),
                                 "reason": f"Fibonacci resistance на {closest_resistance:.2f}",
                             }
                             signal_reasons.append(
-                                f"🛡️ STOP-LOSS SHORT: {stop_loss_price:.2f} ({stop_loss_recommendation['risk_pct']:.1f}% risk)"
+                                f"🛡️ STOP-LOSS SHORT: {stop_loss_price:.2f} "
+                                f"({stop_loss_recommendation['risk_pct']:.1f}% risk)"
                             )
 
             # 3. Fibonacci + Tails съвпадение (бонус)
@@ -917,11 +971,17 @@ class SignalGenerator:
                     current_idx = len(daily_df) - 1
 
                 if "ATH_Proximity_Score" in daily_df.columns:
-                    ath_proximity_score = float(daily_df.iloc[current_idx]["ATH_Proximity_Score"])
-                    ath_distance_pct = float(daily_df.iloc[current_idx]["ATH_Distance_Pct"])
+                    ath_proximity_score = float(
+                        daily_df.iloc[current_idx]["ATH_Proximity_Score"]
+                    )
+                    ath_distance_pct = float(
+                        daily_df.iloc[current_idx]["ATH_Distance_Pct"]
+                    )
 
                     # РЕЛАКС ATH FILТЪР: SHORT само ако сме близо до ROLLING ATH (> 10% под ATH)
-                    if ath_distance_pct > 10.0:  # Далеч от rolling ATH - блокираме SHORT
+                    if (
+                        ath_distance_pct > 10.0
+                    ):  # Далеч от rolling ATH - блокираме SHORT
                         signal_scores["SHORT"] = 0.0  # Изцяло блокираме SHORT сигнала
                         signal_reasons.append(
                             f"SHORT BLOCKED by rolling ATH proximity: {
@@ -932,16 +992,21 @@ class SignalGenerator:
                                 ath_distance_pct:.1f}% distance from ATH"
                         )
                     elif ath_proximity_score > 0:  # Близо до ATH - даваме бонус
-                        ath_bonus = ath_proximity_score * 0.15  # 15% бонус базиран на proximity
+                        ath_bonus = (
+                            ath_proximity_score * 0.15
+                        )  # 15% бонус базиран на proximity
                         signal_scores["SHORT"] += ath_bonus
                         signal_reasons.append(
-                            f"ATH Proximity бонус за SHORT: +{ath_bonus:.3f} (proximity: {ath_proximity_score:.2f})"
+                            f"ATH Proximity бонус за SHORT: +{ath_bonus:.3f} "
+                            f"(proximity: {ath_proximity_score:.2f})"
                         )
                         logger.info(
-                            f"ATH proximity bonus added to SHORT: +{ath_bonus:.3f} (score: {ath_proximity_score:.3f})"
+                            f"ATH proximity bonus added to SHORT: +{ath_bonus:.3f} "
+                            f"(score: {ath_proximity_score:.3f})"
                         )
                         print(
-                            f"🔥 ATH BONUS: +{ath_bonus:.3f} за SHORT сигнал (proximity: {ath_proximity_score:.3f})"
+                            f"🔥 ATH BONUS: +{ath_bonus:.3f} за SHORT сигнал "
+                            f"(proximity: {ath_proximity_score:.3f})"
                         )
                     else:
                         signal_reasons.append("No ATH proximity data available")
@@ -957,8 +1022,13 @@ class SignalGenerator:
                     )
 
                     # Блокираме SHORT само ако трендът е ЕКСТРЕМНО силно възходящ
-                    if trend_direction in ["STRONG_UPTREND"] and trend_strength == "VERY_STRONG":
-                        signal_scores["SHORT"] *= 0.5  # Намаляваме SHORT сигнала с 50% (по-леко)
+                    if (
+                        trend_direction in ["STRONG_UPTREND"]
+                        and trend_strength == "VERY_STRONG"
+                    ):
+                        signal_scores["SHORT"] *= (
+                            0.5  # Намаляваме SHORT сигнала с 50% (по-леко)
+                        )
                         signal_reasons.append(
                             f"SHORT weakened by very strong uptrend: {trend_direction} ({trend_strength})"
                         )
@@ -966,14 +1036,16 @@ class SignalGenerator:
                             f"SHORT weakened by very strong uptrend: {trend_direction} ({trend_strength})"
                         )
                     elif trend_direction in ["UPTREND"] and trend_strength == "STRONG":
-                        signal_scores[
-                            "SHORT"
-                        ] *= 0.7  # Намаляваме SHORT сигнала с 30% (много по-леко)
+                        signal_scores["SHORT"] *= (
+                            0.7  # Намаляваме SHORT сигнала с 30% (много по-леко)
+                        )
                         signal_reasons.append(
-                            f"SHORT mildly weakened by strong uptrend: {trend_direction} ({trend_strength})"
+                            f"SHORT mildly weakened by strong uptrend: "
+                            f"{trend_direction} ({trend_strength})"
                         )
                         logger.info(
-                            f"SHORT mildly weakened by strong uptrend: {trend_direction} ({trend_strength})"
+                            f"SHORT mildly weakened by strong uptrend: "
+                            f"{trend_direction} ({trend_strength})"
                         )
 
                 # 5.2 Market Regime филтър - SHORT само в подходящи market conditions
@@ -982,9 +1054,9 @@ class SignalGenerator:
 
                     # Ако сме твърде далеч от ATH и трендът е силен uptrend - намаляваме SHORT
                     if ath_distance > 15.0 and trend_direction in ["STRONG_UPTREND"]:
-                        signal_scores[
-                            "SHORT"
-                        ] *= 0.6  # Намаляваме SHORT сигнала с 40% (много по-леко)
+                        signal_scores["SHORT"] *= (
+                            0.6  # Намаляваме SHORT сигнала с 40% (много по-леко)
+                        )
                         signal_reasons.append(
                             f"SHORT moderately weakened: {
                                 ath_distance:.1f}% from ATH + strong uptrend"
@@ -994,7 +1066,9 @@ class SignalGenerator:
                                 ath_distance:.1f}% from ATH + strong uptrend"
                         )
                     elif ath_distance > 10.0 and trend_direction in ["UPTREND"]:
-                        signal_scores["SHORT"] *= 0.8  # Намаляваме SHORT сигнала с 20% (леко)
+                        signal_scores["SHORT"] *= (
+                            0.8  # Намаляваме SHORT сигнала с 20% (леко)
+                        )
                         signal_reasons.append(
                             f"SHORT mildly weakened: {ath_distance:.1f}% from ATH + uptrend"
                         )
@@ -1030,21 +1104,27 @@ class SignalGenerator:
                     # Core requirement: Fibonacci confluence
                     if (
                         fib_analysis
-                        and fib_analysis.get("fibonacci_signal", {}).get("signal") == "LONG"
+                        and fib_analysis.get("fibonacci_signal", {}).get("signal")
+                        == "LONG"
                     ):
                         confluence_count += 1
                         fib_proximity = fib_analysis.get("proximity_to_key_level", 1.0)
                         if fib_proximity <= 0.02:  # Within 2% of Fib level
                             confluence_bonus += 0.1
-                            quality_factors.append(f"Fib precise confluence ({fib_proximity:.1%})")
+                            quality_factors.append(
+                                f"Fib precise confluence ({fib_proximity:.1%})"
+                            )
 
                     # Core requirement: Weekly Tails confluence
                     if (
                         tails_analysis
-                        and tails_analysis.get("tails_signal", {}).get("signal") == "LONG"
+                        and tails_analysis.get("tails_signal", {}).get("signal")
+                        == "LONG"
                     ):
                         confluence_count += 1
-                        tail_strength = tails_analysis.get("tails_signal", {}).get("strength", 0.0)
+                        tail_strength = tails_analysis.get("tails_signal", {}).get(
+                            "strength", 0.0
+                        )
                         # Long Tail Reversal Pattern detection
                         if tail_strength > 0.8:  # Strong tail = potential reversal
                             confluence_bonus += 0.15  # Long tail reversal bonus
@@ -1061,14 +1141,18 @@ class SignalGenerator:
                             confluence_count += 1
                             volume_confirmed = True
                             confluence_bonus += 0.05
-                            quality_factors.append(f"Volume confirmation ({vol_ratio:.1f}x avg)")
+                            quality_factors.append(
+                                f"Volume confirmation ({vol_ratio:.1f}x avg)"
+                            )
                         else:
                             warning_factors.append(f"Low volume ({vol_ratio:.1f}x avg)")
 
                     # Bonus confirmations for additional quality
                     # Multi-timeframe alignment confirmation
                     if multi_timeframe_analysis:
-                        alignment_score = multi_timeframe_analysis.get("alignment_score", 0.5)
+                        alignment_score = multi_timeframe_analysis.get(
+                            "alignment_score", 0.5
+                        )
                         overall_alignment = multi_timeframe_analysis.get(
                             "overall_alignment", "NEUTRAL"
                         )
@@ -1079,7 +1163,10 @@ class SignalGenerator:
                             quality_factors.append(
                                 f"Strong multi-timeframe alignment ({alignment_score:.1%})"
                             )
-                        elif overall_alignment in ["MODERATE", "GOOD"] and alignment_score >= 0.6:
+                        elif (
+                            overall_alignment in ["MODERATE", "GOOD"]
+                            and alignment_score >= 0.6
+                        ):
                             confluence_bonus += 0.08
                             quality_factors.append(
                                 f"Good multi-timeframe alignment ({alignment_score:.1%})"
@@ -1091,7 +1178,10 @@ class SignalGenerator:
                             )
 
                     # Trend alignment check
-                    if trend_analysis and trend_analysis.get("trend_direction") == "UPTREND":
+                    if (
+                        trend_analysis
+                        and trend_analysis.get("trend_direction") == "UPTREND"
+                    ):
                         confluence_bonus += 0.05
                         quality_factors.append("Trend alignment")
 
@@ -1101,10 +1191,14 @@ class SignalGenerator:
                     # Apply strict confluence requirements
                     if confluence_count < 3:  # Must have minimum 3 core confirmations
                         enhanced_confidence *= 0.6  # Severe penalty for low confluence
-                        warning_factors.append(f"Low confluence ({confluence_count}/3 required)")
+                        warning_factors.append(
+                            f"Low confluence ({confluence_count}/3 required)"
+                        )
                     else:
                         enhanced_confidence += confluence_bonus
-                        quality_factors.append(f"Strong confluence ({confluence_count} factors)")
+                        quality_factors.append(
+                            f"Strong confluence ({confluence_count} factors)"
+                        )
 
                     # FINAL ENHANCED CONFIDENCE THRESHOLD FOR 85%+ ACCURACY
                     long_confidence_threshold = 0.9  # From config.toml
@@ -1138,13 +1232,17 @@ class SignalGenerator:
                             rsi_val = rsi_data["current_rsi"]
                             if 40 <= rsi_val <= 60:  # Sweet spot
                                 enhanced_confidence *= 1.3
-                                quality_factors.append(f"RSI optimal zone ({rsi_val:.1f})")
+                                quality_factors.append(
+                                    f"RSI optimal zone ({rsi_val:.1f})"
+                                )
                             elif 35 <= rsi_val <= 65:  # Good zone
                                 enhanced_confidence *= 1.1
                                 quality_factors.append(f"RSI good zone ({rsi_val:.1f})")
                             elif rsi_val > 70:  # Overbought warning
                                 enhanced_confidence *= 0.7
-                                warning_factors.append(f"RSI overbought ({rsi_val:.1f})")
+                                warning_factors.append(
+                                    f"RSI overbought ({rsi_val:.1f})"
+                                )
 
                     # Factor 2: Bollinger position quality (0.8x to 1.2x multiplier)
                     if indicators_signals and "bollinger" in indicators_signals:
@@ -1153,10 +1251,14 @@ class SignalGenerator:
                             bb_pos = bb_data["band_position"]
                             if 0.3 <= bb_pos <= 0.6:  # Optimal entry zone
                                 enhanced_confidence *= 1.2
-                                quality_factors.append(f"BB optimal position ({bb_pos:.1%})")
+                                quality_factors.append(
+                                    f"BB optimal position ({bb_pos:.1%})"
+                                )
                             elif bb_pos > 0.8:  # Too high warning
                                 enhanced_confidence *= 0.8
-                                warning_factors.append(f"BB high position ({bb_pos:.1%})")
+                                warning_factors.append(
+                                    f"BB high position ({bb_pos:.1%})"
+                                )
 
                     # Factor 3: MACD alignment bonus (1.0x to 1.4x multiplier)
                     if indicators_signals and "macd" in indicators_signals:
@@ -1164,7 +1266,9 @@ class SignalGenerator:
                         if macd_data.get("signal") == "LONG":
                             macd_strength = macd_data.get("strength", 0.5)
                             enhanced_confidence *= 1.0 + 0.4 * macd_strength
-                            quality_factors.append(f"MACD bullish alignment ({macd_strength:.2f})")
+                            quality_factors.append(
+                                f"MACD bullish alignment ({macd_strength:.2f})"
+                            )
                         else:
                             # Penalty for MACD conflict but don't block
                             enhanced_confidence *= 0.85
@@ -1176,12 +1280,16 @@ class SignalGenerator:
                         if div_signal.get("signal") == "LONG":
                             div_strength = div_signal.get("strength", 0.5)
                             enhanced_confidence *= 1.0 + 0.3 * div_strength
-                            quality_factors.append(f"Bullish divergence ({div_strength:.2f})")
+                            quality_factors.append(
+                                f"Bullish divergence ({div_strength:.2f})"
+                            )
                         elif div_signal.get("signal") == "SHORT":
                             div_strength = div_signal.get("strength", 0.5)
                             # Reduce penalty - only minor confidence reduction
                             enhanced_confidence *= 1.0 - 0.3 * div_strength
-                            warning_factors.append(f"Bearish divergence ({div_strength:.2f})")
+                            warning_factors.append(
+                                f"Bearish divergence ({div_strength:.2f})"
+                            )
 
                     # Factor 5: Fibonacci confluence (0.9x to 1.3x multiplier)
                     if fib_analysis:
@@ -1189,11 +1297,17 @@ class SignalGenerator:
                         if fib_signal.get("signal") == "LONG":
                             fib_strength = fib_signal.get("strength", 0.5)
                             enhanced_confidence *= 1.0 + 0.3 * fib_strength
-                            quality_factors.append(f"Fibonacci support ({fib_strength:.2f})")
+                            quality_factors.append(
+                                f"Fibonacci support ({fib_strength:.2f})"
+                            )
                         elif fib_signal.get("signal") == "SHORT":
                             fib_strength = fib_signal.get("strength", 0.5)
-                            enhanced_confidence *= 1.0 - 0.1 * fib_strength  # Minor penalty
-                            warning_factors.append(f"Fibonacci resistance ({fib_strength:.2f})")
+                            enhanced_confidence *= (
+                                1.0 - 0.1 * fib_strength
+                            )  # Minor penalty
+                            warning_factors.append(
+                                f"Fibonacci resistance ({fib_strength:.2f})"
+                            )
 
                     # Factor 6: Weekly Tails primary signal (1.0x to 1.5x multiplier)
                     if tails_analysis:
@@ -1201,7 +1315,9 @@ class SignalGenerator:
                         if tails_signal.get("signal") == "LONG":
                             tails_strength = tails_signal.get("strength", 0.5)
                             enhanced_confidence *= 1.0 + 0.5 * tails_strength
-                            quality_factors.append(f"Weekly Tails support ({tails_strength:.2f})")
+                            quality_factors.append(
+                                f"Weekly Tails support ({tails_strength:.2f})"
+                            )
                         else:
                             # Penalty for lack of Weekly Tails support
                             enhanced_confidence *= 0.9
@@ -1209,38 +1325,54 @@ class SignalGenerator:
 
                     # Factor 7: Trend alignment (0.7x to 1.4x multiplier)
                     if trend_analysis:
-                        trend_direction = trend_analysis.get("trend_direction", "UNKNOWN")
+                        trend_direction = trend_analysis.get(
+                            "trend_direction", "UNKNOWN"
+                        )
                         if trend_direction in ["STRONG_UPTREND", "UPTREND"]:
                             enhanced_confidence *= 1.4
-                            quality_factors.append(f"Strong trend alignment ({trend_direction})")
+                            quality_factors.append(
+                                f"Strong trend alignment ({trend_direction})"
+                            )
                         elif trend_direction == "SIDEWAYS":
                             enhanced_confidence *= 1.0  # Neutral
                         elif trend_direction in ["DOWNTREND", "STRONG_DOWNTREND"]:
                             enhanced_confidence *= 0.7  # Penalty but don't block
-                            warning_factors.append(f"Counter-trend signal ({trend_direction})")
+                            warning_factors.append(
+                                f"Counter-trend signal ({trend_direction})"
+                            )
 
                     # Update confidence with enhancements
                     confidence = enhanced_confidence
 
                     # Add quality and warning factors to reasons
                     if quality_factors:
-                        signal_reasons.append(f"Quality factors: {', '.join(quality_factors)}")
+                        signal_reasons.append(
+                            f"Quality factors: {', '.join(quality_factors)}"
+                        )
                     if warning_factors:
-                        signal_reasons.append(f"Warning factors: {', '.join(warning_factors)}")
+                        signal_reasons.append(
+                            f"Warning factors: {', '.join(warning_factors)}"
+                        )
 
                     # Final confidence threshold - much more permissive
                     if confidence < 0.15:  # Only block extremely weak signals
                         final_signal = "HOLD"
                         confidence = 0.0
-                        signal_reasons.append(f"Confidence too low: {confidence:.3f} < 0.15")
-                        logger.info(f"LONG signal blocked for low confidence: {confidence:.3f}")
+                        signal_reasons.append(
+                            f"Confidence too low: {confidence:.3f} < 0.15"
+                        )
+                        logger.info(
+                            f"LONG signal blocked for low confidence: {confidence:.3f}"
+                        )
 
                 # Ако SHORT сигнала е твърде слаб след филтрите - конвертираме в HOLD
                 if final_signal == "SHORT" and confidence < 0.15:
                     final_signal = "HOLD"
                     confidence = 0.0
                     reason = "SHORT сигнал твърде слаб след филтрите"
-                    signal_reasons.append("SHORT converted to HOLD - signal too weak after filters")
+                    signal_reasons.append(
+                        "SHORT converted to HOLD - signal too weak after filters"
+                    )
 
                 # Phase 1: Trend Filter за SHORT сигнали
                 if (
@@ -1248,7 +1380,9 @@ class SignalGenerator:
                     and trend_analysis
                     and self.config.get("short_signals", {}).get("trend_filter", False)
                 ):
-                    trend_filter_applied = self._apply_trend_filter_for_short(trend_analysis)
+                    trend_filter_applied = self._apply_trend_filter_for_short(
+                        trend_analysis
+                    )
                     if trend_filter_applied["blocked"]:
                         final_signal = "HOLD"
                         confidence = 0.5
@@ -1268,7 +1402,8 @@ class SignalGenerator:
                         confidence = 0.4
                         signal_reasons.append(
                             f"SHORT BLOCKED by Fibonacci resistance filter: {
-                                fib_resistance_filter_applied['reason']}"
+                                fib_resistance_filter_applied['reason']
+                            }"
                         )
 
                 # ВЪЗСТАНОВЕНИ ВСИЧКИ SHORT ФИЛТРИ - Сега с ATH proximity бонус!
@@ -1279,10 +1414,12 @@ class SignalGenerator:
                 if self.fib_tail_required:
                     has_fib_or_tail = (
                         fib_analysis
-                        and fib_analysis.get("fibonacci_signal", {}).get("signal") != "HOLD"
+                        and fib_analysis.get("fibonacci_signal", {}).get("signal")
+                        != "HOLD"
                     ) or (
                         tails_analysis
-                        and tails_analysis.get("tails_signal", {}).get("signal") != "HOLD"
+                        and tails_analysis.get("tails_signal", {}).get("signal")
+                        != "HOLD"
                     )
 
                     # Намаляваме изискванията за по-гъвкавост
@@ -1298,7 +1435,11 @@ class SignalGenerator:
                     reason = " | ".join(signal_reasons)
 
             # Phase 2: LONG Signal Enhancements
-            if final_signal == "LONG" and daily_df is not None and weekly_df is not None:
+            if (
+                final_signal == "LONG"
+                and daily_df is not None
+                and weekly_df is not None
+            ):
                 long_enhancements_bonus = 0.0
                 long_enhancements_reasons = []
 
@@ -1309,12 +1450,16 @@ class SignalGenerator:
                 volume_long_result = self._check_volume_confirmation_for_long(daily_df)
                 if volume_long_result["bonus"] != 0.0:
                     long_enhancements_bonus += volume_long_result["bonus"]
-                    long_enhancements_reasons.append(f"Volume LONG: {volume_long_result['reason']}")
+                    long_enhancements_reasons.append(
+                        f"Volume LONG: {volume_long_result['reason']}"
+                    )
 
                 # Phase 2.2: Divergence Confirmation за LONG сигнали
                 if divergence_analysis:
-                    divergence_long_result = self._check_divergence_confirmation_for_long(
-                        divergence_analysis
+                    divergence_long_result = (
+                        self._check_divergence_confirmation_for_long(
+                            divergence_analysis
+                        )
                     )
                     if divergence_long_result["bonus"] != 0.0:
                         long_enhancements_bonus += divergence_long_result["bonus"]
@@ -1323,7 +1468,9 @@ class SignalGenerator:
                         )
 
                 # Phase 2.3: Market Regime Awareness за LONG сигнали
-                market_regime_long_result = self._check_market_regime_for_long(daily_df, weekly_df)
+                market_regime_long_result = self._check_market_regime_for_long(
+                    daily_df, weekly_df
+                )
                 if market_regime_long_result["bonus"] != 0.0:
                     long_enhancements_bonus += market_regime_long_result["bonus"]
                     long_enhancements_reasons.append(
@@ -1361,7 +1508,9 @@ class SignalGenerator:
                 if whale_analysis and self.config.get("long_signals", {}).get(
                     "whale_confirmation_enabled", False
                 ):
-                    whale_long_result = self._check_whale_confirmation_for_long(whale_analysis)
+                    whale_long_result = self._check_whale_confirmation_for_long(
+                        whale_analysis
+                    )
                     if whale_long_result["bonus"] != 0.0:
                         long_enhancements_bonus += whale_long_result["bonus"]
                         long_enhancements_reasons.append(
@@ -1372,8 +1521,10 @@ class SignalGenerator:
                 if self.config.get("long_signals", {}).get(
                     "price_patterns_confirmation_enabled", False
                 ):
-                    patterns_long_result = self._check_price_patterns_confirmation_for_long(
-                        daily_df, current_price
+                    patterns_long_result = (
+                        self._check_price_patterns_confirmation_for_long(
+                            daily_df, current_price
+                        )
                     )
                     if patterns_long_result["bonus"] != 0.0:
                         long_enhancements_bonus += patterns_long_result["bonus"]
@@ -1385,8 +1536,10 @@ class SignalGenerator:
                 if elliott_wave_analysis and self.config.get("long_signals", {}).get(
                     "elliott_wave_confirmation_enabled", False
                 ):
-                    elliott_long_result = self._check_elliott_wave_confirmation_for_long(
-                        elliott_wave_analysis
+                    elliott_long_result = (
+                        self._check_elliott_wave_confirmation_for_long(
+                            elliott_wave_analysis
+                        )
                     )
                     if elliott_long_result["bonus"] != 0.0:
                         long_enhancements_bonus += elliott_long_result["bonus"]
@@ -1398,8 +1551,10 @@ class SignalGenerator:
                 if optimal_levels_analysis and self.config.get("long_signals", {}).get(
                     "optimal_levels_confirmation_enabled", False
                 ):
-                    levels_long_result = self._check_optimal_levels_confirmation_for_long(
-                        optimal_levels_analysis, current_price
+                    levels_long_result = (
+                        self._check_optimal_levels_confirmation_for_long(
+                            optimal_levels_analysis, current_price
+                        )
                     )
                     if levels_long_result["bonus"] != 0.0:
                         long_enhancements_bonus += levels_long_result["bonus"]
@@ -1410,7 +1565,9 @@ class SignalGenerator:
                 # Прилагаме бонуса към confidence
                 if long_enhancements_bonus != 0.0:
                     old_confidence = confidence
-                    confidence = min(confidence + long_enhancements_bonus, 5.0)  # Максимум 5.0
+                    confidence = min(
+                        confidence + long_enhancements_bonus, 5.0
+                    )  # Максимум 5.0
 
                     # Ако имаме достатъчно силни LONG сигнали, може да се промени сигнала
                     config = self.config.get("long_signals", {})
@@ -1420,26 +1577,23 @@ class SignalGenerator:
                     if confidence >= high_threshold and final_signal == "LONG":
                         # Много силен LONG сигнал
                         reason += f" | Phase 2 ENHANCED: {
-                            '; '.join(long_enhancements_reasons)} (confidence: {
-                            old_confidence:.2f} → {
-                            confidence:.2f})"
+                            '; '.join(long_enhancements_reasons)
+                        } (confidence: {old_confidence:.2f} → {confidence:.2f})"
                     elif confidence >= medium_threshold and final_signal == "LONG":
                         # Добър LONG сигнал
                         reason += f" | Phase 2 BONUS: {
-                            '; '.join(long_enhancements_reasons)} (confidence: {
-                            old_confidence:.2f} → {
-                            confidence:.2f})"
+                            '; '.join(long_enhancements_reasons)
+                        } (confidence: {old_confidence:.2f} → {confidence:.2f})"
                     else:
                         # Обикновен бонус
                         reason += f" | Phase 2: {
-                            '; '.join(long_enhancements_reasons)} (+{
-                            long_enhancements_bonus:.2f})"
+                            '; '.join(long_enhancements_reasons)
+                        } (+{long_enhancements_bonus:.2f})"
 
                     logger.info(
                         f"LONG Enhancement: {long_enhancements_reasons}, bonus: {
                             long_enhancements_bonus:.2f}, confidence: {
-                            old_confidence:.2f} → {
-                            confidence:.2f}"
+                            old_confidence:.2f} → {confidence:.2f}"
                     )
 
             # PHASE 2: Добавяме информация за подобренията
@@ -1472,16 +1626,15 @@ class SignalGenerator:
         """Конвертира числов score в текстова сила"""
         if score >= 0.8:
             return "VERY_STRONG"
-        elif score >= 0.6:
+        if score >= 0.6:
             return "STRONG"
-        elif score >= 0.4:
+        if score >= 0.4:
             return "MODERATE"
-        elif score >= 0.2:
+        if score >= 0.2:
             return "WEAK"
-        else:
-            return "VERY_WEAK"
+        return "VERY_WEAK"
 
-    def _apply_trend_filter_for_short(self, trend_analysis: Dict) -> Dict[str, any]:
+    def _apply_trend_filter_for_short(self, trend_analysis: dict) -> dict[str, any]:
         """
         Phase 1: Прилага trend filter за SHORT сигнали
 
@@ -1546,7 +1699,9 @@ class SignalGenerator:
             #     blocked = True
             #     reason = f"SHORT blocked: Unclear trend conditions (Daily: {daily_direction}, Combined: {trend_direction})"
 
-            logger.info(f"Trend filter result: {'BLOCKED' if blocked else 'ALLOWED'} - {reason}")
+            logger.info(
+                f"Trend filter result: {'BLOCKED' if blocked else 'ALLOWED'} - {reason}"
+            )
 
             return {
                 "blocked": blocked,
@@ -1566,10 +1721,13 @@ class SignalGenerator:
             }
 
     def _apply_fibonacci_resistance_filter_for_short(
-        self, tails_analysis: Dict, fib_analysis: Dict
-    ) -> Dict[str, any]:
+        self, tails_analysis: dict, fib_analysis: dict
+    ) -> dict[str, any]:
         """TEMPORARILY DISABLED FOR TESTING"""
-        return {"blocked": False, "reason": "Fibonacci resistance filter DISABLED for testing"}
+        return {
+            "blocked": False,
+            "reason": "Fibonacci resistance filter DISABLED for testing",
+        }
         """
         Phase 1.3: Филтрира SHORT сигнали от weekly tails според Fibonacci resistance
 
@@ -1602,11 +1760,16 @@ class SignalGenerator:
             proximity_threshold = config.get("fibonacci_proximity_threshold", 0.02)
 
             if not fibonacci_resistance_check:
-                return {"blocked": False, "reason": "Fibonacci resistance check изключен"}
+                return {
+                    "blocked": False,
+                    "reason": "Fibonacci resistance check изключен",
+                }
 
             # Анализираме последните SHORT опашки
             tails_analysis_data = tails_analysis.get("tails_analysis", [])
-            short_tails = [tail for tail in tails_analysis_data if tail.get("signal") == "SHORT"]
+            short_tails = [
+                tail for tail in tails_analysis_data if tail.get("signal") == "SHORT"
+            ]
 
             if not short_tails:
                 return {"blocked": False, "reason": "Няма SHORT опашки"}
@@ -1616,7 +1779,9 @@ class SignalGenerator:
             tail_high = latest_short_tail.get("high", latest_short_tail.get("price", 0))
 
             # Намираме resistance нива над опашката
-            resistance_levels = [price for level, price in fib_levels.items() if price > tail_high]
+            resistance_levels = [
+                price for level, price in fib_levels.items() if price > tail_high
+            ]
 
             if not resistance_levels:
                 return {
@@ -1628,7 +1793,9 @@ class SignalGenerator:
 
             # Проверяваме дали опашката е близо до някое resistance ниво
             for resistance_price in resistance_levels:
-                price_distance_pct = abs(tail_high - resistance_price) / resistance_price
+                price_distance_pct = (
+                    abs(tail_high - resistance_price) / resistance_price
+                )
 
                 if price_distance_pct <= proximity_threshold:
                     logger.info(
@@ -1645,7 +1812,9 @@ class SignalGenerator:
             # Ако няма близко resistance ниво, проверяваме дали опашката е над някое ниво
             min_resistance = min(resistance_levels)
             if tail_high > min_resistance:
-                logger.info(f"SHORT allowed: Опашка над resistance {min_resistance:.2f}")
+                logger.info(
+                    f"SHORT allowed: Опашка над resistance {min_resistance:.2f}"
+                )
                 return {
                     "blocked": False,
                     "reason": f"SHORT allowed: Опашка над Fib resistance {min_resistance:.2f}",
@@ -1668,7 +1837,9 @@ class SignalGenerator:
                 "error": str(e),
             }
 
-    def _check_volume_confirmation_for_short(self, daily_df: pd.DataFrame) -> Dict[str, any]:
+    def _check_volume_confirmation_for_short(
+        self, daily_df: pd.DataFrame
+    ) -> dict[str, any]:
         """
         Phase 1.4: Проверява volume confirmation за SHORT сигнали
 
@@ -1717,7 +1888,10 @@ class SignalGenerator:
             avg_volume = recent_data[volume_col].iloc[:-1].mean()
 
             if avg_volume <= 0:
-                return {"confirmed": False, "reason": "Средният обем е нула или отрицателен"}
+                return {
+                    "confirmed": False,
+                    "reason": "Средният обем е нула или отрицателен",
+                }
 
             # Изчисляваме колко пъти е по-голям текущият обем
             volume_multiplier = current_volume / avg_volume
@@ -1734,8 +1908,7 @@ class SignalGenerator:
                 return {
                     "confirmed": True,
                     "reason": (
-                        f"Volume confirmation: {
-                            volume_multiplier:.2f}x > {
+                        f"Volume confirmation: {volume_multiplier:.2f}x > {
                             multiplier_threshold:.2f}x threshold"
                     ),
                     "current_volume": current_volume,
@@ -1743,19 +1916,17 @@ class SignalGenerator:
                     "volume_multiplier": volume_multiplier,
                     "threshold": multiplier_threshold,
                 }
-            else:
-                return {
-                    "confirmed": False,
-                    "reason": (
-                        f"Недостатъчен volume: {
-                            volume_multiplier:.2f}x < {
-                            multiplier_threshold:.2f}x threshold"
-                    ),
-                    "current_volume": current_volume,
-                    "avg_volume": avg_volume,
-                    "volume_multiplier": volume_multiplier,
-                    "threshold": multiplier_threshold,
-                }
+            return {
+                "confirmed": False,
+                "reason": (
+                    f"Недостатъчен volume: {volume_multiplier:.2f}x < {
+                        multiplier_threshold:.2f}x threshold"
+                ),
+                "current_volume": current_volume,
+                "avg_volume": avg_volume,
+                "volume_multiplier": volume_multiplier,
+                "threshold": multiplier_threshold,
+            }
 
         except Exception as e:
             logger.error(f"Грешка при volume confirmation check: {e}")
@@ -1765,7 +1936,9 @@ class SignalGenerator:
                 "error": str(e),
             }
 
-    def _check_bnb_burn_filter_for_short(self, daily_df: pd.DataFrame) -> Dict[str, any]:
+    def _check_bnb_burn_filter_for_short(
+        self, daily_df: pd.DataFrame
+    ) -> dict[str, any]:
         """
         Phase 1.5: Проверява BNB burn filter за SHORT сигнали
 
@@ -1787,7 +1960,10 @@ class SignalGenerator:
                 return {"blocked": False, "reason": "Няма данни за burn анализ"}
 
             # Проверяваме дали има burn колони
-            if "burn_event" not in daily_df.columns or "burn_window" not in daily_df.columns:
+            if (
+                "burn_event" not in daily_df.columns
+                or "burn_window" not in daily_df.columns
+            ):
                 return {"blocked": False, "reason": "Няма burn колони в данните"}
 
             # Взимаме последната дата (текущата дата за анализ)
@@ -1803,33 +1979,33 @@ class SignalGenerator:
                 return {
                     "blocked": True,
                     "reason": (
-                        f'SHORT BLOCKED: Текущата дата ({latest_date.strftime("%Y-%m-%d")}) е BNB burn дата'
+                        f"SHORT BLOCKED: Текущата дата ({latest_date.strftime('%Y-%m-%d')}) е BNB burn дата"
                     ),
                     "burn_event": True,
                     "burn_window": True,
                     "current_date": latest_date.strftime("%Y-%m-%d"),
                 }
-            elif is_in_burn_window:
+            if is_in_burn_window:
                 return {
                     "blocked": True,
                     "reason": (
-                        f'SHORT BLOCKED: Текущата дата ({latest_date.strftime("%Y-%m-%d")}) е в burn прозорец'
+                        f"SHORT BLOCKED: Текущата дата ({latest_date.strftime('%Y-%m-%d')}) е в burn прозорец"
                     ),
                     "burn_event": False,
                     "burn_window": True,
                     "current_date": latest_date.strftime("%Y-%m-%d"),
                 }
-            else:
-                return {
-                    "blocked": False,
-                    "reason": (
-                        f'Burn filter OK: Няма предстоящи burn събития около {
-                            latest_date.strftime("%Y-%m-%d")}'
-                    ),
-                    "burn_event": False,
-                    "burn_window": False,
-                    "current_date": latest_date.strftime("%Y-%m-%d"),
-                }
+            return {
+                "blocked": False,
+                "reason": (
+                    f"Burn filter OK: Няма предстоящи burn събития около {
+                        latest_date.strftime('%Y-%m-%d')
+                    }"
+                ),
+                "burn_event": False,
+                "burn_window": False,
+                "current_date": latest_date.strftime("%Y-%m-%d"),
+            }
 
         except Exception as e:
             logger.error(f"Грешка при BNB burn filter check: {e}")
@@ -1841,7 +2017,7 @@ class SignalGenerator:
 
     def _check_price_action_rejection_for_short(
         self, daily_df: pd.DataFrame, price_action_analyzer: Any = None
-    ) -> Dict[str, any]:
+    ) -> dict[str, any]:
         """
         Phase 1.6: Проверява price action rejection patterns за SHORT сигнали
 
@@ -1859,10 +2035,16 @@ class SignalGenerator:
         """
         try:
             if daily_df is None or daily_df.empty:
-                return {"confirmed": False, "reason": "Няма данни за price action анализ"}
+                return {
+                    "confirmed": False,
+                    "reason": "Няма данни за price action анализ",
+                }
 
             if price_action_analyzer is None:
-                return {"confirmed": False, "reason": "Няма price action analyzer instance"}
+                return {
+                    "confirmed": False,
+                    "reason": "Няма price action analyzer instance",
+                }
 
             # Конфигурационни параметри
             config = self.config.get("short_signals", {})
@@ -1872,25 +2054,26 @@ class SignalGenerator:
                 return {"confirmed": True, "reason": "Price action rejection изключен"}
 
             # Анализираме rejection patterns
-            rejection_analysis = price_action_analyzer.analyze_rejection_patterns(daily_df)
+            rejection_analysis = price_action_analyzer.analyze_rejection_patterns(
+                daily_df
+            )
 
             if rejection_analysis.get("rejection_detected", False):
                 return {
                     "confirmed": True,
-                    "reason": f'Price action rejection confirmed: {rejection_analysis["reason"]}',
+                    "reason": f"Price action rejection confirmed: {rejection_analysis['reason']}",
                     "strength": rejection_analysis.get("strength", 0),
                     "wick_ratio": rejection_analysis.get("wick_ratio", 0),
                     "date": rejection_analysis.get("date"),
                     "rejection_details": rejection_analysis,
                 }
-            else:
-                return {
-                    "confirmed": False,
-                    "reason": (
-                        f'Недостатъчен rejection: {rejection_analysis.get("reason", "Unknown")}'
-                    ),
-                    "rejection_details": rejection_analysis,
-                }
+            return {
+                "confirmed": False,
+                "reason": (
+                    f"Недостатъчен rejection: {rejection_analysis.get('reason', 'Unknown')}"
+                ),
+                "rejection_details": rejection_analysis,
+            }
 
         except Exception as e:
             logger.error(f"Грешка при price action rejection check: {e}")
@@ -1900,7 +2083,9 @@ class SignalGenerator:
                 "error": str(e),
             }
 
-    def _check_multi_timeframe_alignment_for_short(self, trend_analysis: Dict) -> Dict[str, any]:
+    def _check_multi_timeframe_alignment_for_short(
+        self, trend_analysis: dict
+    ) -> dict[str, any]:
         """
         Phase 1.7: Проверява multi-timeframe alignment за SHORT сигнали
 
@@ -1923,7 +2108,9 @@ class SignalGenerator:
             config = self.config.get("short_signals", {})
             alignment_enabled = config.get("multi_timeframe_alignment", True)
             daily_weakness_required = config.get("daily_weakness_required", True)
-            weekly_strong_uptrend_block = config.get("weekly_strong_uptrend_block", True)
+            weekly_strong_uptrend_block = config.get(
+                "weekly_strong_uptrend_block", True
+            )
             alignment_threshold = config.get("alignment_threshold", 0.6)
 
             if not alignment_enabled:
@@ -1934,7 +2121,10 @@ class SignalGenerator:
             weekly_trend = trend_analysis.get("weekly_trend", {})
 
             if not combined_trend or not daily_trend or not weekly_trend:
-                return {"aligned": False, "reason": "Недостатъчно trend данни за alignment анализ"}
+                return {
+                    "aligned": False,
+                    "reason": "Недостатъчно trend данни за alignment анализ",
+                }
 
             # Проверяваме daily тренд слабост
             daily_direction = daily_trend.get("direction", "")
@@ -1943,7 +2133,10 @@ class SignalGenerator:
             is_daily_weak = False
             if daily_weakness_required:
                 # Daily трябва да показва слабост (DOWNTREND или WEAK)
-                is_daily_weak = daily_direction in ["DOWNTREND", "BEARISH"] or daily_strength in [
+                is_daily_weak = daily_direction in [
+                    "DOWNTREND",
+                    "BEARISH",
+                ] or daily_strength in [
                     "WEAK",
                     "MODERATE",
                 ]
@@ -1959,7 +2152,8 @@ class SignalGenerator:
             if weekly_strong_uptrend_block:
                 # Weekly не трябва да е в силен UPTREND
                 is_weekly_ok = not (
-                    weekly_direction in ["UPTREND", "BULLISH"] and weekly_strength == "STRONG"
+                    weekly_direction in ["UPTREND", "BULLISH"]
+                    and weekly_strength == "STRONG"
                 )
 
             # Изчисляваме alignment score
@@ -1979,48 +2173,69 @@ class SignalGenerator:
                 alignment_score += 0.1
 
             # Проверяваме дали има достатъчно alignment
-            if alignment_score >= alignment_threshold and is_daily_weak and is_weekly_ok:
+            if (
+                alignment_score >= alignment_threshold
+                and is_daily_weak
+                and is_weekly_ok
+            ):
                 reason_parts = []
                 if is_daily_weak:
-                    reason_parts.append(f"Daily weakness: {daily_direction} ({daily_strength})")
+                    reason_parts.append(
+                        f"Daily weakness: {daily_direction} ({daily_strength})"
+                    )
                 if is_weekly_ok:
-                    reason_parts.append(f"Weekly OK: {weekly_direction} ({weekly_strength})")
+                    reason_parts.append(
+                        f"Weekly OK: {weekly_direction} ({weekly_strength})"
+                    )
                 if trend_confidence != "LOW":
                     reason_parts.append(f"Trend confidence: {trend_confidence}")
 
                 return {
                     "aligned": True,
-                    "reason": f'Multi-timeframe aligned for SHORT: {", ".join(reason_parts)}',
+                    "reason": f"Multi-timeframe aligned for SHORT: {', '.join(reason_parts)}",
                     "alignment_score": alignment_score,
                     "daily_weak": is_daily_weak,
                     "weekly_ok": is_weekly_ok,
-                    "daily_trend": {"direction": daily_direction, "strength": daily_strength},
-                    "weekly_trend": {"direction": weekly_direction, "strength": weekly_strength},
+                    "daily_trend": {
+                        "direction": daily_direction,
+                        "strength": daily_strength,
+                    },
+                    "weekly_trend": {
+                        "direction": weekly_direction,
+                        "strength": weekly_strength,
+                    },
                     "trend_confidence": trend_confidence,
                 }
-            else:
-                reason_parts = []
-                if not is_daily_weak:
-                    reason_parts.append(f"No daily weakness: {daily_direction} ({daily_strength})")
-                if not is_weekly_ok:
-                    reason_parts.append(
-                        f"Weekly strong uptrend blocked: {weekly_direction} ({weekly_strength})"
-                    )
-                if alignment_score < alignment_threshold:
-                    reason_parts.append(
-                        f"Low alignment score: {alignment_score:.2f} < {alignment_threshold:.2f}"
-                    )
+            reason_parts = []
+            if not is_daily_weak:
+                reason_parts.append(
+                    f"No daily weakness: {daily_direction} ({daily_strength})"
+                )
+            if not is_weekly_ok:
+                reason_parts.append(
+                    f"Weekly strong uptrend blocked: {weekly_direction} ({weekly_strength})"
+                )
+            if alignment_score < alignment_threshold:
+                reason_parts.append(
+                    f"Low alignment score: {alignment_score:.2f} < {alignment_threshold:.2f}"
+                )
 
-                return {
-                    "aligned": False,
-                    "reason": f'Multi-timeframe not aligned for SHORT: {", ".join(reason_parts)}',
-                    "alignment_score": alignment_score,
-                    "daily_weak": is_daily_weak,
-                    "weekly_ok": is_weekly_ok,
-                    "daily_trend": {"direction": daily_direction, "strength": daily_strength},
-                    "weekly_trend": {"direction": weekly_direction, "strength": weekly_strength},
-                    "trend_confidence": trend_confidence,
-                }
+            return {
+                "aligned": False,
+                "reason": f"Multi-timeframe not aligned for SHORT: {', '.join(reason_parts)}",
+                "alignment_score": alignment_score,
+                "daily_weak": is_daily_weak,
+                "weekly_ok": is_weekly_ok,
+                "daily_trend": {
+                    "direction": daily_direction,
+                    "strength": daily_strength,
+                },
+                "weekly_trend": {
+                    "direction": weekly_direction,
+                    "strength": weekly_strength,
+                },
+                "trend_confidence": trend_confidence,
+            }
 
         except Exception as e:
             logger.error(f"Грешка при multi-timeframe alignment check: {e}")
@@ -2031,8 +2246,8 @@ class SignalGenerator:
             }
 
     def _detect_market_regime(
-        self, daily_df: pd.DataFrame, weekly_df: pd.DataFrame, trend_analysis: Dict
-    ) -> Dict[str, Any]:
+        self, daily_df: pd.DataFrame, weekly_df: pd.DataFrame, trend_analysis: dict
+    ) -> dict[str, Any]:
         """
         Phase 1.8: Детектира текущия market regime за SHORT сигнали
 
@@ -2086,13 +2301,15 @@ class SignalGenerator:
 
             # Анализираме волатилността
             if len(daily_df) >= 20:
-                recent_volatility = daily_df["Close"].pct_change().rolling(20).std().iloc[
-                    -1
-                ] * np.sqrt(252)
+                recent_volatility = daily_df["Close"].pct_change().rolling(
+                    20
+                ).std().iloc[-1] * np.sqrt(252)
                 avg_volatility = daily_df["Close"].pct_change().rolling(60).std().iloc[
                     -1
                 ] * np.sqrt(252)
-                volatility_ratio = recent_volatility / avg_volatility if avg_volatility > 0 else 1.0
+                volatility_ratio = (
+                    recent_volatility / avg_volatility if avg_volatility > 0 else 1.0
+                )
             else:
                 volatility_ratio = 1.0
 
@@ -2103,7 +2320,10 @@ class SignalGenerator:
             # Определяме market regime базиран на критерии
             regime_criteria = {
                 "strong_bull": (
-                    (weekly_direction in ["UPTREND", "BULLISH"] and weekly_strength == "STRONG")
+                    (
+                        weekly_direction in ["UPTREND", "BULLISH"]
+                        and weekly_strength == "STRONG"
+                    )
                     or (
                         daily_direction in ["UPTREND", "BULLISH"]
                         and daily_strength == "STRONG"
@@ -2145,15 +2365,11 @@ class SignalGenerator:
             elif regime_criteria["range"]:
                 regime = "RANGE"
                 short_policy = "SHORT_ENABLED"
-                reason = (
-                    f"RANGE: Range status {range_status}, volatility ratio {volatility_ratio:.2f}"
-                )
+                reason = f"RANGE: Range status {range_status}, volatility ratio {volatility_ratio:.2f}"
             elif regime_criteria["bear"]:
                 regime = "BEAR"
                 short_policy = "SHORT_ENABLED"
-                reason = (
-                    f"BEAR: Weekly {weekly_direction}, Daily {daily_direction} ({daily_strength})"
-                )
+                reason = f"BEAR: Weekly {weekly_direction}, Daily {daily_direction} ({daily_strength})"
             else:
                 regime = "NEUTRAL"
                 short_policy = "SHORT_ENABLED"
@@ -2181,8 +2397,14 @@ class SignalGenerator:
                 "short_policy": short_policy,
                 "reason": reason,
                 "strength": regime_strength,
-                "daily_trend": {"direction": daily_direction, "strength": daily_strength},
-                "weekly_trend": {"direction": weekly_direction, "strength": weekly_strength},
+                "daily_trend": {
+                    "direction": daily_direction,
+                    "strength": daily_strength,
+                },
+                "weekly_trend": {
+                    "direction": weekly_direction,
+                    "strength": weekly_strength,
+                },
                 "trend_confidence": trend_confidence,
                 "volatility_ratio": volatility_ratio,
                 "range_status": range_status,
@@ -2201,9 +2423,9 @@ class SignalGenerator:
         self,
         daily_df: pd.DataFrame,
         weekly_df: pd.DataFrame,
-        trend_analysis: Dict,
+        trend_analysis: dict,
         current_confidence: float,
-    ) -> Dict[str, any]:
+    ) -> dict[str, any]:
         """
         Phase 1.8: Проверява market regime и прилага SHORT политики
 
@@ -2224,12 +2446,14 @@ class SignalGenerator:
         """
         try:
             # Детектираме market regime
-            regime_analysis = self._detect_market_regime(daily_df, weekly_df, trend_analysis)
+            regime_analysis = self._detect_market_regime(
+                daily_df, weekly_df, trend_analysis
+            )
 
             if regime_analysis.get("error"):
                 return {
                     "allowed": True,  # По подразбиране разрешаваме при грешка
-                    "reason": f'Regime detection error: {regime_analysis["reason"]}',
+                    "reason": f"Regime detection error: {regime_analysis['reason']}",
                     "regime": "UNKNOWN",
                     "policy_applied": "SHORT_ENABLED",
                 }
@@ -2247,23 +2471,24 @@ class SignalGenerator:
                 # STRONG_BULL: Блокираме всички SHORT сигнали
                 return {
                     "allowed": False,
-                    "reason": f'SHORT BLOCKED by {regime} regime: {regime_analysis["reason"]}',
+                    "reason": f"SHORT BLOCKED by {regime} regime: {regime_analysis['reason']}",
                     "regime": regime,
                     "policy_applied": short_policy,
                     "regime_strength": regime_strength,
                     "regime_analysis": regime_analysis,
                 }
 
-            elif short_policy == "SHORT_HIGH_CONFIDENCE":
+            if short_policy == "SHORT_HIGH_CONFIDENCE":
                 # WEAK_BULL: Само висококонфидентни SHORT сигнали
                 if current_confidence >= high_confidence_threshold:
                     return {
                         "allowed": True,
                         "reason": (
-                            f'SHORT ALLOWED in {regime} regime (high confidence {
+                            f"SHORT ALLOWED in {regime} regime (high confidence {
                                 current_confidence:.2f} >= {
                                 high_confidence_threshold:.2f}): {
-                                regime_analysis["reason"]}'
+                                regime_analysis['reason']
+                            }"
                         ),
                         "regime": regime,
                         "policy_applied": short_policy,
@@ -2271,43 +2496,42 @@ class SignalGenerator:
                         "confidence_threshold": high_confidence_threshold,
                         "regime_analysis": regime_analysis,
                     }
-                else:
-                    return {
-                        "allowed": False,
-                        "reason": (
-                            f'SHORT BLOCKED by {regime} regime (low confidence {
-                                current_confidence:.2f} < {
-                                high_confidence_threshold:.2f}): {
-                                regime_analysis["reason"]}'
-                        ),
-                        "regime": regime,
-                        "policy_applied": short_policy,
-                        "regime_strength": regime_strength,
-                        "confidence_threshold": high_confidence_threshold,
-                        "regime_analysis": regime_analysis,
-                    }
+                return {
+                    "allowed": False,
+                    "reason": (
+                        f"SHORT BLOCKED by {regime} regime (low confidence {
+                            current_confidence:.2f} < {
+                            high_confidence_threshold:.2f}): {
+                            regime_analysis['reason']
+                        }"
+                    ),
+                    "regime": regime,
+                    "policy_applied": short_policy,
+                    "regime_strength": regime_strength,
+                    "confidence_threshold": high_confidence_threshold,
+                    "regime_analysis": regime_analysis,
+                }
 
-            elif short_policy == "SHORT_ENABLED":
+            if short_policy == "SHORT_ENABLED":
                 # RANGE или BEAR: Разрешаваме всички SHORT сигнали
                 return {
                     "allowed": True,
-                    "reason": f'SHORT ALLOWED in {regime} regime: {regime_analysis["reason"]}',
+                    "reason": f"SHORT ALLOWED in {regime} regime: {regime_analysis['reason']}",
                     "regime": regime,
                     "policy_applied": short_policy,
                     "regime_strength": regime_strength,
                     "regime_analysis": regime_analysis,
                 }
 
-            else:
-                # Неизвестна политика - по подразбиране разрешаваме
-                return {
-                    "allowed": True,
-                    "reason": f"Unknown policy {short_policy}, SHORT ALLOWED by default",
-                    "regime": regime,
-                    "policy_applied": short_policy,
-                    "regime_strength": regime_strength,
-                    "regime_analysis": regime_analysis,
-                }
+            # Неизвестна политика - по подразбиране разрешаваме
+            return {
+                "allowed": True,
+                "reason": f"Unknown policy {short_policy}, SHORT ALLOWED by default",
+                "regime": regime,
+                "policy_applied": short_policy,
+                "regime_strength": regime_strength,
+                "regime_analysis": regime_analysis,
+            }
 
         except Exception as e:
             logger.error(f"Грешка при market regime check: {e}")
@@ -2319,7 +2543,9 @@ class SignalGenerator:
                 "error": str(e),
             }
 
-    def _check_volume_confirmation_for_long(self, daily_df: pd.DataFrame) -> Dict[str, any]:
+    def _check_volume_confirmation_for_long(
+        self, daily_df: pd.DataFrame
+    ) -> dict[str, any]:
         """
         Phase 2: Проверява volume confirmation за LONG сигнали
 
@@ -2334,7 +2560,11 @@ class SignalGenerator:
         """
         try:
             if daily_df is None or daily_df.empty:
-                return {"bonus": 0.0, "reason": "Няма данни за volume анализ", "confirmed": False}
+                return {
+                    "bonus": 0.0,
+                    "reason": "Няма данни за volume анализ",
+                    "confirmed": False,
+                }
 
             # Конфигурационни параметри за LONG сигнали
             config = self.config.get("long_signals", {})
@@ -2381,7 +2611,9 @@ class SignalGenerator:
 
             if volume_multiplier >= multiplier_threshold:
                 # Volume confirmation успешен - даваме минимален бонус към LONG сигнала
-                bonus = min(volume_multiplier * 0.005, 0.01)  # Намален максимален бонус 0.01 точки
+                bonus = min(
+                    volume_multiplier * 0.005, 0.01
+                )  # Намален максимален бонус 0.01 точки
                 return {
                     "bonus": bonus,
                     "reason": ".2",
@@ -2390,16 +2622,15 @@ class SignalGenerator:
                     "avg_volume": avg_volume,
                     "volume_multiplier": volume_multiplier,
                 }
-            else:
-                # Недостатъчен volume - лек penalty или неутрален
-                return {
-                    "bonus": -0.2,  # Малък penalty за липса на volume
-                    "reason": ".2",
-                    "confirmed": False,
-                    "current_volume": current_volume,
-                    "avg_volume": avg_volume,
-                    "volume_multiplier": volume_multiplier,
-                }
+            # Недостатъчен volume - лек penalty или неутрален
+            return {
+                "bonus": -0.2,  # Малък penalty за липса на volume
+                "reason": ".2",
+                "confirmed": False,
+                "current_volume": current_volume,
+                "avg_volume": avg_volume,
+                "volume_multiplier": volume_multiplier,
+            }
 
         except Exception as e:
             logger.error(f"Грешка при volume confirmation за LONG: {e}")
@@ -2410,7 +2641,9 @@ class SignalGenerator:
                 "error": str(e),
             }
 
-    def _check_divergence_confirmation_for_long(self, divergence_analysis: Dict) -> Dict[str, any]:
+    def _check_divergence_confirmation_for_long(
+        self, divergence_analysis: dict
+    ) -> dict[str, any]:
         """
         Phase 2: Проверява divergence confirmation за LONG сигнали
 
@@ -2425,7 +2658,11 @@ class SignalGenerator:
         """
         try:
             if not divergence_analysis:
-                return {"bonus": 0.0, "reason": "Няма divergence анализ", "confirmed": False}
+                return {
+                    "bonus": 0.0,
+                    "reason": "Няма divergence анализ",
+                    "confirmed": False,
+                }
 
             config = self.config.get("long_signals", {})
             divergence_enabled = config.get("divergence_confirmation_enabled", True)
@@ -2474,16 +2711,19 @@ class SignalGenerator:
                     "signals_count": bullish_signals,
                     "avg_strength": avg_strength,
                 }
-            elif require_bullish:
+            if require_bullish:
                 # Изисква се bullish divergence но няма - лек penalty
                 return {
                     "bonus": -0.5,
                     "reason": "Липсва bullish divergence (изисква се)",
                     "confirmed": False,
                 }
-            else:
-                # Не се изисква divergence - неутрален
-                return {"bonus": 0.0, "reason": "Divergence не се изисква", "confirmed": True}
+            # Не се изисква divergence - неутрален
+            return {
+                "bonus": 0.0,
+                "reason": "Divergence не се изисква",
+                "confirmed": True,
+            }
 
         except Exception as e:
             logger.error(f"Грешка при divergence confirmation за LONG: {e}")
@@ -2496,7 +2736,7 @@ class SignalGenerator:
 
     def _check_market_regime_for_long(
         self, daily_df: pd.DataFrame, weekly_df: pd.DataFrame
-    ) -> Dict[str, any]:
+    ) -> dict[str, any]:
         """
         Phase 2: Проверява market regime за LONG сигнали
 
@@ -2510,7 +2750,12 @@ class SignalGenerator:
             Dict с информация за market regime и евентуален бонус
         """
         try:
-            if daily_df is None or weekly_df is None or daily_df.empty or weekly_df.empty:
+            if (
+                daily_df is None
+                or weekly_df is None
+                or daily_df.empty
+                or weekly_df.empty
+            ):
                 return {
                     "bonus": 0.0,
                     "reason": "Няма достатъчно данни за market regime анализ",
@@ -2562,7 +2807,9 @@ class SignalGenerator:
                 else:
                     bonus = 0.002  # Намален драстично за да позволи SHORT
                     reason = "Moderate bull market"
-            elif abs(weekly_trend) < 0.002 and abs(daily_trend) < 0.001:  # Рангинг пазар
+            elif (
+                abs(weekly_trend) < 0.002 and abs(daily_trend) < 0.001
+            ):  # Рангинг пазар
                 regime = "RANGE"
                 bonus = 0.0
                 reason = "Range market - неутрално за LONG"
@@ -2574,7 +2821,9 @@ class SignalGenerator:
                 else:
                     bonus = -0.5
                     reason = "Strong bear market - рисковано за LONG"
-            elif weekly_trend < -0.002 and daily_trend < -0.001:  # Умерен низходящ тренд
+            elif (
+                weekly_trend < -0.002 and daily_trend < -0.001
+            ):  # Умерен низходящ тренд
                 regime = "MODERATE_BEAR"
                 if avoid_long_in_bear:
                     bonus = -1.0
@@ -2608,13 +2857,13 @@ class SignalGenerator:
 
     def _calculate_signal_quality_score(
         self,
-        fib_analysis: Dict,
-        tails_analysis: Dict,
-        trend_analysis: Dict,
+        fib_analysis: dict,
+        tails_analysis: dict,
+        trend_analysis: dict,
         volume_confirmation: bool = False,
-        divergence_analysis: Dict = None,
+        divergence_analysis: dict = None,
         ath_proximity_score: float = 0.0,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Phase 1.9: Изчислява signal quality score за SHORT сигнали
 
@@ -2696,7 +2945,7 @@ class SignalGenerator:
                     score_breakdown["fibonacci_reason"] = "Fibonacci signal is HOLD"
                 else:
                     score_breakdown["fibonacci_reason"] = (
-                        f'Fibonacci signal is {fib_signal.get("signal", "UNKNOWN")}'
+                        f"Fibonacci signal is {fib_signal.get('signal', 'UNKNOWN')}"
                     )
 
             # 2. Weekly tails scoring (30 точки макс)
@@ -2710,7 +2959,7 @@ class SignalGenerator:
                 total_score += tails_score
             elif tails_analysis:
                 score_breakdown["tails_reason"] = (
-                    f'Weekly tails signal: {tails_analysis.get("signal", "UNKNOWN")}'
+                    f"Weekly tails signal: {tails_analysis.get('signal', 'UNKNOWN')}"
                 )
 
             # 3. Trend alignment scoring (20 точки макс)
@@ -2734,7 +2983,10 @@ class SignalGenerator:
                 # Weekly тренд не силен uptrend (10 точки)
                 weekly_direction = weekly_trend.get("direction", "")
                 weekly_strength = weekly_trend.get("strength", "")
-                if not (weekly_direction in ["UPTREND", "BULLISH"] and weekly_strength == "STRONG"):
+                if not (
+                    weekly_direction in ["UPTREND", "BULLISH"]
+                    and weekly_strength == "STRONG"
+                ):
                     trend_alignment_score += 10
 
                 trend_score = int((trend_alignment_score / 20.0) * trend_weight)
@@ -2791,7 +3043,9 @@ class SignalGenerator:
 
             # Изчисляваме percentage score
             percentage_score = (
-                (total_score / max_possible_score) * 100 if max_possible_score > 0 else 0
+                (total_score / max_possible_score) * 100
+                if max_possible_score > 0
+                else 0
             )
 
             # Определяме дали сигнала преминава threshold
@@ -2805,7 +3059,9 @@ class SignalGenerator:
                 "passes_threshold": passes_threshold,
                 "min_threshold": min_short_score,
                 "score_breakdown": score_breakdown,
-                "recommendation": "SHORT_ALLOWED" if passes_threshold else "SHORT_BLOCKED",
+                "recommendation": (
+                    "SHORT_ALLOWED" if passes_threshold else "SHORT_BLOCKED"
+                ),
             }
 
         except Exception as e:
@@ -2822,23 +3078,23 @@ class SignalGenerator:
 
     def _create_signal_details(
         self,
-        final_signal: Dict,
-        fib_analysis: Dict,
-        tails_analysis: Dict,
-        indicators_signals: Dict,
-        confluence_info: Dict,
-        optimal_levels_analysis: Dict = None,
-        trend_analysis: Dict = None,
-        elliott_wave_analysis: Dict = None,
-        whale_analysis: Dict = None,
-        ichimoku_analysis: Dict = None,
-        sentiment_analysis: Dict = None,
-        divergence_analysis: Dict = None,
-        ma_analysis: Dict = None,
-        patterns_analysis: Dict = None,
+        final_signal: dict,
+        fib_analysis: dict,
+        tails_analysis: dict,
+        indicators_signals: dict,
+        confluence_info: dict,
+        optimal_levels_analysis: dict = None,
+        trend_analysis: dict = None,
+        elliott_wave_analysis: dict = None,
+        whale_analysis: dict = None,
+        ichimoku_analysis: dict = None,
+        sentiment_analysis: dict = None,
+        divergence_analysis: dict = None,
+        ma_analysis: dict = None,
+        patterns_analysis: dict = None,
         daily_df: pd.DataFrame = None,
         weekly_df: pd.DataFrame = None,
-    ) -> Dict[str, any]:
+    ) -> dict[str, any]:
         """
         Създава детайлна информация за сигнала
 
@@ -2888,7 +3144,9 @@ class SignalGenerator:
                         "recommendation": "HOLD",
                     }
                 ),
-                "next_targets": self._get_next_targets(final_signal, fib_analysis, tails_analysis),
+                "next_targets": self._get_next_targets(
+                    final_signal, fib_analysis, tails_analysis
+                ),
                 "risk_level": self._calculate_risk_level(
                     final_signal, fib_analysis, tails_analysis
                 ),
@@ -2902,12 +3160,16 @@ class SignalGenerator:
 
                 try:
                     # Използваме данните от основния анализ
-                    short_candidates = self.smart_short_generator.generate_short_signals(
-                        daily_df, weekly_df
+                    short_candidates = (
+                        self.smart_short_generator.generate_short_signals(
+                            daily_df, weekly_df
+                        )
                     )
 
                     if short_candidates:
-                        logger.info(f"✅ Генерирани {len(short_candidates)} SHORT кандидати")
+                        logger.info(
+                            f"✅ Генерирани {len(short_candidates)} SHORT кандидати"
+                        )
 
                         # Конвертираме SHORT кандидатите в signal dictionaries
                         for candidate in short_candidates:
@@ -2915,7 +3177,9 @@ class SignalGenerator:
                                 short_signal_dict = create_short_signal_dict(candidate)
                                 short_signals.append(short_signal_dict)
                             except Exception as e:
-                                logger.warning(f"Грешка при конвертиране на SHORT кандидат: {e}")
+                                logger.warning(
+                                    f"Грешка при конвертиране на SHORT кандидат: {e}"
+                                )
                                 continue
 
                         # Ако имаме силни SHORT сигнали, можем да ги включим
@@ -2925,7 +3189,9 @@ class SignalGenerator:
 
                         if strong_short_signals:
                             # Взимаме най-силния SHORT сигнал
-                            best_short = max(strong_short_signals, key=lambda x: x["confidence"])
+                            best_short = max(
+                                strong_short_signals, key=lambda x: x["confidence"]
+                            )
                             logger.info(
                                 f"🎯 Най-силен SHORT сигнал: {best_short['confidence']:.2f} confidence"
                             )
@@ -2935,7 +3201,9 @@ class SignalGenerator:
                             if (
                                 best_short["confidence"] > 0.6
                             ):  # Minimum threshold for SHORT signals
-                                logger.info("✅ Включваме SHORT сигнал (confidence > 0.6)")
+                                logger.info(
+                                    "✅ Включваме SHORT сигнал (confidence > 0.6)"
+                                )
                                 final_signal = best_short
                                 signal_details["signal"] = "SHORT"
                                 signal_details["confidence"] = best_short["confidence"]
@@ -2943,14 +3211,16 @@ class SignalGenerator:
                                     "reason", "Smart SHORT signal"
                                 )
                             else:
-                                logger.info("⚠️ SHORT сигнал твърде слаб (confidence <= 0.6)")
+                                logger.info(
+                                    "⚠️ SHORT сигнал твърде слаб (confidence <= 0.6)"
+                                )
 
                     else:
                         logger.info("ℹ️ Няма подходящи SHORT сигнали за текущия пазар")
 
                 except Exception as e:
                     logger.error(f"❌ Грешка при SHORT сигнал интеграция: {e}")
-                    logger.error(f"Error details: {str(e)}")
+                    logger.error(f"Error details: {e!s}")
                     import traceback
 
                     logger.error(f"Traceback: {traceback.format_exc()}")
@@ -2965,7 +3235,11 @@ class SignalGenerator:
             return final_signal
 
     def _determine_priority(
-        self, final_signal: Dict, fib_analysis: Dict, tails_analysis: Dict, confluence_info: Dict
+        self,
+        final_signal: dict,
+        fib_analysis: dict,
+        tails_analysis: dict,
+        confluence_info: dict,
     ) -> str:
         """
         Определя приоритета на сигнала
@@ -2985,11 +3259,17 @@ class SignalGenerator:
                 return "HIGHEST"
 
             # Проверяваме за Fibonacci сигнал
-            if fib_analysis and fib_analysis.get("fibonacci_signal", {}).get("signal") != "HOLD":
+            if (
+                fib_analysis
+                and fib_analysis.get("fibonacci_signal", {}).get("signal") != "HOLD"
+            ):
                 return "HIGH"
 
             # Проверяваме за Weekly Tails сигнал
-            if tails_analysis and tails_analysis.get("tails_signal", {}).get("signal") != "HOLD":
+            if (
+                tails_analysis
+                and tails_analysis.get("tails_signal", {}).get("signal") != "HOLD"
+            ):
                 return "MEDIUM"
 
             # Само технически индикатори
@@ -3000,8 +3280,8 @@ class SignalGenerator:
             return "UNKNOWN"
 
     def _get_next_targets(
-        self, final_signal: Dict, fib_analysis: Dict, tails_analysis: Dict
-    ) -> Dict[str, any]:
+        self, final_signal: dict, fib_analysis: dict, tails_analysis: dict
+    ) -> dict[str, any]:
         """
         Определя следващите целеви нива
 
@@ -3028,10 +3308,14 @@ class SignalGenerator:
 
                 # Определяме support и resistance нива
                 support_levels = [
-                    (level, price) for level, price in fib_levels.items() if price < current_price
+                    (level, price)
+                    for level, price in fib_levels.items()
+                    if price < current_price
                 ]
                 resistance_levels = [
-                    (level, price) for level, price in fib_levels.items() if price > current_price
+                    (level, price)
+                    for level, price in fib_levels.items()
+                    if price > current_price
                 ]
 
                 if final_signal["signal"] == "LONG":
@@ -3039,34 +3323,34 @@ class SignalGenerator:
                     if support_levels:
                         support_levels.sort(key=lambda x: abs(x[1] - current_price))
                         next_targets["entry_price"] = support_levels[0][1]
-                        next_targets["fibonacci_levels"][
-                            "entry"
-                        ] = f"Fib {support_levels[0][0] * 100:.1f}%"
+                        next_targets["fibonacci_levels"]["entry"] = (
+                            f"Fib {support_levels[0][0] * 100:.1f}%"
+                        )
 
                     # Следващото resistance за exit
                     if resistance_levels:
                         resistance_levels.sort(key=lambda x: x[1] - current_price)
                         next_targets["exit_price"] = resistance_levels[0][1]
-                        next_targets["fibonacci_levels"][
-                            "exit"
-                        ] = f"Fib {resistance_levels[0][0] * 100:.1f}%"
+                        next_targets["fibonacci_levels"]["exit"] = (
+                            f"Fib {resistance_levels[0][0] * 100:.1f}%"
+                        )
 
                 elif final_signal["signal"] == "SHORT":
                     # За SHORT: търсим най-близкото resistance за entry
                     if resistance_levels:
                         resistance_levels.sort(key=lambda x: abs(x[1] - current_price))
                         next_targets["entry_price"] = resistance_levels[0][1]
-                        next_targets["fibonacci_levels"][
-                            "entry"
-                        ] = f"Fib {resistance_levels[0][0] * 100:.1f}%"
+                        next_targets["fibonacci_levels"]["entry"] = (
+                            f"Fib {resistance_levels[0][0] * 100:.1f}%"
+                        )
 
                     # Следващото support за exit
                     if support_levels:
                         support_levels.sort(key=lambda x: current_price - x[1])
                         next_targets["exit_price"] = support_levels[0][1]
-                        next_targets["fibonacci_levels"][
-                            "exit"
-                        ] = f"Fib {support_levels[0][0] * 100:.1f}%"
+                        next_targets["fibonacci_levels"]["exit"] = (
+                            f"Fib {support_levels[0][0] * 100:.1f}%"
+                        )
 
             # Добавяме Weekly Tails support
             if tails_analysis and "tails_analysis" in tails_analysis:
@@ -3092,7 +3376,7 @@ class SignalGenerator:
             return {}
 
     def _calculate_risk_level(
-        self, final_signal: Dict, fib_analysis: Dict, tails_analysis: Dict
+        self, final_signal: dict, fib_analysis: dict, tails_analysis: dict
     ) -> str:
         """
         Изчислява нивото на риска
@@ -3132,10 +3416,9 @@ class SignalGenerator:
             # Определяме нивото на риска
             if risk_score <= 0:
                 return "LOW"
-            elif risk_score == 1:
+            if risk_score == 1:
                 return "MEDIUM"
-            else:
-                return "HIGH"
+            return "HIGH"
 
         except Exception as e:
             logger.error(f"Грешка при изчисляване на нивото на риска: {e}")
@@ -3143,8 +3426,8 @@ class SignalGenerator:
 
     # Phase 3: Advanced LONG Signal Confirmations
     def _check_ichimoku_confirmation_for_long(
-        self, ichimoku_analysis: Dict, current_price: float
-    ) -> Dict[str, any]:
+        self, ichimoku_analysis: dict, current_price: float
+    ) -> dict[str, any]:
         """
         Phase 3.1: Ichimoku Cloud Confirmation за LONG сигнали
 
@@ -3176,7 +3459,9 @@ class SignalGenerator:
             logger.error(f"Грешка при Ichimoku LONG confirmation: {e}")
             return {"bonus": 0.0, "reason": f"Error in Ichimoku check: {e}"}
 
-    def _check_sentiment_confirmation_for_long(self, sentiment_analysis: Dict) -> Dict[str, any]:
+    def _check_sentiment_confirmation_for_long(
+        self, sentiment_analysis: dict
+    ) -> dict[str, any]:
         """
         Phase 3.2: Sentiment Confirmation за LONG сигнали
 
@@ -3207,7 +3492,9 @@ class SignalGenerator:
             logger.error(f"Грешка при Sentiment LONG confirmation: {e}")
             return {"bonus": 0.0, "reason": f"Error in Sentiment check: {e}"}
 
-    def _check_whale_confirmation_for_long(self, whale_analysis: Dict) -> Dict[str, any]:
+    def _check_whale_confirmation_for_long(
+        self, whale_analysis: dict
+    ) -> dict[str, any]:
         """
         Phase 3.3: Whale Activity Confirmation за LONG сигнали
 
@@ -3225,9 +3512,7 @@ class SignalGenerator:
 
                 if total_signals >= min_signals:
                     bonus = config.get("whale_bonus_long", 0.4)
-                    reason = (
-                        f"Strong whale activity ({total_signals} signals) (+{bonus:.2f} confidence)"
-                    )
+                    reason = f"Strong whale activity ({total_signals} signals) (+{bonus:.2f} confidence)"
                 elif total_signals >= min_signals // 2:
                     # Намален бонус за по-малко сигнали
                     bonus = config.get("whale_bonus_long", 0.4) * 0.6
@@ -3242,7 +3527,7 @@ class SignalGenerator:
 
     def _check_price_patterns_confirmation_for_long(
         self, daily_df: pd.DataFrame, current_price: float
-    ) -> Dict[str, any]:
+    ) -> dict[str, any]:
         """
         Phase 3.4: Price Action Patterns Confirmation за LONG сигнали
 
@@ -3278,7 +3563,8 @@ class SignalGenerator:
                     last_candle = recent_data.iloc[-1]
                     body_size = abs(last_candle["Close"] - last_candle["Open"])
                     lower_shadow = (
-                        min(last_candle["Open"], last_candle["Close"]) - last_candle["Low"]
+                        min(last_candle["Open"], last_candle["Close"])
+                        - last_candle["Low"]
                     )
                     upper_shadow = last_candle["High"] - max(
                         last_candle["Open"], last_candle["Close"]
@@ -3300,8 +3586,8 @@ class SignalGenerator:
             return {"bonus": 0.0, "reason": f"Error in Patterns check: {e}"}
 
     def _check_elliott_wave_confirmation_for_long(
-        self, elliott_wave_analysis: Dict
-    ) -> Dict[str, any]:
+        self, elliott_wave_analysis: dict
+    ) -> dict[str, any]:
         """
         Phase 3.5: Elliott Wave Confirmation за LONG сигнали
 
@@ -3332,8 +3618,8 @@ class SignalGenerator:
             return {"bonus": 0.0, "reason": f"Error in Elliott Wave check: {e}"}
 
     def _check_optimal_levels_confirmation_for_long(
-        self, optimal_levels_analysis: Dict, current_price: float
-    ) -> Dict[str, any]:
+        self, optimal_levels_analysis: dict, current_price: float
+    ) -> dict[str, any]:
         """
         Phase 3.6: Optimal Levels Confirmation за LONG сигнали
 
@@ -3362,7 +3648,7 @@ class SignalGenerator:
             logger.error(f"Грешка при Optimal Levels LONG confirmation: {e}")
             return {"bonus": 0.0, "reason": f"Error in Optimal Levels check: {e}"}
 
-    def _fetch_bnb_burn_dates(self) -> List[pd.Timestamp]:
+    def _fetch_bnb_burn_dates(self) -> list[pd.Timestamp]:
         """
         Извлича BNB burn дати от конфигурацията
 

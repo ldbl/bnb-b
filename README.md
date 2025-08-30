@@ -9,11 +9,11 @@ Advanced Technical Analysis System for BNB/USDT Trading with 22+ Specialized Ana
 
 ## 📈 Current Performance
 
-- **Overall Accuracy**: 59.7% (37/62 signals) - Latest 18-month backtest
-- **LONG Accuracy**: 63.3% (49 signals) - Enhanced performance 
-- **SHORT Accuracy**: 46.2% (13 signals) - Market regime filtering active
-- **Average P&L**: +2.21% per signal
-- **Backtest Period**: 540 days (2024-03-07 to 2025-08-29)
+-   **Overall Accuracy**: 59.7% (37/62 signals) - Latest 18-month backtest
+-   **LONG Accuracy**: 63.3% (49 signals) - Enhanced performance
+-   **SHORT Accuracy**: 46.2% (13 signals) - Market regime filtering active
+-   **Average P&L**: +2.21% per signal
+-   **Backtest Period**: 540 days (2024-03-07 to 2025-08-29)
 
 ## 🏗️ Architecture
 
@@ -101,9 +101,9 @@ print(f"Reasoning: {signal['reason']}")
 
 ### Prerequisites
 
-- Python 3.13+
-- TA-Lib technical analysis library
-- Make (for development commands)
+-   Python 3.13+
+-   TA-Lib technical analysis library
+-   Make (for development commands)
 
 ### Development Workflow
 
@@ -138,33 +138,36 @@ pre-commit run --all-files
 ## 📊 Core Modules
 
 ### 🎯 Signal Generation Engine
-- **SignalGenerator**: Orchestrates 22+ analysis modules with weighted scoring
-- **Multi-timeframe Analysis**: Daily and weekly data correlation
-- **Market Regime Intelligence**: STRONG_BULL detection and SHORT blocking
+
+-   **SignalGenerator**: Orchestrates 22+ analysis modules with weighted scoring
+-   **Multi-timeframe Analysis**: Daily and weekly data correlation
+-   **Market Regime Intelligence**: STRONG_BULL detection and SHORT blocking
 
 ### 📈 Technical Analysis Modules
-- **Fibonacci Analysis** (35% weight): Support/resistance levels
-- **Weekly Tails Analysis** (40% weight): Wick pattern analysis
-- **Technical Indicators** (15% weight): RSI, MACD, Bollinger Bands
-- **Moving Averages** (10% weight): Trend confirmation
-- **Elliott Wave Analysis**: Wave structure and completion signals
-- **Divergence Detection**: Price-momentum divergence analysis
-- **Smart SHORT Generator**: Market regime-aware SHORT signals
+
+-   **Fibonacci Analysis** (35% weight): Support/resistance levels
+-   **Weekly Tails Analysis** (40% weight): Wick pattern analysis
+-   **Technical Indicators** (15% weight): RSI, MACD, Bollinger Bands
+-   **Moving Averages** (10% weight): Trend confirmation
+-   **Elliott Wave Analysis**: Wave structure and completion signals
+-   **Divergence Detection**: Price-momentum divergence analysis
+-   **Smart SHORT Generator**: Market regime-aware SHORT signals
 
 ### 🛡️ Risk Management
-- **Market Regime Detection**: Bull/Bear/Neutral classification
-- **ATH Proximity Filtering**: Prevents risky SHORT signals
-- **Volume Confirmation**: Enhanced signal validation
-- **Time-based Validation**: Realistic holding periods
+
+-   **Market Regime Detection**: Bull/Bear/Neutral classification
+-   **ATH Proximity Filtering**: Prevents risky SHORT signals
+-   **Volume Confirmation**: Enhanced signal validation
+-   **Time-based Validation**: Realistic holding periods
 
 ## 🧪 Testing
 
 ### Test Categories
 
-- **Unit Tests**: Individual module testing
-- **Integration Tests**: Multi-module interaction testing
-- **Slow Tests**: Full market data validation
-- **API Tests**: External data source testing
+-   **Unit Tests**: Individual module testing
+-   **Integration Tests**: Multi-module interaction testing
+-   **Slow Tests**: Full market data validation
+-   **API Tests**: External data source testing
 
 ### Running Tests
 
@@ -174,7 +177,7 @@ pytest tests/ --cov=src/bnb_trading --cov-report=html
 
 # Specific markers
 pytest -m "unit"           # Unit tests only
-pytest -m "integration"    # Integration tests only  
+pytest -m "integration"    # Integration tests only
 pytest -m "slow"          # Market data tests
 ```
 
@@ -203,28 +206,28 @@ min_ath_distance_pct = 5.0   # Risk management
 
 Automated testing and quality checks:
 
-- **Python Testing**: 3.13
-- **Code Quality**: Black, isort, flake8, mypy
-- **Security Scanning**: Bandit security analysis
-- **Test Coverage**: Comprehensive coverage reporting
-- **Integration Testing**: Full system validation
+-   **Python Testing**: 3.13
+-   **Code Quality**: Black, isort, flake8, mypy
+-   **Security Scanning**: Bandit security analysis
+-   **Test Coverage**: Comprehensive coverage reporting
+-   **Integration Testing**: Full system validation
 
 ## 📚 Documentation
 
-- **[CLAUDE.md](CLAUDE.md)**: Development guide and system overview
-- **[MODULES.md](MODULES.md)**: Detailed technical documentation
-- **[TODO.md](TODO.md)**: Development roadmap and priorities
+-   **[CLAUDE.md](CLAUDE.md)**: Development guide and system overview
+-   **[MODULES.md](MODULES.md)**: Detailed technical documentation
+-   **[TODO.md](TODO.md)**: Development roadmap and priorities
 
 ## 🎯 Performance Targets
 
 ### Current vs Target Performance
 
-| Metric | Current | Target | Status |
-|--------|---------|---------|---------|
-| LONG Accuracy | 63.3% | 85%+ | 🚧 In Progress |
-| SHORT Accuracy | 46.2% | 75%+ | 🚧 In Progress |
-| Overall Accuracy | 59.7% | 80%+ | 🚧 In Progress |
-| Risk/Reward Ratio | 1:2.1 | 1:4 (LONG) | 🚧 Improving |
+| Metric            | Current | Target     | Status         |
+| ----------------- | ------- | ---------- | -------------- |
+| LONG Accuracy     | 63.3%   | 85%+       | 🚧 In Progress |
+| SHORT Accuracy    | 46.2%   | 75%+       | 🚧 In Progress |
+| Overall Accuracy  | 59.7%   | 80%+       | 🚧 In Progress |
+| Risk/Reward Ratio | 1:2.1   | 1:4 (LONG) | 🚧 Improving   |
 
 ## 🤝 Contributing
 
@@ -238,10 +241,10 @@ Automated testing and quality checks:
 
 ### Development Standards
 
-- **Code Quality**: Black formatting, flake8 linting, mypy type checking
-- **Testing**: Minimum 80% test coverage required
-- **Documentation**: Comprehensive docstrings and examples
-- **Type Safety**: Full type hints for all public APIs
+-   **Code Quality**: Black formatting, flake8 linting, mypy type checking
+-   **Testing**: Minimum 80% test coverage required
+-   **Documentation**: Comprehensive docstrings and examples
+-   **Type Safety**: Full type hints for all public APIs
 
 ## 📄 License
 
@@ -253,12 +256,12 @@ This software is for educational and research purposes only. Cryptocurrency trad
 
 ## 🙏 Acknowledgments
 
-- **TA-Lib**: Technical Analysis Library
-- **CCXT**: Cryptocurrency Exchange Trading Library  
-- **Pandas**: Data analysis and manipulation
-- **NumPy**: Numerical computing
+-   **TA-Lib**: Technical Analysis Library
+-   **CCXT**: Cryptocurrency Exchange Trading Library
+-   **Pandas**: Data analysis and manipulation
+-   **NumPy**: Numerical computing
 
 ---
 
-*For detailed technical documentation, see [MODULES.md](MODULES.md)*
-*For development guidance, see [CLAUDE.md](CLAUDE.md)*
+_For detailed technical documentation, see [MODULES.md](MODULES.md)_
+_For development guidance, see [CLAUDE.md](CLAUDE.md)_

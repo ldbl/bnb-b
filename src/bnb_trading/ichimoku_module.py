@@ -119,7 +119,6 @@ DATE: 2024-01-01
 
 import logging
 from datetime import datetime
-from typing import Dict, List, Optional
 
 import requests
 
@@ -231,20 +230,23 @@ class IchimokuAnalyzer:
     def fetch_ichimoku_data(self, interval: str = "1d", limit: int = 100):
         """Fetch data for Ichimoku analysis"""
         try:
-            params = {"symbol": "BNBUSDT", "interval": interval, "limit": min(limit, 1000)}
+            params = {
+                "symbol": "BNBUSDT",
+                "interval": interval,
+                "limit": min(limit, 1000),
+            }
 
             response = requests.get(f"{self.base_url}/klines", params=params)
             if response.status_code == 200:
                 return response.json()
-            else:
-                print(f"API Error: {response.status_code}")
-                return []
+            print(f"API Error: {response.status_code}")
+            return []
 
         except Exception as e:
             print(f"Error fetching data: {e}")
             return []
 
-    def process_klines_data(self, klines: List) -> Dict:
+    def process_klines_data(self, klines: list) -> dict:
         """Process klines into OHLC data"""
         if not klines:
             return {}
@@ -260,7 +262,9 @@ class IchimokuAnalyzer:
 
         return data
 
-    def calculate_tenkan_sen(self, highs: List[float], lows: List[float]) -> List[Optional[float]]:
+    def calculate_tenkan_sen(
+        self, highs: list[float], lows: list[float]
+    ) -> list[float | None]:
         """Calculate Tenkan Sen (Conversion Line) - (Highest High + Lowest Low) / 2 over 9 periods"""
         tenkan_values = []
 
@@ -268,8 +272,8 @@ class IchimokuAnalyzer:
             if i < self.tenkan_period - 1:
                 tenkan_values.append(None)
             else:
-                period_highs = highs[i - self.tenkan_period + 1: i + 1]
-                period_lows = lows[i - self.tenkan_period + 1: i + 1]
+                period_highs = highs[i - self.tenkan_period + 1 : i + 1]
+                period_lows = lows[i - self.tenkan_period + 1 : i + 1]
 
                 highest_high = max(period_highs)
                 lowest_low = min(period_lows)
@@ -279,7 +283,9 @@ class IchimokuAnalyzer:
 
         return tenkan_values
 
-    def calculate_kijun_sen(self, highs: List[float], lows: List[float]) -> List[Optional[float]]:
+    def calculate_kijun_sen(
+        self, highs: list[float], lows: list[float]
+    ) -> list[float | None]:
         """Calculate Kijun Sen (Base Line) - (Highest High + Lowest Low) / 2 over 26 periods"""
         kijun_values = []
 
@@ -287,8 +293,8 @@ class IchimokuAnalyzer:
             if i < self.kijun_period - 1:
                 kijun_values.append(None)
             else:
-                period_highs = highs[i - self.kijun_period + 1: i + 1]
-                period_lows = lows[i - self.kijun_period + 1: i + 1]
+                period_highs = highs[i - self.kijun_period + 1 : i + 1]
+                period_lows = lows[i - self.kijun_period + 1 : i + 1]
 
                 highest_high = max(period_highs)
                 lowest_low = min(period_lows)
@@ -299,8 +305,8 @@ class IchimokuAnalyzer:
         return kijun_values
 
     def calculate_senkou_span_a(
-        self, tenkan_values: List[Optional[float]], kijun_values: List[Optional[float]]
-    ) -> List[Optional[float]]:
+        self, tenkan_values: list[float | None], kijun_values: list[float | None]
+    ) -> list[float | None]:
         """Calculate Senkou Span A (Leading Span A) - (Tenkan + Kijun) / 2, projected 26 periods ahead"""
         senkou_a_values = []
 
@@ -314,8 +320,8 @@ class IchimokuAnalyzer:
         return senkou_a_values
 
     def calculate_senkou_span_b(
-        self, highs: List[float], lows: List[float]
-    ) -> List[Optional[float]]:
+        self, highs: list[float], lows: list[float]
+    ) -> list[float | None]:
         """Calculate Senkou Span B (Leading Span B) - (Highest High + Lowest Low) / 2 over 52 periods"""
         senkou_b_values = []
 
@@ -323,8 +329,8 @@ class IchimokuAnalyzer:
             if i < self.senkou_span_b_period - 1:
                 senkou_b_values.append(None)
             else:
-                period_highs = highs[i - self.senkou_span_b_period + 1: i + 1]
-                period_lows = lows[i - self.senkou_span_b_period + 1: i + 1]
+                period_highs = highs[i - self.senkou_span_b_period + 1 : i + 1]
+                period_lows = lows[i - self.senkou_span_b_period + 1 : i + 1]
 
                 highest_high = max(period_highs)
                 lowest_low = min(period_lows)
@@ -334,7 +340,7 @@ class IchimokuAnalyzer:
 
         return senkou_b_values
 
-    def calculate_chikou_span(self, closes: List[float]) -> List[Optional[float]]:
+    def calculate_chikou_span(self, closes: list[float]) -> list[float | None]:
         """Calculate Chikou Span (Lagging Span) - Current close projected 26 periods back"""
         chikou_values = [None] * len(closes)
 
@@ -343,7 +349,7 @@ class IchimokuAnalyzer:
 
         return chikou_values
 
-    def calculate_all_ichimoku_lines(self, data: Dict) -> Dict:
+    def calculate_all_ichimoku_lines(self, data: dict) -> dict:
         """Calculate all Ichimoku lines"""
         highs = data["highs"]
         lows = data["lows"]
@@ -368,7 +374,7 @@ class IchimokuAnalyzer:
             "lows": lows,
         }
 
-    def analyze_ichimoku_signals(self, ichimoku_data: Dict) -> Dict:
+    def analyze_ichimoku_signals(self, ichimoku_data: dict) -> dict:
         """Analyze Ichimoku signals and generate trading recommendations"""
 
         # Get current values (last index)
@@ -415,7 +421,9 @@ class IchimokuAnalyzer:
 
         # Skip analysis if we don't have enough data
         if not all([tenkan_current, kijun_current, senkou_a_current, senkou_b_current]):
-            signals["signals"].append("Insufficient data for complete Ichimoku analysis")
+            signals["signals"].append(
+                "Insufficient data for complete Ichimoku analysis"
+            )
             return signals
 
         # 1. Tenkan/Kijun Cross (TK Cross)
@@ -426,12 +434,16 @@ class IchimokuAnalyzer:
             if prev_tenkan and prev_kijun:
                 # Bullish TK Cross
                 if prev_tenkan <= prev_kijun and tenkan_current > kijun_current:
-                    signals["signals"].append("🔴→🟢 Bullish TK Cross - Tenkan crossed above Kijun")
+                    signals["signals"].append(
+                        "🔴→🟢 Bullish TK Cross - Tenkan crossed above Kijun"
+                    )
                     signals["strength"] += 2
 
                 # Bearish TK Cross
                 elif prev_tenkan >= prev_kijun and tenkan_current < kijun_current:
-                    signals["signals"].append("🟢→🔴 Bearish TK Cross - Tenkan crossed below Kijun")
+                    signals["signals"].append(
+                        "🟢→🔴 Bearish TK Cross - Tenkan crossed below Kijun"
+                    )
                     signals["strength"] -= 2
 
         # 2. Price vs Kijun Sen
@@ -516,10 +528,12 @@ class IchimokuAnalyzer:
 
         return signals
 
-    def get_current_price(self) -> Optional[float]:
+    def get_current_price(self) -> float | None:
         """Get current BNB price"""
         try:
-            response = requests.get(f"{self.base_url}/ticker/price", params={"symbol": "BNBUSDT"})
+            response = requests.get(
+                f"{self.base_url}/ticker/price", params={"symbol": "BNBUSDT"}
+            )
             if response.status_code == 200:
                 return float(response.json()["price"])
         except BaseException:
@@ -685,18 +699,30 @@ class IchimokuAnalyzer:
             if signals["tenkan_sen"] and signals["kijun_sen"]:
                 tk_diff = signals["tenkan_sen"] - signals["kijun_sen"]
                 tk_status = (
-                    "🟢 Bullish" if tk_diff > 0 else "🔴 Bearish" if tk_diff < 0 else "🟡 Neutral"
+                    "🟢 Bullish"
+                    if tk_diff > 0
+                    else "🔴 Bearish"
+                    if tk_diff < 0
+                    else "🟡 Neutral"
                 )
                 print(f"   TK Cross: {tk_status} (${tk_diff:.2f})")
 
             # Cloud thickness (strength indicator)
             if signals["senkou_span_a"] and signals["senkou_span_b"]:
-                cloud_thickness = abs(signals["senkou_span_a"] - signals["senkou_span_b"])
-                cloud_strength = "Thick" if cloud_thickness > current_price * 0.02 else "Thin"
-                cloud_color = (
-                    "Green" if signals["senkou_span_a"] > signals["senkou_span_b"] else "Red"
+                cloud_thickness = abs(
+                    signals["senkou_span_a"] - signals["senkou_span_b"]
                 )
-                print(f"   Cloud: {cloud_color} & {cloud_strength} (${cloud_thickness:.2f})")
+                cloud_strength = (
+                    "Thick" if cloud_thickness > current_price * 0.02 else "Thin"
+                )
+                cloud_color = (
+                    "Green"
+                    if signals["senkou_span_a"] > signals["senkou_span_b"]
+                    else "Red"
+                )
+                print(
+                    f"   Cloud: {cloud_color} & {cloud_strength} (${cloud_thickness:.2f})"
+                )
 
             # Key signals
             key_signals = [

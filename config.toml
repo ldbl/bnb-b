@@ -15,10 +15,10 @@ weak_bull_threshold = 0.10      # 10%+ returns = WEAK_BULL
 bear_threshold = -0.10          # -10% returns = BEAR
 # Trend strength classification thresholds
 trend_strength_weak = 0.05      # < 5% = WEAK
-trend_strength_moderate = 0.10  # 5-10% = MODERATE  
+trend_strength_moderate = 0.10  # 5-10% = MODERATE
 trend_strength_strong = 0.20    # 10-20% = STRONG
 trend_strength_extreme = 0.30   # > 20% = EXTREME
-# Range detection parameters  
+# Range detection parameters
 range_threshold_factor = 0.8    # Range detection sensitivity
 range_breakout_factor = 0.5     # Breakout detection sensitivity
 range_upper_threshold = 0.8     # Upper range position threshold
@@ -130,7 +130,7 @@ weekly_tails_confirmation = true    # Weekly tails потвърждение за
 trend_consistency_threshold = 0.7   # Минимална консистентност за бонус
 
 [signals]
-fibonacci_weight = 0.35  # Намалено за баланс  
+fibonacci_weight = 0.35  # Намалено за баланс
 weekly_tails_weight = 0.40  # УВЕЛИЧЕНО значително за по-силни LONG сигнали от долни опашки
 ma_weight = 0.10  # Намалено
 rsi_weight = 0.08  # Намалено
@@ -333,7 +333,7 @@ weekly_tails_weight = 30
 trend_weight = 20
 volume_weight = 10
 divergence_weight = 5
-min_short_score = 90  # ОЩЕ ПО-РЕЛАКСИРАН - за да позволи някои SHORT сигналим 
+min_short_score = 90  # ОЩЕ ПО-РЕЛАКСИРАН - за да позволи някои SHORT сигналим
 
 
 

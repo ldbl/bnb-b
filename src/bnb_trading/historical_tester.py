@@ -16,7 +16,7 @@ import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -48,7 +48,7 @@ class TestResult:
     max_drawdown: float
     sharpe_ratio: float
     avg_trade_duration: float
-    baseline_comparison: Dict[str, float] = field(default_factory=dict)
+    baseline_comparison: dict[str, float] = field(default_factory=dict)
 
 
 @dataclass
@@ -138,24 +138,23 @@ class HistoricalTester:
         try:
             baseline_file = Path("baseline_metrics.json")
             if baseline_file.exists():
-                with open(baseline_file, "r", encoding="utf-8") as f:
+                with open(baseline_file, encoding="utf-8") as f:
                     data = json.load(f)
                 return BaselineMetrics(**data)
-            else:
-                # Default baseline metrics (текущо състояние на системата)
-                logger.warning(
-                    "⚠️  Baseline metrics file не е намерен. Използвам default стойности."
-                )
-                return BaselineMetrics(
-                    long_accuracy=100.0,
-                    short_accuracy=0.0,
-                    overall_accuracy=77.3,
-                    total_pnl=45.26,
-                    max_drawdown=10.0,
-                    sharpe_ratio=1.5,
-                    avg_trade_duration=14.0,
-                    total_signals=51,
-                )
+            # Default baseline metrics (текущо състояние на системата)
+            logger.warning(
+                "⚠️  Baseline metrics file не е намерен. Използвам default стойности."
+            )
+            return BaselineMetrics(
+                long_accuracy=100.0,
+                short_accuracy=0.0,
+                overall_accuracy=77.3,
+                total_pnl=45.26,
+                max_drawdown=10.0,
+                sharpe_ratio=1.5,
+                avg_trade_duration=14.0,
+                total_signals=51,
+            )
         except Exception as e:
             logger.error(f"❌ Грешка при зареждане на baseline metrics: {e}")
             # Fallback to default values
@@ -171,8 +170,8 @@ class HistoricalTester:
             )
 
     def test_new_feature(
-        self, feature_name: str, custom_periods: Optional[List[str]] = None
-    ) -> Dict[str, TestResult]:
+        self, feature_name: str, custom_periods: list[str] | None = None
+    ) -> dict[str, TestResult]:
         """
         Тестване на нова функционалност срещу historical data
 
@@ -185,7 +184,9 @@ class HistoricalTester:
         """
         logger.info(f"🧪 Започвам тестване на нова функционалност: {feature_name}")
 
-        periods_to_test = custom_periods if custom_periods else list(self.testing_periods.keys())
+        periods_to_test = (
+            custom_periods if custom_periods else list(self.testing_periods.keys())
+        )
         results = {}
 
         for period_name in periods_to_test:
@@ -248,12 +249,14 @@ class HistoricalTester:
                 daily_df = data["daily"]
                 # Филтрираме по дата
                 daily_df = daily_df[
-                    (daily_df.index >= start_datetime) & (daily_df.index <= end_datetime)
+                    (daily_df.index >= start_datetime)
+                    & (daily_df.index <= end_datetime)
                 ]
                 data["daily"] = daily_df
                 logger.info(
-                    f"Филтрирани daily данни: {
-                        len(daily_df)} редове за периода {start_date} до {end_date}"
+                    f"Филтрирани daily данни: {len(daily_df)} редове за периода {
+                        start_date
+                    } до {end_date}"
                 )
 
             if data and "weekly" in data:
@@ -266,8 +269,9 @@ class HistoricalTester:
                 ]
                 data["weekly"] = weekly_df
                 logger.info(
-                    f"Филтрирани weekly данни: {
-                        len(weekly_df)} редове за периода {start_date} до {end_date}"
+                    f"Филтрирани weekly данни: {len(weekly_df)} редове за периода {
+                        start_date
+                    } до {end_date}"
                 )
 
         except Exception as e:
@@ -276,7 +280,9 @@ class HistoricalTester:
 
         # Проверяваме дали имаме достатъчно данни
         if not data or "daily" not in data or data["daily"].empty:
-            raise ValueError(f"Няма достатъчно daily данни за период {start_date} до {end_date}")
+            raise ValueError(
+                f"Няма достатъчно daily данни за период {start_date} до {end_date}"
+            )
 
         daily_count = len(data["daily"]) if data.get("daily") is not None else 0
         weekly_count = len(data["weekly"]) if data.get("weekly") is not None else 0
@@ -391,7 +397,9 @@ class HistoricalTester:
 
         return result
 
-    def _calculate_baseline_comparison(self, analysis: Dict[str, float]) -> Dict[str, float]:
+    def _calculate_baseline_comparison(
+        self, analysis: dict[str, float]
+    ) -> dict[str, float]:
         """
         Изчислява сравнение с baseline метриките
 
@@ -408,7 +416,8 @@ class HistoricalTester:
                 analysis.get("long_accuracy", 0.0) - self.baseline_metrics.long_accuracy
             )
             comparison["overall_accuracy_delta"] = (
-                analysis.get("overall_accuracy", 0.0) - self.baseline_metrics.overall_accuracy
+                analysis.get("overall_accuracy", 0.0)
+                - self.baseline_metrics.overall_accuracy
             )
             comparison["pnl_delta"] = (
                 analysis.get("total_pnl", 0.0) - self.baseline_metrics.total_pnl
@@ -420,8 +429,8 @@ class HistoricalTester:
         return comparison
 
     def _simulate_backtest_analysis(
-        self, signals_df: pd.DataFrame, data: Dict[str, pd.DataFrame]
-    ) -> Dict[str, float]:
+        self, signals_df: pd.DataFrame, data: dict[str, pd.DataFrame]
+    ) -> dict[str, float]:
         """
         Симулира backtest анализ базирано на генерираните сигнали
 
@@ -459,7 +468,8 @@ class HistoricalTester:
             if long_signals > 0:
                 # LONG сигнали поддържат висока accuracy
                 long_accuracy = min(
-                    100.0, self.baseline_metrics.long_accuracy + np.random.uniform(-2, 2)
+                    100.0,
+                    self.baseline_metrics.long_accuracy + np.random.uniform(-2, 2),
                 )
             else:
                 long_accuracy = 0.0
@@ -506,7 +516,9 @@ class HistoricalTester:
                 "error": str(e),
             }
 
-    def validate_feature_impact(self, test_results: Dict[str, TestResult]) -> Dict[str, Any]:
+    def validate_feature_impact(
+        self, test_results: dict[str, TestResult]
+    ) -> dict[str, Any]:
         """
         Валидира дали новата функционалност подобрява резултатите
 
@@ -533,7 +545,9 @@ class HistoricalTester:
                     f"LOW LONG accuracy in {period_name}: {result.long_accuracy:.1f}%"
                 )
 
-            if result.baseline_comparison.get("drawdown_delta", 0) > 5.0:  # Max drawdown increase
+            if (
+                result.baseline_comparison.get("drawdown_delta", 0) > 5.0
+            ):  # Max drawdown increase
                 critical_failures.append(
                     f"Increased drawdown in {period_name}: +{result.baseline_comparison['drawdown_delta']:.1f}%"
                 )
@@ -545,13 +559,17 @@ class HistoricalTester:
                 improvement_score += 1
 
         # Calculate overall improvement rating
-        improvement_rating = improvement_score / (total_periods * 2) if total_periods > 0 else 0
+        improvement_rating = (
+            improvement_score / (total_periods * 2) if total_periods > 0 else 0
+        )
 
         validation_result = {
             "improvement_rating": improvement_rating,
             "critical_failures": critical_failures,
             "total_periods_tested": total_periods,
-            "recommendation": self._generate_recommendation(improvement_rating, critical_failures),
+            "recommendation": self._generate_recommendation(
+                improvement_rating, critical_failures
+            ),
         }
 
         logger.info(f"📊 Feature impact analysis: {improvement_rating:.2f} rating")
@@ -561,7 +579,7 @@ class HistoricalTester:
         return validation_result
 
     def _generate_recommendation(
-        self, improvement_rating: float, critical_failures: List[str]
+        self, improvement_rating: float, critical_failures: list[str]
     ) -> str:
         """
         Генерира препоръка базирано на резултатите
@@ -579,11 +597,10 @@ class HistoricalTester:
         if improvement_rating >= 0.6:  # 60% improvement across periods
             return "✅ APPROVE: Feature shows consistent improvement. Ready for deployment."
 
-        elif improvement_rating >= 0.3:  # 30% improvement
+        if improvement_rating >= 0.3:  # 30% improvement
             return "⚠️  CONDITIONAL: Some improvement detected. Consider deployment with monitoring."
 
-        else:
-            return "❌ REJECT: No significant improvement or negative impact detected."
+        return "❌ REJECT: No significant improvement or negative impact detected."
 
     def save_baseline_metrics(self, metrics: BaselineMetrics):
         """
@@ -612,7 +629,7 @@ class HistoricalTester:
         except Exception as e:
             logger.error(f"❌ Грешка при запазване на baseline metrics: {e}")
 
-    def get_test_summary(self, test_results: Dict[str, TestResult]) -> str:
+    def get_test_summary(self, test_results: dict[str, TestResult]) -> str:
         """
         Генерира summary на тестовите резултати
 
@@ -631,23 +648,17 @@ class HistoricalTester:
 
             summary_lines.extend(
                 [
-                    f"📊 {
-                        period_name.upper()} ({
-                        result.start_date} to {
-                        result.end_date})",
-                    f"   Signals: {
-                        result.total_signals} (LONG: {
-                        result.long_signals}, SHORT: {
-                        result.short_signals})",
-                    f"   Accuracy: Overall {
-                        result.overall_accuracy:.1f}%, LONG {
-                        result.long_accuracy:.1f}%, SHORT {
-                        result.short_accuracy:.1f}%",
-                    f"   P&L: ${
-                        result.total_pnl:.2f}, Max DD: {
+                    f"📊 {period_name.upper()} ({result.start_date} to {
+                        result.end_date
+                    })",
+                    f"   Signals: {result.total_signals} (LONG: {
+                        result.long_signals
+                    }, SHORT: {result.short_signals})",
+                    f"   Accuracy: Overall {result.overall_accuracy:.1f}%, LONG {
+                        result.long_accuracy:.1f}%, SHORT {result.short_accuracy:.1f}%",
+                    f"   P&L: ${result.total_pnl:.2f}, Max DD: {
                         result.max_drawdown:.1f}%",
-                    f"   Sharpe: {
-                        result.sharpe_ratio:.2f}, Avg Duration: {
+                    f"   Sharpe: {result.sharpe_ratio:.2f}, Avg Duration: {
                         result.avg_trade_duration:.1f} days",
                     "",
                 ]
@@ -657,7 +668,9 @@ class HistoricalTester:
 
 
 # Utility functions за testing
-def create_test_config(feature_enabled: bool = True, custom_params: Dict = None) -> Dict:
+def create_test_config(
+    feature_enabled: bool = True, custom_params: dict = None
+) -> dict:
     """
     Създава test configuration за специфична функционалност
 
@@ -676,7 +689,7 @@ def create_test_config(feature_enabled: bool = True, custom_params: Dict = None)
     return config
 
 
-def run_quick_test(feature_name: str, period: str = "recent_data") -> Dict[str, Any]:
+def run_quick_test(feature_name: str, period: str = "recent_data") -> dict[str, Any]:
     """
     Бърз тест за development purposes
 

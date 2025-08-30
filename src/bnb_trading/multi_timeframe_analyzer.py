@@ -83,7 +83,7 @@ DATE: 2024-01-01
 """
 
 import logging
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -152,7 +152,7 @@ class MultiTimeframeAnalyzer:
         and proper configuration for optimal performance.
     """
 
-    def __init__(self, config: Dict[str, Any]) -> None:
+    def __init__(self, config: dict[str, Any]) -> None:
         self.config = config
         self.multi_timeframe_config = config.get("multi_timeframe", {})
 
@@ -160,26 +160,33 @@ class MultiTimeframeAnalyzer:
         self.daily_weekly_trend_alignment = self.multi_timeframe_config.get(
             "daily_weekly_trend_alignment", True
         )
-        self.fibonacci_bonus = self.multi_timeframe_config.get("fibonacci_alignment_bonus", 0.15)
+        self.fibonacci_bonus = self.multi_timeframe_config.get(
+            "fibonacci_alignment_bonus", 0.15
+        )
         self.macd_bonus = self.multi_timeframe_config.get("macd_alignment_bonus", 0.10)
-        self.volume_bonus = self.multi_timeframe_config.get("volume_alignment_bonus", 0.05)
+        self.volume_bonus = self.multi_timeframe_config.get(
+            "volume_alignment_bonus", 0.05
+        )
         self.weekly_tails_confirmation = self.multi_timeframe_config.get(
             "weekly_tails_confirmation", True
         )
-        self.trend_threshold = self.multi_timeframe_config.get("trend_consistency_threshold", 0.7)
+        self.trend_threshold = self.multi_timeframe_config.get(
+            "trend_consistency_threshold", 0.7
+        )
 
         logger.info("Multi-Timeframe Analyzer инициализиран")
-        logger.info(f"Daily/Weekly trend alignment: {self.daily_weekly_trend_alignment}")
         logger.info(
-            f"Confidence bonuses: Fibonacci={
-                self.fibonacci_bonus}, MACD={
-                self.macd_bonus}, Volume={
-                self.volume_bonus}"
+            f"Daily/Weekly trend alignment: {self.daily_weekly_trend_alignment}"
+        )
+        logger.info(
+            f"Confidence bonuses: Fibonacci={self.fibonacci_bonus}, MACD={
+                self.macd_bonus
+            }, Volume={self.volume_bonus}"
         )
 
     def analyze_timeframe_alignment(
-        self, daily_analysis: Dict, weekly_analysis: Dict
-    ) -> Dict[str, Any]:
+        self, daily_analysis: dict, weekly_analysis: dict
+    ) -> dict[str, Any]:
         """
         Основен метод за анализ на multi-timeframe alignment
 
@@ -208,7 +215,9 @@ class MultiTimeframeAnalyzer:
             max_score = 0.0
 
             # 1. Trend alignment анализ
-            trend_result = self._analyze_trend_alignment(daily_analysis, weekly_analysis)
+            trend_result = self._analyze_trend_alignment(
+                daily_analysis, weekly_analysis
+            )
             total_score += trend_result["score"]
             max_score += 1.0
 
@@ -220,7 +229,9 @@ class MultiTimeframeAnalyzer:
             # Status вече е добавен в метода _analyze_trend_alignment
 
             # 2. Fibonacci alignment анализ
-            fib_result = self._analyze_fibonacci_alignment(daily_analysis, weekly_analysis)
+            fib_result = self._analyze_fibonacci_alignment(
+                daily_analysis, weekly_analysis
+            )
             total_score += fib_result["score"]
             max_score += 1.0
 
@@ -243,7 +254,9 @@ class MultiTimeframeAnalyzer:
             # Status вече е добавен в метода _analyze_macd_alignment
 
             # 4. Volume alignment анализ
-            volume_result = self._analyze_volume_alignment(daily_analysis, weekly_analysis)
+            volume_result = self._analyze_volume_alignment(
+                daily_analysis, weekly_analysis
+            )
             total_score += volume_result["score"]
             max_score += 1.0
 
@@ -272,7 +285,9 @@ class MultiTimeframeAnalyzer:
                         f"Weekly tails confirmation: {weekly_tails_result['reason']}"
                     )
                 else:
-                    conflicts.append(f"Weekly tails conflict: {weekly_tails_result['reason']}")
+                    conflicts.append(
+                        f"Weekly tails conflict: {weekly_tails_result['reason']}"
+                    )
                 # Status вече е добавен в метода _analyze_weekly_tails_confirmation
 
             # Изчисляваме alignment score
@@ -299,7 +314,9 @@ class MultiTimeframeAnalyzer:
                 "macd_alignment": macd_result.get("status", "UNKNOWN"),
                 "volume_alignment": volume_result.get("status", "UNKNOWN"),
                 "weekly_tails_alignment": (
-                    weekly_tails_result.get("status", "N/A") if weekly_tails_result else "N/A"
+                    weekly_tails_result.get("status", "N/A")
+                    if weekly_tails_result
+                    else "N/A"
                 ),
                 "recommendation": recommendation,
                 "analysis_summary": {
@@ -326,11 +343,15 @@ class MultiTimeframeAnalyzer:
                 "recommendation": "HOLD",
             }
 
-    def _analyze_trend_alignment(self, daily: Dict, weekly: Dict) -> Dict:
+    def _analyze_trend_alignment(self, daily: dict, weekly: dict) -> dict:
         """Анализира alignment на трендовете"""
         try:
-            daily_trend = daily.get("trend_analysis", {}).get("primary_trend", "UNKNOWN")
-            weekly_trend = weekly.get("trend_analysis", {}).get("primary_trend", "UNKNOWN")
+            daily_trend = daily.get("trend_analysis", {}).get(
+                "primary_trend", "UNKNOWN"
+            )
+            weekly_trend = weekly.get("trend_analysis", {}).get(
+                "primary_trend", "UNKNOWN"
+            )
 
             if daily_trend == "UNKNOWN" or weekly_trend == "UNKNOWN":
                 return {
@@ -353,7 +374,10 @@ class MultiTimeframeAnalyzer:
             ]:
                 aligned = True
                 reason = "Both timeframes show upward trend"
-            elif daily_trend in ["DOWNTREND", "MODERATE_DOWNTREND"] and weekly_trend in [
+            elif daily_trend in [
+                "DOWNTREND",
+                "MODERATE_DOWNTREND",
+            ] and weekly_trend in [
                 "DOWNTREND",
                 "MODERATE_DOWNTREND",
             ]:
@@ -365,13 +389,23 @@ class MultiTimeframeAnalyzer:
             score = 1.0 if aligned else 0.0
             status = "TREND_ALIGNED" if aligned else "TREND_CONFLICT"
 
-            return {"score": score, "aligned": aligned, "reason": reason, "status": status}
+            return {
+                "score": score,
+                "aligned": aligned,
+                "reason": reason,
+                "status": status,
+            }
 
         except Exception as e:
             logger.error(f"Грешка при trend alignment анализ: {e}")
-            return {"score": 0.5, "aligned": False, "reason": f"Error: {e}", "status": "ERROR"}
+            return {
+                "score": 0.5,
+                "aligned": False,
+                "reason": f"Error: {e}",
+                "status": "ERROR",
+            }
 
-    def _analyze_fibonacci_alignment(self, daily: Dict, weekly: Dict) -> Dict:
+    def _analyze_fibonacci_alignment(self, daily: dict, weekly: dict) -> dict:
         """Анализира alignment на Fibonacci сигналите"""
         try:
             daily_fib = (
@@ -398,17 +432,35 @@ class MultiTimeframeAnalyzer:
             score = 1.0 if aligned else 0.0
             status = "FIB_ALIGNED" if aligned else "FIB_CONFLICT"
 
-            return {"score": score, "aligned": aligned, "reason": reason, "status": status}
+            return {
+                "score": score,
+                "aligned": aligned,
+                "reason": reason,
+                "status": status,
+            }
 
         except Exception as e:
             logger.error(f"Грешка при Fibonacci alignment анализ: {e}")
-            return {"score": 0.5, "aligned": False, "reason": f"Error: {e}", "status": "ERROR"}
+            return {
+                "score": 0.5,
+                "aligned": False,
+                "reason": f"Error: {e}",
+                "status": "ERROR",
+            }
 
-    def _analyze_macd_alignment(self, daily: Dict, weekly: Dict) -> Dict:
+    def _analyze_macd_alignment(self, daily: dict, weekly: dict) -> dict:
         """Анализира alignment на MACD сигналите"""
         try:
-            daily_macd = daily.get("indicators_signals", {}).get("macd", {}).get("signal", "HOLD")
-            weekly_macd = weekly.get("indicators_signals", {}).get("macd", {}).get("signal", "HOLD")
+            daily_macd = (
+                daily.get("indicators_signals", {})
+                .get("macd", {})
+                .get("signal", "HOLD")
+            )
+            weekly_macd = (
+                weekly.get("indicators_signals", {})
+                .get("macd", {})
+                .get("signal", "HOLD")
+            )
 
             if daily_macd == "HOLD" or weekly_macd == "HOLD":
                 return {
@@ -423,13 +475,23 @@ class MultiTimeframeAnalyzer:
             score = 1.0 if aligned else 0.0
             status = "MACD_ALIGNED" if aligned else "MACD_CONFLICT"
 
-            return {"score": score, "aligned": aligned, "reason": reason, "status": status}
+            return {
+                "score": score,
+                "aligned": aligned,
+                "reason": reason,
+                "status": status,
+            }
 
         except Exception as e:
             logger.error(f"Грешка при MACD alignment анализ: {e}")
-            return {"score": 0.5, "aligned": False, "reason": f"Error: {e}", "status": "ERROR"}
+            return {
+                "score": 0.5,
+                "aligned": False,
+                "reason": f"Error: {e}",
+                "status": "ERROR",
+            }
 
-    def _analyze_volume_alignment(self, daily: Dict, weekly: Dict) -> Dict:
+    def _analyze_volume_alignment(self, daily: dict, weekly: dict) -> dict:
         """Анализира alignment на volume сигналите"""
         try:
             # Volume alignment е по-трудно да се оцени директно
@@ -455,17 +517,29 @@ class MultiTimeframeAnalyzer:
             score = 1.0 if aligned else 0.0
             status = "VOLUME_ALIGNED" if aligned else "VOLUME_CONFLICT"
 
-            return {"score": score, "aligned": aligned, "reason": reason, "status": status}
+            return {
+                "score": score,
+                "aligned": aligned,
+                "reason": reason,
+                "status": status,
+            }
 
         except Exception as e:
             logger.error(f"Грешка при volume alignment анализ: {e}")
-            return {"score": 0.5, "aligned": False, "reason": f"Error: {e}", "status": "ERROR"}
+            return {
+                "score": 0.5,
+                "aligned": False,
+                "reason": f"Error: {e}",
+                "status": "ERROR",
+            }
 
-    def _analyze_weekly_tails_confirmation(self, daily: Dict, weekly: Dict) -> Dict:
+    def _analyze_weekly_tails_confirmation(self, daily: dict, weekly: dict) -> dict:
         """Анализира weekly tails потвърждение за daily сигнали"""
         try:
             daily_signal = daily.get("signal", "HOLD")
-            weekly_tails = weekly.get("weekly_tails_analysis", {}).get("tails_signal", {})
+            weekly_tails = weekly.get("weekly_tails_analysis", {}).get(
+                "tails_signal", {}
+            )
 
             if daily_signal == "HOLD":
                 return {
@@ -490,21 +564,33 @@ class MultiTimeframeAnalyzer:
             score = 1.0 if aligned else 0.0
             status = "TAILS_CONFIRMED" if aligned else "TAILS_CONFLICT"
 
-            return {"score": score, "aligned": aligned, "reason": reason, "status": status}
+            return {
+                "score": score,
+                "aligned": aligned,
+                "reason": reason,
+                "status": status,
+            }
 
         except Exception as e:
             logger.error(f"Грешка при weekly tails confirmation анализ: {e}")
-            return {"score": 0.5, "aligned": False, "reason": f"Error: {e}", "status": "ERROR"}
+            return {
+                "score": 0.5,
+                "aligned": False,
+                "reason": f"Error: {e}",
+                "status": "ERROR",
+            }
 
     def _calculate_overall_alignment(
-        self, alignment_score: float, conflicts: List, confirmations: List
-    ) -> Tuple[str, float]:
+        self, alignment_score: float, conflicts: list, confirmations: list
+    ) -> tuple[str, float]:
         """Изчислява overall alignment и confidence bonus"""
         try:
             # Определяме alignment level базирано на score и conflicts
             if alignment_score >= 0.9 and len(conflicts) == 0:
                 overall_alignment = "PERFECT"
-                confidence_bonus = self.fibonacci_bonus + self.macd_bonus + self.volume_bonus
+                confidence_bonus = (
+                    self.fibonacci_bonus + self.macd_bonus + self.volume_bonus
+                )
             elif alignment_score >= 0.7 and len(conflicts) <= 1:
                 overall_alignment = "STRONG"
                 confidence_bonus = self.fibonacci_bonus + self.macd_bonus
@@ -527,7 +613,9 @@ class MultiTimeframeAnalyzer:
             logger.error(f"Грешка при изчисление на overall alignment: {e}")
             return "UNKNOWN", 0.0
 
-    def _generate_recommendation(self, overall_alignment: str, daily: Dict, weekly: Dict) -> str:
+    def _generate_recommendation(
+        self, overall_alignment: str, daily: dict, weekly: dict
+    ) -> str:
         """Генерира recommendation базирано на alignment"""
         try:
             daily_signal = daily.get("signal", "HOLD")
@@ -536,16 +624,16 @@ class MultiTimeframeAnalyzer:
             if overall_alignment in ["PERFECT", "STRONG"]:
                 if daily_signal == weekly_signal == "LONG":
                     return "STRONG_BUY"
-                elif daily_signal == weekly_signal == "SHORT":
+                if daily_signal == weekly_signal == "SHORT":
                     return "STRONG_SELL"
-                elif daily_signal == "LONG":
+                if daily_signal == "LONG":
                     return "BUY"
-                elif daily_signal == "SHORT":
+                if daily_signal == "SHORT":
                     return "SELL"
             elif overall_alignment == "MODERATE":
                 if daily_signal == "LONG":
                     return "BUY"
-                elif daily_signal == "SHORT":
+                if daily_signal == "SHORT":
                     return "SELL"
             else:
                 return "HOLD"

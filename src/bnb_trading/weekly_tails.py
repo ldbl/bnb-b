@@ -72,7 +72,7 @@ DATE: 2024-01-01
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -145,7 +145,7 @@ class WeeklyTailsAnalyzer:
         and higher institutional impact compared to shorter timeframes.
     """
 
-    def __init__(self, config: Dict[str, Any]) -> None:
+    def __init__(self, config: dict[str, Any]) -> None:
         """
         Initialize the Weekly Tails Analyzer with configuration parameters.
 
@@ -201,7 +201,7 @@ class WeeklyTailsAnalyzer:
         logger.info(f"Минимален размер на опашката: {self.min_tail_size:.1%}")
         logger.info(f"Силен размер на опашката: {self.strong_tail_size:.1%}")
 
-    def analyze_weekly_tails(self, weekly_df: pd.DataFrame) -> List[Dict]:
+    def analyze_weekly_tails(self, weekly_df: pd.DataFrame) -> list[dict]:
         """
         Анализира седмични опашки за последните N седмици
 
@@ -233,7 +233,7 @@ class WeeklyTailsAnalyzer:
             logger.error(f"Грешка при анализ на седмични опашки: {e}")
             return []
 
-    def _analyze_single_tail(self, row: pd.Series, date: pd.Timestamp) -> Optional[Dict]:
+    def _analyze_single_tail(self, row: pd.Series, date: pd.Timestamp) -> dict | None:
         """
         Анализира единична седмична опашка
 
@@ -275,7 +275,9 @@ class WeeklyTailsAnalyzer:
 
             # Изчисляваме силата на опашката като процент от body
             # Защитни проверки за да избегнем DataFrame операции
-            if isinstance(body_size, (int, float)) and body_size > 0.01:  # Минимален body size
+            if (
+                isinstance(body_size, (int, float)) and body_size > 0.01
+            ):  # Минимален body size
                 tail_strength = float(tail_size) / float(body_size)
             else:
                 tail_strength = 0.0
@@ -328,8 +330,7 @@ class WeeklyTailsAnalyzer:
             }
 
             logger.info(
-                f"Седмица {
-                    date.strftime('%Y-%m-%d')}: {dominant_tail} опашка, сила: {
+                f"Седмица {date.strftime('%Y-%m-%d')}: {dominant_tail} опашка, сила: {
                     tail_strength:.1%}, сигнал: {signal}"
             )
 
@@ -339,7 +340,7 @@ class WeeklyTailsAnalyzer:
             logger.error(f"Грешка при анализ на единична опашка: {e}")
             return None
 
-    def calculate_tail_strength(self, tail_info: Dict) -> float:
+    def calculate_tail_strength(self, tail_info: dict) -> float:
         """
         Изчислява силата на опашката с допълнителни фактори
 
@@ -364,7 +365,9 @@ class WeeklyTailsAnalyzer:
             sequence_bonus = 1.0
 
             # Изчисляваме финалната сила
-            final_strength = min(1.0, base_strength * strength_multiplier * sequence_bonus)
+            final_strength = min(
+                1.0, base_strength * strength_multiplier * sequence_bonus
+            )
 
             return final_strength
 
@@ -373,8 +376,11 @@ class WeeklyTailsAnalyzer:
             return 0.0
 
     def check_fib_tail_confluence(
-        self, fib_levels: Dict[float, float], current_price: float, tails_analysis: List[Dict]
-    ) -> Dict[str, any]:
+        self,
+        fib_levels: dict[float, float],
+        current_price: float,
+        tails_analysis: list[dict],
+    ) -> dict[str, any]:
         """
         Проверява съвпадение между Fibonacci нива и седмични опашки
 
@@ -426,7 +432,8 @@ class WeeklyTailsAnalyzer:
                             "target_price": target_price,
                             "distance": distance,
                             "distance_percentage": distance_percentage,
-                            "confluence_score": tail["signal_strength"] * (1 - distance_percentage),
+                            "confluence_score": tail["signal_strength"]
+                            * (1 - distance_percentage),
                         }
 
                         confluence_info["confluence_points"].append(confluence_point)
@@ -454,13 +461,17 @@ class WeeklyTailsAnalyzer:
             confluence_info["confluence_points"].sort(
                 key=lambda x: x["confluence_score"], reverse=True
             )
-            confluence_info["best_entry_points"].sort(key=lambda x: x["strength"], reverse=True)
+            confluence_info["best_entry_points"].sort(
+                key=lambda x: x["strength"], reverse=True
+            )
 
             if confluence_info["confluence_points"]:
                 logger.info(
                     f"Намерени {len(confluence_info['confluence_points'])} съвпадения Fibonacci + опашки"
                 )
-                for point in confluence_info["confluence_points"][:3]:  # Показваме топ 3
+                for point in confluence_info["confluence_points"][
+                    :3
+                ]:  # Показваме топ 3
                     logger.info(
                         f"  {point['tail_date'].strftime('%Y-%m-%d')}: Fib {point['fib_level'] * 100:.1f}% + {point['tail_signal']} (сила: {point['confluence_score']:.2f})"
                     )
@@ -476,7 +487,7 @@ class WeeklyTailsAnalyzer:
                 "best_entry_points": [],
             }
 
-    def get_weekly_tails_signal(self, tails_analysis: List[Dict]) -> Dict[str, any]:
+    def get_weekly_tails_signal(self, tails_analysis: list[dict]) -> dict[str, any]:
         """
         Генерира сигнал базиран на седмични опашки
 
@@ -507,33 +518,38 @@ class WeeklyTailsAnalyzer:
             )
 
             # Определяме доминантния сигнал (ПО-СТРИКТНИ ПРАГОВЕ ЗА SHORT)
-            if long_strength > short_strength and long_strength >= 0.3:  # Намалено от 0.5
+            if (
+                long_strength > short_strength and long_strength >= 0.3
+            ):  # Намалено от 0.5
                 signal = "LONG"
                 strength = long_strength
                 reason = f"Доминантни LONG опашки (сила: {strength:.2f})"
                 tail_count = len(long_tails)
-            elif short_strength > long_strength and short_strength >= 0.99:  # МАКСИМАЛНО СТРИКТЕН
+            elif (
+                short_strength > long_strength and short_strength >= 0.99
+            ):  # МАКСИМАЛНО СТРИКТЕН
                 signal = "SHORT"
                 strength = short_strength
                 reason = f"Доминантни SHORT опашки (сила: {strength:.2f})"
                 tail_count = len(short_tails)
+            # Ако няма доминантен сигнал, проверяваме за единични силни опашки
+            elif long_tails and max([t["signal_strength"] for t in long_tails]) >= 0.6:
+                signal = "LONG"
+                strength = max([t["signal_strength"] for t in long_tails])
+                reason = f"Единична силна LONG опашка (сила: {strength:.2f})"
+                tail_count = len(long_tails)
+            elif (
+                short_tails and max([t["signal_strength"] for t in short_tails]) >= 0.99
+            ):
+                signal = "SHORT"
+                strength = max([t["signal_strength"] for t in short_tails])
+                reason = f"Единична силна SHORT опашка (сила: {strength:.2f})"
+                tail_count = len(short_tails)
             else:
-                # Ако няма доминантен сигнал, проверяваме за единични силни опашки
-                if long_tails and max([t["signal_strength"] for t in long_tails]) >= 0.6:
-                    signal = "LONG"
-                    strength = max([t["signal_strength"] for t in long_tails])
-                    reason = f"Единична силна LONG опашка (сила: {strength:.2f})"
-                    tail_count = len(long_tails)
-                elif short_tails and max([t["signal_strength"] for t in short_tails]) >= 0.99:
-                    signal = "SHORT"
-                    strength = max([t["signal_strength"] for t in short_tails])
-                    reason = f"Единична силна SHORT опашка (сила: {strength:.2f})"
-                    tail_count = len(short_tails)
-                else:
-                    signal = "HOLD"
-                    strength = max(long_strength, short_strength)
-                    reason = "Смесени сигнали от опашките"
-                    tail_count = len(tails_analysis)
+                signal = "HOLD"
+                strength = max(long_strength, short_strength)
+                reason = "Смесени сигнали от опашките"
+                tail_count = len(tails_analysis)
 
             # Добавяме информация за последните опашки
             recent_tails = tails_analysis[:3]  # Последните 3 опашки
@@ -560,7 +576,10 @@ class WeeklyTailsAnalyzer:
             return {"signal": "HOLD", "reason": f"Грешка: {e}"}
 
     def _check_tail_above_fibonacci_resistance(
-        self, tail_price: float, fib_levels: Dict[float, float], proximity_threshold: float = 0.02
+        self,
+        tail_price: float,
+        fib_levels: dict[float, float],
+        proximity_threshold: float = 0.02,
     ) -> bool:
         """
         Phase 1.3: Проверява дали опашката е над Fibonacci resistance ниво
@@ -582,15 +601,21 @@ class WeeklyTailsAnalyzer:
                 return False
 
             # Resistance нива са тези над текущата цена
-            resistance_levels = [price for level, price in fib_levels.items() if price > tail_price]
+            resistance_levels = [
+                price for level, price in fib_levels.items() if price > tail_price
+            ]
 
             if not resistance_levels:
-                logger.info(f"Няма resistance нива над опашката (tail_price: {tail_price:.2f})")
+                logger.info(
+                    f"Няма resistance нива над опашката (tail_price: {tail_price:.2f})"
+                )
                 return False
 
             # Проверяваме дали опашката е близо до някое resistance ниво
             for resistance_price in resistance_levels:
-                price_distance_pct = abs(tail_price - resistance_price) / resistance_price
+                price_distance_pct = (
+                    abs(tail_price - resistance_price) / resistance_price
+                )
 
                 if price_distance_pct <= proximity_threshold:
                     logger.info(
@@ -614,7 +639,7 @@ class WeeklyTailsAnalyzer:
             logger.error(f"Грешка при проверка на tail above fibonacci resistance: {e}")
             return False
 
-    def analyze_weekly_tails_trend(self, weekly_df: pd.DataFrame) -> Dict[str, any]:
+    def analyze_weekly_tails_trend(self, weekly_df: pd.DataFrame) -> dict[str, any]:
         """
         Анализира тренда на седмични опашки с trend-based weighting
 
@@ -627,7 +652,9 @@ class WeeklyTailsAnalyzer:
         try:
             # PHASE 1: Analyze market trend for weighting
             market_trend = (
-                self._analyze_market_trend(weekly_df) if self.trend_based_weighting else "NEUTRAL"
+                self._analyze_market_trend(weekly_df)
+                if self.trend_based_weighting
+                else "NEUTRAL"
             )
 
             # Анализираме седмичните опашки
@@ -646,10 +673,18 @@ class WeeklyTailsAnalyzer:
             # Статистика за опашките
             total_tails = len(weighted_tails_analysis)
             strong_tails = len(
-                [t for t in weighted_tails_analysis if t["strength_category"] == "STRONG"]
+                [
+                    t
+                    for t in weighted_tails_analysis
+                    if t["strength_category"] == "STRONG"
+                ]
             )
             moderate_tails = len(
-                [t for t in weighted_tails_analysis if t["strength_category"] == "MODERATE"]
+                [
+                    t
+                    for t in weighted_tails_analysis
+                    if t["strength_category"] == "MODERATE"
+                ]
             )
 
             trend_analysis = {
@@ -663,7 +698,9 @@ class WeeklyTailsAnalyzer:
                 "analysis_date": pd.Timestamp.now(),
             }
 
-            logger.info(f"Weekly Tails тренд анализ завършен - Market trend: {market_trend}")
+            logger.info(
+                f"Weekly Tails тренд анализ завършен - Market trend: {market_trend}"
+            )
             return trend_analysis
 
         except Exception as e:
@@ -685,21 +722,24 @@ class WeeklyTailsAnalyzer:
             recent_weeks = weekly_df[close_col].tail(self.lookback_weeks)
 
             # Calculate trend strength over lookback period
-            trend_change = (recent_weeks.iloc[-1] - recent_weeks.iloc[0]) / recent_weeks.iloc[0]
+            trend_change = (
+                recent_weeks.iloc[-1] - recent_weeks.iloc[0]
+            ) / recent_weeks.iloc[0]
 
             # Determine trend classification
             if trend_change >= self.bull_market_threshold:
                 return "BULL"
-            elif trend_change <= self.bear_market_threshold:
+            if trend_change <= self.bear_market_threshold:
                 return "BEAR"
-            else:
-                return "NEUTRAL"
+            return "NEUTRAL"
 
         except Exception as e:
             logger.error(f"Error analyzing market trend: {e}")
             return "NEUTRAL"
 
-    def _apply_trend_weighting(self, tails_analysis: List[Dict], market_trend: str) -> List[Dict]:
+    def _apply_trend_weighting(
+        self, tails_analysis: list[dict], market_trend: str
+    ) -> list[dict]:
         """
         Apply trend-based weighting to tail signals
 
@@ -722,7 +762,9 @@ class WeeklyTailsAnalyzer:
                 if market_trend == "BULL":
                     if tail_type == "LONG":
                         # Amplify LONG tail signals in bull markets
-                        new_strength = min(original_strength * self.long_tail_amplification, 1.0)
+                        new_strength = min(
+                            original_strength * self.long_tail_amplification, 1.0
+                        )
                         weighted_tail["strength"] = new_strength
                         weighted_tail["trend_adjustment"] = "BULL_AMPLIFIED"
                         weighted_tail["reason"] = (
@@ -735,7 +777,9 @@ class WeeklyTailsAnalyzer:
                             weighted_tail["signal"] = "NONE"
                             weighted_tail["strength"] = 0
                             weighted_tail["trend_adjustment"] = "BULL_SUPPRESSED"
-                            weighted_tail["reason"] = "SHORT tail suppressed in bull market"
+                            weighted_tail["reason"] = (
+                                "SHORT tail suppressed in bull market"
+                            )
                         else:
                             weighted_tail["strength"] = new_strength
                             weighted_tail["trend_adjustment"] = "BULL_REDUCED"
@@ -746,7 +790,9 @@ class WeeklyTailsAnalyzer:
                 elif market_trend == "BEAR":
                     if tail_type == "SHORT":
                         # Amplify SHORT tail signals in bear markets
-                        new_strength = min(original_strength * self.long_tail_amplification, 1.0)
+                        new_strength = min(
+                            original_strength * self.long_tail_amplification, 1.0
+                        )
                         weighted_tail["strength"] = new_strength
                         weighted_tail["trend_adjustment"] = "BEAR_AMPLIFIED"
                         weighted_tail["reason"] = (
@@ -789,15 +835,16 @@ class WeeklyTailsAnalyzer:
         """
         if strength >= 0.8:
             return "EXTREME"
-        elif strength >= 0.6:
+        if strength >= 0.6:
             return "STRONG"
-        elif strength >= 0.3:
+        if strength >= 0.3:
             return "MODERATE"
-        else:
-            return "WEAK"
+        return "WEAK"
 
 
 if __name__ == "__main__":
     # Тест на Weekly Tails модула с trend-based weighting
-    print("Weekly Tails модул за BNB Trading System - Enhanced with trend-based weighting")
+    print(
+        "Weekly Tails модул за BNB Trading System - Enhanced with trend-based weighting"
+    )
     print("Използвайте main.py за пълен анализ")

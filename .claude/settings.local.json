@@ -23,7 +23,8 @@
       "Bash(black:*)",
       "Bash(isort:*)",
       "Bash(autopep8:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(pip3 install:*)"
     ],
     "deny": [],
     "ask": []

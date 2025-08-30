@@ -138,7 +138,7 @@ DATE: 2024-01-01
 """
 
 import logging
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -248,16 +248,24 @@ class PriceActionPatternsAnalyzer:
         for reliable pattern detection and statistical validation.
     """
 
-    def __init__(self, config: Dict[str, Any]) -> None:
+    def __init__(self, config: dict[str, Any]) -> None:
         self.config = config
-        self.min_pattern_distance = config.get("price_patterns", {}).get("min_pattern_distance", 5)
-        self.pattern_threshold = config.get("price_patterns", {}).get("pattern_threshold", 0.02)
-        self.volume_confirmation = config.get("price_patterns", {}).get("volume_confirmation", True)
-        self.candle_confirmation = config.get("price_patterns", {}).get("candle_confirmation", True)
+        self.min_pattern_distance = config.get("price_patterns", {}).get(
+            "min_pattern_distance", 5
+        )
+        self.pattern_threshold = config.get("price_patterns", {}).get(
+            "pattern_threshold", 0.02
+        )
+        self.volume_confirmation = config.get("price_patterns", {}).get(
+            "volume_confirmation", True
+        )
+        self.candle_confirmation = config.get("price_patterns", {}).get(
+            "candle_confirmation", True
+        )
 
         logger.info("Price Action Patterns анализатор инициализиран")
 
-    def detect_all_patterns(self, price_data: pd.DataFrame) -> Dict:
+    def detect_all_patterns(self, price_data: pd.DataFrame) -> dict:
         """
         Открива всички видове price action patterns
 
@@ -288,7 +296,9 @@ class PriceActionPatternsAnalyzer:
             patterns["head_shoulders"] = self._detect_head_shoulders(price_data)
 
             # 4. Inverse Head & Shoulders Pattern
-            patterns["inverse_head_shoulders"] = self._detect_inverse_head_shoulders(price_data)
+            patterns["inverse_head_shoulders"] = self._detect_inverse_head_shoulders(
+                price_data
+            )
 
             # 5. Triangle Pattern
             patterns["triangle"] = self._detect_triangle(price_data)
@@ -305,11 +315,15 @@ class PriceActionPatternsAnalyzer:
             logger.error(f"Грешка при откриване на patterns: {e}")
             return {"error": f"Грешка: {e}"}
 
-    def _detect_double_top(self, price_data: pd.DataFrame) -> Dict:
+    def _detect_double_top(self, price_data: pd.DataFrame) -> dict:
         """Открива Double Top pattern (bearish reversal)"""
         try:
             if len(price_data) < 20:
-                return {"detected": False, "confidence": 0, "reason": "Недостатъчно данни"}
+                return {
+                    "detected": False,
+                    "confidence": 0,
+                    "reason": "Недостатъчно данни",
+                }
 
             highs = (
                 price_data["high"].values
@@ -331,7 +345,11 @@ class PriceActionPatternsAnalyzer:
             peaks = self._find_peaks(highs, "high")
 
             if len(peaks) < 2:
-                return {"detected": False, "confidence": 0, "reason": "Няма достатъчно пикове"}
+                return {
+                    "detected": False,
+                    "confidence": 0,
+                    "reason": "Няма достатъчно пикове",
+                }
 
             # Проверяваме последните 2 пика за double top
             peak1_idx, peak1_price = peaks[-2]
@@ -343,17 +361,19 @@ class PriceActionPatternsAnalyzer:
 
             if (
                 price_diff < self.pattern_threshold  # Цените са близки
-                and time_diff >= self.min_pattern_distance  # Минимално време между пикове
+                and time_diff
+                >= self.min_pattern_distance  # Минимално време между пикове
                 and peak2_idx > peak1_idx
             ):  # Вторият пик е по-нов
-
                 # Проверяваме за neckline (support level между пикове)
                 neckline = self._find_neckline(price_data, peak1_idx, peak2_idx)
 
                 # Проверяваме за volume confirmation
                 volume_confirmed = False
                 if self.volume_confirmation and "volume" in price_data.columns:
-                    volume_confirmed = self._check_volume_confirmation(price_data, peak2_idx)
+                    volume_confirmed = self._check_volume_confirmation(
+                        price_data, peak2_idx
+                    )
 
                 # Проверяваме за bearish candle confirmation
                 candle_confirmed = False
@@ -379,7 +399,11 @@ class PriceActionPatternsAnalyzer:
                     "volume_confirmed": volume_confirmed,
                     "candle_confirmed": candle_confirmed,
                     "pattern_strength": (
-                        "STRONG" if confidence > 80 else "MEDIUM" if confidence > 65 else "WEAK"
+                        "STRONG"
+                        if confidence > 80
+                        else "MEDIUM"
+                        if confidence > 65
+                        else "WEAK"
                     ),
                 }
 
@@ -393,11 +417,15 @@ class PriceActionPatternsAnalyzer:
             logger.error(f"Грешка при откриване на double top: {e}")
             return {"detected": False, "confidence": 0, "reason": f"Грешка: {e}"}
 
-    def _detect_double_bottom(self, price_data: pd.DataFrame) -> Dict:
+    def _detect_double_bottom(self, price_data: pd.DataFrame) -> dict:
         """Открива Double Bottom pattern (bullish reversal)"""
         try:
             if len(price_data) < 20:
-                return {"detected": False, "confidence": 0, "reason": "Недостатъчно данни"}
+                return {
+                    "detected": False,
+                    "confidence": 0,
+                    "reason": "Недостатъчно данни",
+                }
 
             highs = (  # noqa: F841
                 price_data["high"].values
@@ -419,7 +447,11 @@ class PriceActionPatternsAnalyzer:
             troughs = self._find_peaks(lows, "low")
 
             if len(troughs) < 2:
-                return {"detected": False, "confidence": 0, "reason": "Няма достатъчно дъна"}
+                return {
+                    "detected": False,
+                    "confidence": 0,
+                    "reason": "Няма достатъчно дъна",
+                }
 
             # Проверяваме последните 2 дъна за double bottom
             trough1_idx, trough1_price = troughs[-2]
@@ -434,7 +466,6 @@ class PriceActionPatternsAnalyzer:
                 and time_diff >= self.min_pattern_distance  # Минимално време между дъна
                 and trough2_idx > trough1_idx
             ):  # Второто дъно е по-ново
-
                 # Проверяваме за neckline (resistance level между дъна)
                 neckline = self._find_neckline(
                     price_data, trough1_idx, trough2_idx, is_resistance=True
@@ -443,12 +474,16 @@ class PriceActionPatternsAnalyzer:
                 # Проверяваме за volume confirmation
                 volume_confirmed = False
                 if self.volume_confirmation and "volume" in price_data.columns:
-                    volume_confirmed = self._check_volume_confirmation(price_data, trough2_idx)
+                    volume_confirmed = self._check_volume_confirmation(
+                        price_data, trough2_idx
+                    )
 
                 # Проверяваме за bullish candle confirmation
                 candle_confirmed = False
                 if self.candle_confirmation:
-                    candle_confirmed = self._check_bullish_candle(price_data, trough2_idx)
+                    candle_confirmed = self._check_bullish_candle(
+                        price_data, trough2_idx
+                    )
 
                 # Изчисляваме confidence
                 confidence = 60  # Base confidence
@@ -471,7 +506,11 @@ class PriceActionPatternsAnalyzer:
                     "volume_confirmed": volume_confirmed,
                     "candle_confirmed": candle_confirmed,
                     "pattern_strength": (
-                        "STRONG" if confidence > 80 else "MEDIUM" if confidence > 65 else "WEAK"
+                        "STRONG"
+                        if confidence > 80
+                        else "MEDIUM"
+                        if confidence > 65
+                        else "WEAK"
                     ),
                 }
 
@@ -485,11 +524,15 @@ class PriceActionPatternsAnalyzer:
             logger.error(f"Грешка при откриване на double bottom: {e}")
             return {"detected": False, "confidence": 0, "reason": f"Грешка: {e}"}
 
-    def _detect_head_shoulders(self, price_data: pd.DataFrame) -> Dict:
+    def _detect_head_shoulders(self, price_data: pd.DataFrame) -> dict:
         """Открива Head & Shoulders pattern (bearish reversal)"""
         try:
             if len(price_data) < 30:
-                return {"detected": False, "confidence": 0, "reason": "Недостатъчно данни за H&S"}
+                return {
+                    "detected": False,
+                    "confidence": 0,
+                    "reason": "Недостатъчно данни за H&S",
+                }
 
             highs = (
                 price_data["high"].values
@@ -515,12 +558,16 @@ class PriceActionPatternsAnalyzer:
             # Проверяваме H&S условията
             if (
                 head_price > left_shoulder_price  # Главата е по-висока от лявото рамо
-                and head_price > right_shoulder_price  # Главата е по-висока от дясното рамо
-                and abs(left_shoulder_price - right_shoulder_price) / left_shoulder_price < 0.03
+                and head_price
+                > right_shoulder_price  # Главата е по-висока от дясното рамо
+                and abs(left_shoulder_price - right_shoulder_price)
+                / left_shoulder_price
+                < 0.03
             ):  # Раменете са близки
-
                 # Проверяваме за neckline
-                neckline = self._find_neckline(price_data, left_shoulder_idx, right_shoulder_idx)
+                neckline = self._find_neckline(
+                    price_data, left_shoulder_idx, right_shoulder_idx
+                )
 
                 confidence = 70  # Base confidence за H&S
 
@@ -528,8 +575,7 @@ class PriceActionPatternsAnalyzer:
                     "detected": True,
                     "confidence": confidence,
                     "reason": (
-                        f"Head & Shoulders: глава на {
-                            head_price:.2f}, рамене на {
+                        f"Head & Shoulders: глава на {head_price:.2f}, рамене на {
                             left_shoulder_price:.2f}"
                     ),
                     "head_price": head_price,
@@ -539,17 +585,25 @@ class PriceActionPatternsAnalyzer:
                     "pattern_strength": "STRONG",
                 }
 
-            return {"detected": False, "confidence": 0, "reason": "Не отговаря на H&S критериите"}
+            return {
+                "detected": False,
+                "confidence": 0,
+                "reason": "Не отговаря на H&S критериите",
+            }
 
         except Exception as e:
             logger.error(f"Грешка при откриване на Head & Shoulders: {e}")
             return {"detected": False, "confidence": 0, "reason": f"Грешка: {e}"}
 
-    def _detect_inverse_head_shoulders(self, price_data: pd.DataFrame) -> Dict:
+    def _detect_inverse_head_shoulders(self, price_data: pd.DataFrame) -> dict:
         """Открива Inverse Head & Shoulders pattern (bullish reversal)"""
         try:
             if len(price_data) < 30:
-                return {"detected": False, "confidence": 0, "reason": "Недостатъчно данни за IH&S"}
+                return {
+                    "detected": False,
+                    "confidence": 0,
+                    "reason": "Недостатъчно данни за IH&S",
+                }
 
             lows = (
                 price_data["low"].values
@@ -575,13 +629,18 @@ class PriceActionPatternsAnalyzer:
             # Проверяваме IH&S условията
             if (
                 head_price < left_shoulder_price  # Главата е по-ниска от лявото рамо
-                and head_price < right_shoulder_price  # Главата е по-ниска от дясното рамо
-                and abs(left_shoulder_price - right_shoulder_price) / left_shoulder_price < 0.03
+                and head_price
+                < right_shoulder_price  # Главата е по-ниска от дясното рамо
+                and abs(left_shoulder_price - right_shoulder_price)
+                / left_shoulder_price
+                < 0.03
             ):  # Раменете са близки
-
                 # Проверяваме за neckline
                 neckline = self._find_neckline(
-                    price_data, left_shoulder_idx, right_shoulder_idx, is_resistance=True
+                    price_data,
+                    left_shoulder_idx,
+                    right_shoulder_idx,
+                    is_resistance=True,
                 )
 
                 confidence = 70  # Base confidence за IH&S
@@ -590,8 +649,7 @@ class PriceActionPatternsAnalyzer:
                     "detected": True,
                     "confidence": confidence,
                     "reason": (
-                        f"Inverse H&S: глава на {
-                            head_price:.2f}, рамене на {
+                        f"Inverse H&S: глава на {head_price:.2f}, рамене на {
                             left_shoulder_price:.2f}"
                     ),
                     "head_price": head_price,
@@ -601,13 +659,17 @@ class PriceActionPatternsAnalyzer:
                     "pattern_strength": "STRONG",
                 }
 
-            return {"detected": False, "confidence": 0, "reason": "Не отговаря на IH&S критериите"}
+            return {
+                "detected": False,
+                "confidence": 0,
+                "reason": "Не отговаря на IH&S критериите",
+            }
 
         except Exception as e:
             logger.error(f"Грешка при откриване на Inverse Head & Shoulders: {e}")
             return {"detected": False, "confidence": 0, "reason": f"Грешка: {e}"}
 
-    def _detect_triangle(self, price_data: pd.DataFrame) -> Dict:
+    def _detect_triangle(self, price_data: pd.DataFrame) -> dict:
         """Открива Triangle pattern"""
         try:
             if len(price_data) < 20:
@@ -652,11 +714,15 @@ class PriceActionPatternsAnalyzer:
             logger.error(f"Грешка при откриване на triangle: {e}")
             return {"detected": False, "confidence": 0, "reason": f"Грешка: {e}"}
 
-    def _detect_wedge(self, price_data: pd.DataFrame) -> Dict:
+    def _detect_wedge(self, price_data: pd.DataFrame) -> dict:
         """Открива Wedge pattern"""
         try:
             if len(price_data) < 20:
-                return {"detected": False, "confidence": 0, "reason": "Недостатъчно данни за wedge"}
+                return {
+                    "detected": False,
+                    "confidence": 0,
+                    "reason": "Недостатъчно данни за wedge",
+                }
 
             # Опростена версия - не е пълно имплементирана
             return {
@@ -669,7 +735,7 @@ class PriceActionPatternsAnalyzer:
             logger.error(f"Грешка при откриване на wedge: {e}")
             return {"detected": False, "confidence": 0, "reason": f"Грешка: {e}"}
 
-    def _find_peaks(self, data: np.ndarray, peak_type: str) -> List[Tuple[int, float]]:
+    def _find_peaks(self, data: np.ndarray, peak_type: str) -> list[tuple[int, float]]:
         """Намира пикове в данните"""
         try:
             peaks = []
@@ -690,7 +756,11 @@ class PriceActionPatternsAnalyzer:
             return []
 
     def _find_neckline(
-        self, price_data: pd.DataFrame, idx1: int, idx2: int, is_resistance: bool = False
+        self,
+        price_data: pd.DataFrame,
+        idx1: int,
+        idx2: int,
+        is_resistance: bool = False,
     ) -> float:
         """Намира neckline между два пика/дъна"""
         try:
@@ -698,22 +768,23 @@ class PriceActionPatternsAnalyzer:
                 return 0.0
 
             # Взимаме данните между двата пика/дъна
-            between_data = price_data.iloc[idx1: idx2 + 1]
+            between_data = price_data.iloc[idx1 : idx2 + 1]
 
             if is_resistance:
                 # За resistance neckline, търсим най-високата точка
                 high_col = "high" if "high" in between_data.columns else "High"
                 return float(between_data[high_col].max())
-            else:
-                # За support neckline, търсим най-ниската точка
-                low_col = "low" if "low" in between_data.columns else "Low"
-                return float(between_data[low_col].min())
+            # За support neckline, търсим най-ниската точка
+            low_col = "low" if "low" in between_data.columns else "Low"
+            return float(between_data[low_col].min())
 
         except Exception as e:
             logger.error(f"Грешка при намиране на neckline: {e}")
             return 0.0
 
-    def _check_volume_confirmation(self, price_data: pd.DataFrame, pattern_idx: int) -> bool:
+    def _check_volume_confirmation(
+        self, price_data: pd.DataFrame, pattern_idx: int
+    ) -> bool:
         """Проверява volume confirmation за pattern"""
         try:
             if "volume" not in price_data.columns:
@@ -726,7 +797,7 @@ class PriceActionPatternsAnalyzer:
 
             # Проверяваме дали обемът на pattern_idx е над средния за последните 10 периода
             lookback = min(10, pattern_idx)
-            recent_volumes = volumes[pattern_idx - lookback: pattern_idx]
+            recent_volumes = volumes[pattern_idx - lookback : pattern_idx]
             avg_volume = np.mean(recent_volumes)
 
             return volumes[pattern_idx] > avg_volume * 1.2
@@ -743,7 +814,9 @@ class PriceActionPatternsAnalyzer:
 
             candle = price_data.iloc[pattern_idx]
             open_price = candle["open"] if "open" in candle.index else candle["Open"]
-            close_price = candle["close"] if "close" in candle.index else candle["Close"]
+            close_price = (
+                candle["close"] if "close" in candle.index else candle["Close"]
+            )
             high_price = candle["high"] if "high" in candle.index else candle["High"]
             candle["low"] if "low" in candle.index else candle["Low"]
 
@@ -769,7 +842,9 @@ class PriceActionPatternsAnalyzer:
 
             candle = price_data.iloc[pattern_idx]
             open_price = candle["open"] if "open" in candle.index else candle["Open"]
-            close_price = candle["close"] if "close" in candle.index else candle["Close"]
+            close_price = (
+                candle["close"] if "close" in candle.index else candle["Close"]
+            )
             candle["high"] if "high" in candle.index else candle["High"]
             low_price = candle["low"] if "low" in candle.index else candle["Low"]
 
@@ -787,7 +862,7 @@ class PriceActionPatternsAnalyzer:
             logger.error(f"Грешка при проверка на bullish candle: {e}")
             return False
 
-    def analyze_rejection_patterns(self, price_data: pd.DataFrame) -> Dict[str, Any]:
+    def analyze_rejection_patterns(self, price_data: pd.DataFrame) -> dict[str, Any]:
         """
         Phase 1.6: Анализира rejection patterns за SHORT сигнали
 
@@ -814,7 +889,10 @@ class PriceActionPatternsAnalyzer:
             strength_threshold = config.get("rejection_strength_threshold", 0.7)
 
             if not rejection_enabled:
-                return {"rejection_detected": False, "reason": "Price action rejection изключен"}
+                return {
+                    "rejection_detected": False,
+                    "reason": "Price action rejection изключен",
+                }
 
             # Взимаме последните N периода за анализ
             recent_data = price_data.tail(lookback_periods)
@@ -834,9 +912,15 @@ class PriceActionPatternsAnalyzer:
                 candle = recent_data.iloc[idx]
 
                 # Извличаме OHLC данни
-                open_price = candle["open"] if "open" in candle.index else candle["Open"]
-                close_price = candle["close"] if "close" in candle.index else candle["Close"]
-                high_price = candle["high"] if "high" in candle.index else candle["High"]
+                open_price = (
+                    candle["open"] if "open" in candle.index else candle["Open"]
+                )
+                close_price = (
+                    candle["close"] if "close" in candle.index else candle["Close"]
+                )
+                high_price = (
+                    candle["high"] if "high" in candle.index else candle["High"]
+                )
                 low_price = candle["low"] if "low" in candle.index else candle["Low"]
 
                 # Изчисляваме body и shadows
@@ -845,7 +929,9 @@ class PriceActionPatternsAnalyzer:
                 min(open_price, close_price) - low_price
 
                 # Проверяваме за bearish rejection (SHORT сигнал)
-                if close_price < open_price and upper_shadow > 0:  # Bearish candle с upper shadow
+                if (
+                    close_price < open_price and upper_shadow > 0
+                ):  # Bearish candle с upper shadow
                     wick_ratio = upper_shadow / body_size if body_size > 0 else 0
 
                     if wick_ratio >= wick_ratio_threshold:
@@ -867,15 +953,17 @@ class PriceActionPatternsAnalyzer:
             # Оценяваме общия rejection сигнал
             if rejection_signals:
                 # Взимаме най-силния rejection сигнал
-                strongest_rejection = max(rejection_signals, key=lambda x: x["strength"])
+                strongest_rejection = max(
+                    rejection_signals, key=lambda x: x["strength"]
+                )
 
                 if strongest_rejection["strength"] >= strength_threshold:
                     return {
                         "rejection_detected": True,
                         "reason": (
-                            f'Силен rejection pattern: wick ratio {
-                                strongest_rejection["wick_ratio"]:.2f} > {
-                                wick_ratio_threshold:.2f}'
+                            f"Силен rejection pattern: wick ratio {
+                                strongest_rejection['wick_ratio']:.2f} > {
+                                wick_ratio_threshold:.2f}"
                         ),
                         "strength": strongest_rejection["strength"],
                         "wick_ratio": strongest_rejection["wick_ratio"],
@@ -885,23 +973,21 @@ class PriceActionPatternsAnalyzer:
                         "all_rejections": len(rejection_signals),
                         "strongest_rejection": strongest_rejection,
                     }
-                else:
-                    return {
-                        "rejection_detected": False,
-                        "reason": (
-                            f'Слаб rejection pattern: strength {
-                                strongest_rejection["strength"]:.2f} < {
-                                strength_threshold:.2f}'
-                        ),
-                        "strength": strongest_rejection["strength"],
-                        "wick_ratio": strongest_rejection["wick_ratio"],
-                    }
-            else:
                 return {
                     "rejection_detected": False,
-                    "reason": f"Няма rejection patterns в последните {lookback_periods} периода",
-                    "analyzed_periods": lookback_periods,
+                    "reason": (
+                        f"Слаб rejection pattern: strength {
+                            strongest_rejection['strength']:.2f} < {
+                            strength_threshold:.2f}"
+                    ),
+                    "strength": strongest_rejection["strength"],
+                    "wick_ratio": strongest_rejection["wick_ratio"],
                 }
+            return {
+                "rejection_detected": False,
+                "reason": f"Няма rejection patterns в последните {lookback_periods} периода",
+                "analyzed_periods": lookback_periods,
+            }
 
         except Exception as e:
             logger.error(f"Грешка при анализ на rejection patterns: {e}")
@@ -911,7 +997,7 @@ class PriceActionPatternsAnalyzer:
                 "error": str(e),
             }
 
-    def _determine_overall_pattern(self, patterns: Dict) -> str:
+    def _determine_overall_pattern(self, patterns: dict) -> str:
         """Определя overall pattern от всички открити"""
         try:
             bearish_count = 0
@@ -932,20 +1018,19 @@ class PriceActionPatternsAnalyzer:
             # Определяме overall pattern
             if bearish_count >= 2:
                 return "STRONG_BEARISH"
-            elif bearish_count == 1:
+            if bearish_count == 1:
                 return "BEARISH"
-            elif bullish_count >= 2:
+            if bullish_count >= 2:
                 return "STRONG_BULLISH"
-            elif bullish_count == 1:
+            if bullish_count == 1:
                 return "BULLISH"
-            else:
-                return "NONE"
+            return "NONE"
 
         except Exception as e:
             logger.error(f"Грешка при определяне на overall pattern: {e}")
             return "NONE"
 
-    def get_pattern_trading_signals(self, patterns: Dict) -> Dict:
+    def get_pattern_trading_signals(self, patterns: dict) -> dict:
         """Генерира trading сигнали базирани на patterns"""
         try:
             overall_pattern = patterns.get("overall_pattern", "NONE")
@@ -957,34 +1042,33 @@ class PriceActionPatternsAnalyzer:
                     "reason": "Множествен bearish patterns - силна bearish сигнал",
                     "risk_level": "HIGH",
                 }
-            elif overall_pattern == "BEARISH":
+            if overall_pattern == "BEARISH":
                 return {
                     "signal": "SELL",
                     "confidence": 65,
                     "reason": "Bearish pattern - умерена bearish сигнал",
                     "risk_level": "MEDIUM",
                 }
-            elif overall_pattern == "STRONG_BULLISH":
+            if overall_pattern == "STRONG_BULLISH":
                 return {
                     "signal": "STRONG_BUY",
                     "confidence": 80,
                     "reason": "Множествен bullish patterns - силна bullish сигнал",
                     "risk_level": "HIGH",
                 }
-            elif overall_pattern == "BULLISH":
+            if overall_pattern == "BULLISH":
                 return {
                     "signal": "BUY",
                     "confidence": 65,
                     "reason": "Bullish pattern - умерена bullish сигнал",
                     "risk_level": "MEDIUM",
                 }
-            else:
-                return {
-                    "signal": "HOLD",
-                    "confidence": 50,
-                    "reason": "Няма ясни patterns - няма сигнал",
-                    "risk_level": "LOW",
-                }
+            return {
+                "signal": "HOLD",
+                "confidence": 50,
+                "reason": "Няма ясни patterns - няма сигнал",
+                "risk_level": "LOW",
+            }
 
         except Exception as e:
             logger.error(f"Грешка при генериране на pattern trading сигнали: {e}")

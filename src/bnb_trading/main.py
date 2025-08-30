@@ -73,7 +73,6 @@ DATE: 2024-01-01
 import logging
 import os
 import sys
-from typing import Dict
 
 import pandas as pd
 import toml
@@ -81,9 +80,9 @@ import toml
 # Add current directory to Python path for module imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from data_fetcher import BNBDataFetcher  # noqa: E402
-from signal_generator import SignalGenerator  # noqa: E402
-from validator import SignalValidator  # noqa: E402
+from data_fetcher import BNBDataFetcher
+from signal_generator import SignalGenerator
+from validator import SignalValidator
 
 # Настройваме logging
 logging.basicConfig(
@@ -210,7 +209,7 @@ class BNBTradingSystem:
             logger.error(f"Грешка при инициализиране на системата: {e}")
             raise
 
-    def run_analysis(self) -> Dict:
+    def run_analysis(self) -> dict:
         """
         Изпълнява пълния анализ на BNB
 
@@ -218,10 +217,11 @@ class BNBTradingSystem:
             Dict с резултатите от анализа
         """
         try:
-
             # 1. Извличаме данни
 
-            data = self.data_fetcher.fetch_bnb_data(self.config["data"]["lookback_days"])
+            data = self.data_fetcher.fetch_bnb_data(
+                self.config["data"]["lookback_days"]
+            )
 
             if not data or "daily" not in data or "weekly" not in data:
                 raise ValueError("Неуспешно извличане на данни")
@@ -269,8 +269,8 @@ class BNBTradingSystem:
             return {"error": f"Грешка: {e}"}
 
     def _prepare_results_for_display(
-        self, signal: Dict, daily_df: pd.DataFrame, weekly_df: pd.DataFrame
-    ) -> Dict:
+        self, signal: dict, daily_df: pd.DataFrame, weekly_df: pd.DataFrame
+    ) -> dict:
         """
         Подготвя резултатите за показване
 
@@ -310,7 +310,9 @@ class BNBTradingSystem:
                 signal.get("weekly_tails_analysis")
                 and "tails_analysis" in signal["weekly_tails_analysis"]
             ):
-                for tail in signal["weekly_tails_analysis"]["tails_analysis"][:5]:  # Последните 5
+                for tail in signal["weekly_tails_analysis"]["tails_analysis"][
+                    :5
+                ]:  # Последните 5
                     tails_display.append(
                         {
                             "date": tail["date"].strftime("%Y-%m-%d"),
@@ -323,8 +325,13 @@ class BNBTradingSystem:
 
             # Форматираме Fibonacci + Tails съвпадения
             confluence_display = []
-            if signal.get("confluence_info") and "confluence_points" in signal["confluence_info"]:
-                for point in signal["confluence_info"]["confluence_points"][:3]:  # Топ 3
+            if (
+                signal.get("confluence_info")
+                and "confluence_points" in signal["confluence_info"]
+            ):
+                for point in signal["confluence_info"]["confluence_points"][
+                    :3
+                ]:  # Топ 3
                     confluence_display.append(
                         {
                             "tail_date": point["tail_date"].strftime("%Y-%m-%d"),
@@ -339,11 +346,15 @@ class BNBTradingSystem:
             if signal.get("next_targets"):
                 next_targets = signal["next_targets"]
                 if next_targets.get("entry_price"):
-                    next_targets_display["entry"] = f"${next_targets['entry_price']:,.2f}"
+                    next_targets_display["entry"] = (
+                        f"${next_targets['entry_price']:,.2f}"
+                    )
                 if next_targets.get("exit_price"):
                     next_targets_display["exit"] = f"${next_targets['exit_price']:,.2f}"
                 if next_targets.get("fibonacci_levels"):
-                    next_targets_display["fib_levels"] = next_targets["fibonacci_levels"]
+                    next_targets_display["fib_levels"] = next_targets[
+                        "fibonacci_levels"
+                    ]
 
             # Статистика за точността
             accuracy_stats = self.validator.get_accuracy_stats(30)
@@ -360,7 +371,9 @@ class BNBTradingSystem:
                         "confidence": f"{row['confidence']:.1f}",
                         "priority": row["priority"],
                         "status": (
-                            "Валидиран" if pd.notna(row["validation_date"]) else "Очаква валидация"
+                            "Валидиран"
+                            if pd.notna(row["validation_date"])
+                            else "Очаква валидация"
                         ),
                     }
                     if pd.notna(row["validation_date"]):
@@ -392,7 +405,7 @@ class BNBTradingSystem:
             logger.error(f"Грешка при форматиране на резултатите: {e}")
             return {"error": f"Грешка при форматиране: {e}"}
 
-    def display_results(self, results: Dict):
+    def display_results(self, results: dict):
         """
         Показва резултатите в конзолата
 
@@ -419,7 +432,9 @@ class BNBTradingSystem:
                 else (
                     "⚠️ СРЕДНА"
                     if confidence < 4.0
-                    else "✅ ВИСОКА" if confidence < 4.5 else "🚀 МНОГО ВИСОКА"
+                    else "✅ ВИСОКА"
+                    if confidence < 4.5
+                    else "🚀 МНОГО ВИСОКА"
                 )
             )
             print(f"   Увереност: {confidence} ({confidence_level})")
@@ -437,37 +452,34 @@ class BNBTradingSystem:
                 print(f"   {'-' * 8} {'-' * 12} {'-' * 12} {'-' * 8}")
                 for level in results["fibonacci_levels"]:
                     print(
-                        f"   {
-                            level['level']:<8} {
-                            level['price']:<12} {
-                            level['distance']:<12} {
-                            level['distance_pct']:<8}"
+                        f"   {level['level']:<8} {level['price']:<12} {
+                            level['distance']:<12} {level['distance_pct']:<8}"
                     )
 
             # Weekly Tails
             if results["weekly_tails"]:
                 print("\n📈 СЕДМИЧНИ ОПАШКИ (последните 5):")
-                print(f"   {'Дата':<12} {'Тип':<8} {'Сила':<8} {'Сигнал':<8} {'Цена':<12}")
+                print(
+                    f"   {'Дата':<12} {'Тип':<8} {'Сила':<8} {'Сигнал':<8} {'Цена':<12}"
+                )
                 print(f"   {'-' * 12} {'-' * 8} {'-' * 8} {'-' * 8} {'-' * 12}")
                 for tail in results["weekly_tails"]:
                     print(
-                        f"   {
-                            tail['date']:<12} {
-                            tail['type']:<8} {
-                            tail['strength']:<8} {
-                            tail['signal']:<8} {
+                        f"   {tail['date']:<12} {tail['type']:<8} {
+                            tail['strength']:<8} {tail['signal']:<8} {
                             tail['price']:<12}"
                     )
 
             # Fibonacci + Tails съвпадения
             if results["fib_tail_confluence"]:
                 print("\n🎯 FIBONACCI + TAILS СЪВПАДЕНИЯ:")
-                print(f"   {'Дата':<12} {'Fib Ниво':<10} {'Съвпадение':<12} {'Сигнал':<8}")
+                print(
+                    f"   {'Дата':<12} {'Fib Ниво':<10} {'Съвпадение':<12} {'Сигнал':<8}"
+                )
                 print(f"   {'-' * 12} {'-' * 10} {'-' * 12} {'-' * 8}")
                 for confluence in results["fib_tail_confluence"]:
                     print(
-                        f"   {
-                            confluence['tail_date']:<12} {
+                        f"   {confluence['tail_date']:<12} {
                             confluence['fib_level']:<10} {
                             confluence['confluence_score']:<12} {
                             confluence['signal']:<8}"
@@ -481,7 +493,9 @@ class BNBTradingSystem:
                 if "exit" in results["next_targets"]:
                     print(f"   Exit: {results['next_targets']['exit']}")
                 if "fib_levels" in results["next_targets"]:
-                    for target_type, fib_level in results["next_targets"]["fib_levels"].items():
+                    for target_type, fib_level in results["next_targets"][
+                        "fib_levels"
+                    ].items():
                         print(f"   {target_type.capitalize()}: {fib_level}")
 
             # Статистика за точността
@@ -489,28 +503,25 @@ class BNBTradingSystem:
                 stats = results["accuracy_stats"]
                 print("\n📈 СТАТИСТИКА ЗА ТОЧНОСТТА (последните 30 дни):")
                 print(
-                    f"   Обща точност: {
-                        stats['overall_accuracy']:.1f}% ({
-                        stats['successful_signals']}/{
-                        stats['total_signals']})"
+                    f"   Обща точност: {stats['overall_accuracy']:.1f}% ({
+                        stats['successful_signals']
+                    }/{stats['total_signals']})"
                 )
                 print(
-                    f"   LONG сигнали: {
-                        stats['long_signals']['accuracy']:.1f}% ({
-                        stats['long_signals']['success']}/{
-                        stats['long_signals']['total']})"
+                    f"   LONG сигнали: {stats['long_signals']['accuracy']:.1f}% ({
+                        stats['long_signals']['success']
+                    }/{stats['long_signals']['total']})"
                 )
                 print(
-                    f"   SHORT сигнали: {
-                        stats['short_signals']['accuracy']:.1f}% ({
-                        stats['short_signals']['success']}/{
-                        stats['short_signals']['total']})"
+                    f"   SHORT сигнали: {stats['short_signals']['accuracy']:.1f}% ({
+                        stats['short_signals']['success']
+                    }/{stats['short_signals']['total']})"
                 )
                 print(f"   Среден P&L: {stats['avg_profit_loss_pct']:+.2f}%")
 
             # Divergence Analysis (НОВО от ideas файла)
             try:
-                if "divergence_analysis" in results and results["divergence_analysis"]:
+                if results.get("divergence_analysis"):
                     div_analysis = results["divergence_analysis"]
                     if (
                         div_analysis
@@ -521,18 +532,20 @@ class BNBTradingSystem:
                         if div_analysis.get("rsi_divergence", {}).get("type") != "NONE":
                             rsi_div = div_analysis["rsi_divergence"]
                             print(
-                                f"   📊 RSI Divergence: {
-                                    rsi_div['type']} (увереност: {
+                                f"   📊 RSI Divergence: {rsi_div['type']} (увереност: {
                                     rsi_div['confidence']:.1f}%)"
                             )
                             print(f"      Причина: {rsi_div['reason']}")
 
-                        if div_analysis.get("macd_divergence", {}).get("type") != "NONE":
+                        if (
+                            div_analysis.get("macd_divergence", {}).get("type")
+                            != "NONE"
+                        ):
                             macd_div = div_analysis["macd_divergence"]
                             print(
                                 f"   📈 MACD Divergence: {
-                                    macd_div['type']} (увереност: {
-                                    macd_div['confidence']:.1f}%)"
+                                    macd_div['type']
+                                } (увереност: {macd_div['confidence']:.1f}%)"
                             )
                             print(f"      Причина: {macd_div['reason']}")
 
@@ -553,7 +566,7 @@ class BNBTradingSystem:
                 logger.warning(f"Грешка при показване на Divergence анализ: {e}")
 
             # Moving Averages Analysis (НОВО от ideas файла)
-            if "moving_averages_analysis" in results and results["moving_averages_analysis"]:
+            if results.get("moving_averages_analysis"):
                 ma_analysis = results["moving_averages_analysis"]
                 if ma_analysis and "error" not in ma_analysis:
                     print("\n📊 MOVING AVERAGES АНАЛИЗ:")
@@ -573,11 +586,12 @@ class BNBTradingSystem:
                         print(f"      Slow EMA (50): ${slow_ema:.2f}")
                         print(
                             f"      Volume Confirmed: {
-                                '✅' if ma_analysis.get('volume_confirmed') else '❌'}"
+                                '✅' if ma_analysis.get('volume_confirmed') else '❌'
+                            }"
                         )
 
             # Price Action Patterns Analysis (НОВО от ideas файла)
-            if "price_patterns_analysis" in results and results["price_patterns_analysis"]:
+            if results.get("price_patterns_analysis"):
                 patterns = results["price_patterns_analysis"]
                 if "error" not in patterns:
                     print("\n📐 PRICE ACTION PATTERNS:")
@@ -588,29 +602,32 @@ class BNBTradingSystem:
                         dt = patterns["double_top"]
                         print(f"   🔴 Double Top: {dt['reason']}")
                         print(
-                            f"      Увереност: {
-                                dt['confidence']:.1f}% | Сила: {
-                                dt['pattern_strength']}"
+                            f"      Увереност: {dt['confidence']:.1f}% | Сила: {
+                                dt['pattern_strength']
+                            }"
                         )
-                        print(f"      Пикове: ${dt['peak1_price']:.2f}, ${dt['peak2_price']:.2f}")
+                        print(
+                            f"      Пикове: ${dt['peak1_price']:.2f}, ${dt['peak2_price']:.2f}"
+                        )
 
                     if patterns.get("double_bottom", {}).get("detected"):
                         db = patterns["double_bottom"]
                         print(f"   🟢 Double Bottom: {db['reason']}")
                         print(
-                            f"      Увереност: {
-                                db['confidence']:.1f}% | Сила: {
-                                db['pattern_strength']}"
+                            f"      Увереност: {db['confidence']:.1f}% | Сила: {
+                                db['pattern_strength']
+                            }"
                         )
-                        print(f"      Дъна: ${db['trough1_price']:.2f}, ${db['trough2_price']:.2f}")
+                        print(
+                            f"      Дъна: ${db['trough1_price']:.2f}, ${db['trough2_price']:.2f}"
+                        )
 
                     if patterns.get("head_shoulders", {}).get("detected"):
                         hs = patterns["head_shoulders"]
                         print(f"   🔴 Head & Shoulders: {hs['reason']}")
                         print(f"      Увереност: {hs['confidence']:.1f}%")
                         print(
-                            f"      Глава: ${
-                                hs['head_price']:.2f} | Рамене: ${
+                            f"      Глава: ${hs['head_price']:.2f} | Рамене: ${
                                 hs['left_shoulder_price']:.2f}"
                         )
 
@@ -618,27 +635,20 @@ class BNBTradingSystem:
             if results["recent_signals"]:
                 print("\n📋 ПОСЛЕДНИ СИГНАЛИ (последните 20):")
                 print(
-                    f"   {
-                        'Дата':<12} {
-                        'Тип':<8} {
-                        'Цена':<12} {
-                        'Увереност':<10} {
-                        'Приоритет':<10} {
-                            'Статус':<15}"
+                    f"   {'Дата':<12} {'Тип':<8} {'Цена':<12} {'Увереност':<10} {
+                        'Приоритет':<10} {'Статус':<15}"
                 )
-                print(f"   {'-' * 12} {'-' * 8} {'-' * 12} {'-' * 10} {'-' * 10} {'-' * 15}")
+                print(
+                    f"   {'-' * 12} {'-' * 8} {'-' * 12} {'-' * 10} {'-' * 10} {'-' * 15}"
+                )
                 for signal in results["recent_signals"][:10]:  # Показваме първите 10
                     status = signal["status"]
                     if "result" in signal:
                         status = f"{signal['result']} {signal['pnl']}"
                     print(
-                        f"   {
-                            signal['date']:<12} {
-                            signal['type']:<8} {
-                            signal['price']:<12} {
-                            signal['confidence']:<10} {
-                            signal['priority']:<10} {
-                            status:<15}"
+                        f"   {signal['date']:<12} {signal['type']:<8} {
+                            signal['price']:<12} {signal['confidence']:<10} {
+                            signal['priority']:<10} {status:<15}"
                     )
 
             analysis_date = results.get("analysis_date", pd.Timestamp.now())
@@ -653,7 +663,7 @@ class BNBTradingSystem:
             logger.error(f"Грешка при показване на резултатите: {e}")
             print(f"❌ Грешка при показване на резултатите: {e}")
 
-    def display_current_signal_detailed(self, signal: Dict):
+    def display_current_signal_detailed(self, signal: dict):
         """
         Показва детайлна информация за текущия сигнал за днес
 
@@ -661,7 +671,6 @@ class BNBTradingSystem:
             signal: Генерираният сигнал
         """
         try:
-
             print("\n" + "🎯" * 20)
             print("🎯 ТЕКУЩ СИГНАЛ ЗА ДНЕС - КЛЮЧОВА ИНФОРМАЦИЯ 🎯")
             print("🎯" * 20)
@@ -674,14 +683,15 @@ class BNBTradingSystem:
                 else (
                     "⚠️ СРЕДНА"
                     if confidence < 4.0
-                    else "✅ ВИСОКА" if confidence < 4.5 else "🚀 МНОГО ВИСОКА"
+                    else "✅ ВИСОКА"
+                    if confidence < 4.5
+                    else "🚀 МНОГО ВИСОКА"
                 )
             )
             print(
-                f"\n🚀 СИГНАЛ: {
-                    signal['signal']} | Увереност: {
-                    confidence:.1f} ({confidence_level}) | Приоритет: {
-                    signal['priority']}"
+                f"\n🚀 СИГНАЛ: {signal['signal']} | Увереност: {confidence:.1f} ({
+                    confidence_level
+                }) | Приоритет: {signal['priority']}"
             )
             print(f"💡 Причина: {signal['reason'][:100]}...")
 
@@ -694,7 +704,9 @@ class BNBTradingSystem:
                 if "fibonacci_extensions" in fib_analysis:
                     fib_extensions = fib_analysis["fibonacci_extensions"]
                     if fib_extensions:
-                        print(f"\n🚀 FIBONACCI EXTENSIONS (текуща цена: ${current_price:,.2f}):")
+                        print(
+                            f"\n🚀 FIBONACCI EXTENSIONS (текуща цена: ${current_price:,.2f}):"
+                        )
 
                         # Сортираме extensions по разстояние от текущата цена (от най-близко до
                         # най-далечно)
@@ -702,12 +714,19 @@ class BNBTradingSystem:
                         for level, price in fib_extensions.items():
                             distance = price - current_price
                             distance_pct = (distance / current_price) * 100
-                            extensions_with_distances.append((level, price, distance, distance_pct))
+                            extensions_with_distances.append(
+                                (level, price, distance, distance_pct)
+                            )
 
                         # Сортираме по разстояние (от най-близко до най-далечно)
                         extensions_with_distances.sort(key=lambda x: x[3])
 
-                        for level, price, distance, distance_pct in extensions_with_distances:
+                        for (
+                            level,
+                            price,
+                            distance,
+                            distance_pct,
+                        ) in extensions_with_distances:
                             # Определяме типа на нивото
                             if level == 1.618:
                                 level_name = f"{level * 100:.1f}% (ЗЛАТНО)"
@@ -718,7 +737,9 @@ class BNBTradingSystem:
                                 f"  {level_name:<15} ${price:8,.2f} (🔴 съпротива) +{distance_pct:5.2f}% нагоре"
                             )
 
-                print(f"\n🔢 FIBONACCI RETRACEMENT (текуща цена: ${current_price:,.2f}):")
+                print(
+                    f"\n🔢 FIBONACCI RETRACEMENT (текуща цена: ${current_price:,.2f}):"
+                )
 
                 if "fibonacci_levels" in fib_analysis:
                     fib_levels = fib_analysis["fibonacci_levels"]
@@ -733,7 +754,9 @@ class BNBTradingSystem:
                             price = fib_levels[level]
                             distance = current_price - price
                             distance_pct = (distance / current_price) * 100
-                            levels_with_distances.append((level, price, distance, distance_pct))
+                            levels_with_distances.append(
+                                (level, price, distance, distance_pct)
+                            )
 
                     # Сортираме по абсолютна стойност на разстоянието (от най-близко до най-далечно)
                     levels_with_distances.sort(key=lambda x: abs(x[3]))
@@ -772,7 +795,9 @@ class BNBTradingSystem:
                     rsi_status = (
                         "🟢 oversold"
                         if rsi_value < 30
-                        else "🔴 overbought" if rsi_value > 70 else "🟡 неутрален"
+                        else "🔴 overbought"
+                        if rsi_value > 70
+                        else "🟡 неутрален"
                     )
                     print(f"   RSI: {rsi_value:5.1f} ({rsi_status})")
 
@@ -799,11 +824,8 @@ class BNBTradingSystem:
                 if "tails_signal" in tails_analysis:
                     tails_signal = tails_analysis["tails_signal"]
                     print(
-                        f"\n📈 WEEKLY TAILS: {
-                            tails_signal['signal']} (сила: {
-                            tails_signal.get(
-                                'strength',
-                                0):.2f})"
+                        f"\n📈 WEEKLY TAILS: {tails_signal['signal']} (сила: {
+                            tails_signal.get('strength', 0):.2f})"
                     )
 
             # Fibonacci + Tails съвпадения - само топ 3
@@ -813,32 +835,37 @@ class BNBTradingSystem:
                     print("\n🎯 FIBONACCI + TAILS СЪВПАДЕНИЯ:")
                     for i, point in enumerate(confluence["confluence_points"][:3], 1):
                         print(
-                            f"   {i}. Fib {
-                                point['fib_level'] * 100:.1f}% + {
-                                point['tail_signal']} (сила: {
-                                point['confluence_score']:.2f})"
+                            f"   {i}. Fib {point['fib_level'] * 100:.1f}% + {
+                                point['tail_signal']
+                            } (сила: {point['confluence_score']:.2f})"
                         )
 
             # Optimal Levels анализ - ново!
             if "optimal_levels_analysis" in signal:
                 opt_analysis = signal["optimal_levels_analysis"]
                 if "error" not in opt_analysis:
-                    print("\n🎯 ОПТИМАЛНИ TRADING НИВА (базирани на исторически докосвания):")
+                    print(
+                        "\n🎯 ОПТИМАЛНИ TRADING НИВА (базирани на исторически докосвания):"
+                    )
 
                     # Top Support нива
-                    if "optimal_levels" in opt_analysis and opt_analysis["optimal_levels"].get(
-                        "top_support_levels"
-                    ):
-                        support_levels = opt_analysis["optimal_levels"]["top_support_levels"]
+                    if "optimal_levels" in opt_analysis and opt_analysis[
+                        "optimal_levels"
+                    ].get("top_support_levels"):
+                        support_levels = opt_analysis["optimal_levels"][
+                            "top_support_levels"
+                        ]
                         print("   🟢 TOP SUPPORT НИВА:")
                         for i, (price, touches) in enumerate(support_levels[:3], 1):
                             print(f"      {i}. ${price:6.0f} ({touches:2d} докосвания)")
 
                     # Top Resistance нива
-                    if "optimal_levels" in opt_analysis and opt_analysis["optimal_levels"].get(
-                        "top_resistance_levels"
-                    ):
-                        resistance_levels = opt_analysis["optimal_levels"]["top_resistance_levels"]
+                    if "optimal_levels" in opt_analysis and opt_analysis[
+                        "optimal_levels"
+                    ].get("top_resistance_levels"):
+                        resistance_levels = opt_analysis["optimal_levels"][
+                            "top_resistance_levels"
+                        ]
                         print("   🔴 TOP RESISTANCE НИВА:")
                         for i, (price, touches) in enumerate(resistance_levels[:3], 1):
                             print(f"      {i}. ${price:6.0f} ({touches:2d} докосвания)")
@@ -860,14 +887,13 @@ class BNBTradingSystem:
                                 print("   📈 LONG СТРАТЕГИЯ:")
                                 print(
                                     f"      Entry: ${
-                                        long_strat.get(
-                                            'entry_price',
-                                            0):6.0f} ({
-                                        long_strat.get(
-                                            'entry_type',
-                                            'individual')})"
+                                        long_strat.get('entry_price', 0):6.0f} ({
+                                        long_strat.get('entry_type', 'individual')
+                                    })"
                                 )
-                                print(f"      Target: ${long_strat.get('target', 0):6.0f}")
+                                print(
+                                    f"      Target: ${long_strat.get('target', 0):6.0f}"
+                                )
                                 print(
                                     f"      Risk/Reward: 1:{long_strat.get('risk_reward', 0):.1f}"
                                 )
@@ -883,8 +909,12 @@ class BNBTradingSystem:
                     # Основен анализ
                     if "combined_analysis" in elliott_analysis:
                         combined = elliott_analysis["combined_analysis"]
-                        print(f"   🎯 ОСНОВЕН АНАЛИЗ: {combined.get('primary_wave', 'UNKNOWN')}")
-                        print(f"      Тренд: {combined.get('primary_trend', 'UNKNOWN')}")
+                        print(
+                            f"   🎯 ОСНОВЕН АНАЛИЗ: {combined.get('primary_wave', 'UNKNOWN')}"
+                        )
+                        print(
+                            f"      Тренд: {combined.get('primary_trend', 'UNKNOWN')}"
+                        )
                         print(f"      Увереност: {combined.get('confidence', 0)}%")
                         print(f"      Степен: {combined.get('degree', 'UNKNOWN')}")
 
@@ -905,9 +935,13 @@ class BNBTradingSystem:
                     # Trading сигнали
                     if "trading_signals" in elliott_analysis:
                         signals = elliott_analysis["trading_signals"]
-                        print(f"   💡 TRADING СИГНАЛИ: {signals.get('action', 'UNKNOWN')}")
+                        print(
+                            f"   💡 TRADING СИГНАЛИ: {signals.get('action', 'UNKNOWN')}"
+                        )
                         print(f"      Причина: {signals.get('reason', '')}")
-                        print(f"      Ниво на риска: {signals.get('risk_level', 'UNKNOWN')}")
+                        print(
+                            f"      Ниво на риска: {signals.get('risk_level', 'UNKNOWN')}"
+                        )
 
                     # Elliott Wave правила
                     if elliott_analysis.get("elliott_rules_valid"):
@@ -928,18 +962,20 @@ class BNBTradingSystem:
                         if div_analysis.get("rsi_divergence", {}).get("type") != "NONE":
                             rsi_div = div_analysis["rsi_divergence"]
                             print(
-                                f"   📊 RSI Divergence: {
-                                    rsi_div['type']} (увереност: {
+                                f"   📊 RSI Divergence: {rsi_div['type']} (увереност: {
                                     rsi_div['confidence']:.1f}%)"
                             )
                             print(f"      Причина: {rsi_div['reason']}")
 
-                        if div_analysis.get("macd_divergence", {}).get("type") != "NONE":
+                        if (
+                            div_analysis.get("macd_divergence", {}).get("type")
+                            != "NONE"
+                        ):
                             macd_div = div_analysis["macd_divergence"]
                             print(
                                 f"   📈 MACD Divergence: {
-                                    macd_div['type']} (увереност: {
-                                    macd_div['confidence']:.1f}%)"
+                                    macd_div['type']
+                                } (увереност: {macd_div['confidence']:.1f}%)"
                             )
                             print(f"      Причина: {macd_div['reason']}")
 
@@ -968,7 +1004,7 @@ class BNBTradingSystem:
 
             # Moving Averages Analysis (НОВО от ideas файла)
             try:
-                if "moving_averages_analysis" in signal and signal["moving_averages_analysis"]:
+                if signal.get("moving_averages_analysis"):
                     ma_analysis = signal["moving_averages_analysis"]
                     if ma_analysis and "error" not in ma_analysis:
                         print("\n📊 MOVING AVERAGES АНАЛИЗ:")
@@ -978,7 +1014,9 @@ class BNBTradingSystem:
                             print(f"      Причина: {crossover['reason']}")
                             print(f"      Увереност: {crossover['confidence']:.1f}%")
                             if "crossover_strength" in crossover:
-                                print(f"      Сила: {crossover['crossover_strength']:.2%}")
+                                print(
+                                    f"      Сила: {crossover['crossover_strength']:.2%}"
+                                )
 
                         # EMA стойности
                         fast_ema = ma_analysis.get("fast_ema_current")
@@ -995,7 +1033,7 @@ class BNBTradingSystem:
 
             # Price Action Patterns Analysis (НОВО от ideas файла)
             try:
-                if "price_patterns_analysis" in signal and signal["price_patterns_analysis"]:
+                if signal.get("price_patterns_analysis"):
                     patterns = signal["price_patterns_analysis"]
                     if "error" not in patterns:
                         print("\n📐 PRICE ACTION PATTERNS:")
@@ -1006,9 +1044,9 @@ class BNBTradingSystem:
                             dt = patterns["double_top"]
                             print(f"   🔴 Double Top: {dt['reason']}")
                             print(
-                                f"      Увереност: {
-                                    dt['confidence']:.1f}% | Сила: {
-                                    dt['pattern_strength']}"
+                                f"      Увереност: {dt['confidence']:.1f}% | Сила: {
+                                    dt['pattern_strength']
+                                }"
                             )
                             print(
                                 f"      Пикове: ${dt['peak1_price']:.2f}, ${dt['peak2_price']:.2f}"
@@ -1018,13 +1056,12 @@ class BNBTradingSystem:
                             db = patterns["double_bottom"]
                             print(f"   🟢 Double Bottom: {db['reason']}")
                             print(
-                                f"      Увереност: {
-                                    db['confidence']:.1f}% | Сила: {
-                                    db['pattern_strength']}"
+                                f"      Увереност: {db['confidence']:.1f}% | Сила: {
+                                    db['pattern_strength']
+                                }"
                             )
                             print(
-                                f"      Дъна: ${
-                                    db['trough1_price']:.2f}, ${
+                                f"      Дъна: ${db['trough1_price']:.2f}, ${
                                     db['trough2_price']:.2f}"
                             )
 
@@ -1032,13 +1069,12 @@ class BNBTradingSystem:
                             hs = patterns["head_shoulders"]
                             print(f"   🔴 Head & Shoulders: {hs['reason']}")
                             print(
-                                f"      Увереност: {
-                                    hs['confidence']:.1f}% | Сила: {
-                                    hs['pattern_strength']}"
+                                f"      Увереност: {hs['confidence']:.1f}% | Сила: {
+                                    hs['pattern_strength']
+                                }"
                             )
                             print(
-                                f"      Пикове: ${
-                                    hs['left_shoulder_price']:.2f}, ${
+                                f"      Пикове: ${hs['left_shoulder_price']:.2f}, ${
                                     hs['head_price']:.2f}, ${
                                     hs['right_shoulder_price']:.2f}"
                             )
@@ -1047,13 +1083,12 @@ class BNBTradingSystem:
                             ihs = patterns["inverse_head_shoulders"]
                             print(f"   🟢 Inverse H&S: {ihs['reason']}")
                             print(
-                                f"      Увереност: {
-                                    ihs['confidence']:.1f}% | Сила: {
-                                    ihs['pattern_strength']}"
+                                f"      Увереност: {ihs['confidence']:.1f}% | Сила: {
+                                    ihs['pattern_strength']
+                                }"
                             )
                             print(
-                                f"      Дъна: ${
-                                    ihs['left_shoulder_price']:.2f}, ${
+                                f"      Дъна: ${ihs['left_shoulder_price']:.2f}, ${
                                     ihs['head_price']:.2f}, ${
                                     ihs['right_shoulder_price']:.2f}"
                             )
@@ -1062,9 +1097,9 @@ class BNBTradingSystem:
                             tri = patterns["triangle"]
                             print(f"   🔺 Triangle: {tri['reason']}")
                             print(
-                                f"      Увереност: {
-                                    tri['confidence']:.1f}% | Сила: {
-                                    tri['pattern_strength']}"
+                                f"      Увереност: {tri['confidence']:.1f}% | Сила: {
+                                    tri['pattern_strength']
+                                }"
                             )
                             print(f"      Тип: {tri['triangle_type']}")
 
@@ -1072,17 +1107,19 @@ class BNBTradingSystem:
                             wedge = patterns["wedge"]
                             print(f"   🔶 Wedge: {wedge['reason']}")
                             print(
-                                f"      Увереност: {
-                                    wedge['confidence']:.1f}% | Сила: {
-                                    wedge['pattern_strength']}"
+                                f"      Увереност: {wedge['confidence']:.1f}% | Сила: {
+                                    wedge['pattern_strength']
+                                }"
                             )
                             print(f"      Тип: {wedge['wedge_type']}")
             except Exception as e:
-                logger.warning(f"Грешка при показване на Price Action Patterns анализ: {e}")
+                logger.warning(
+                    f"Грешка при показване на Price Action Patterns анализ: {e}"
+                )
 
             # Whale Tracker Analysis - ново!
             try:
-                if "whale_analysis" in signal and signal["whale_analysis"]:
+                if signal.get("whale_analysis"):
                     whale_analysis = signal["whale_analysis"]
                     if whale_analysis and "error" not in whale_analysis:
                         print("\n🐋 WHALE TRACKER АНАЛИЗ (институционални движения):")
@@ -1090,7 +1127,9 @@ class BNBTradingSystem:
                         # Whale sentiment
                         if "sentiment" in whale_analysis:
                             sentiment = whale_analysis["sentiment"]
-                            print(f"   🧠 WHALE SENTIMENT: {sentiment.get('sentiment', 'UNKNOWN')}")
+                            print(
+                                f"   🧠 WHALE SENTIMENT: {sentiment.get('sentiment', 'UNKNOWN')}"
+                            )
                             print(f"      Увереност: {sentiment.get('confidence', 0)}%")
                             print(
                                 f"      Buy/Sell Ratio: {sentiment.get('buy_ratio', 0):.1f}%/{sentiment.get('sell_ratio', 0):.1f}%"
@@ -1108,7 +1147,11 @@ class BNBTradingSystem:
                                     ]
                                 )
                                 whale_count = len(
-                                    [p for p in high_vol if "🐳 WHALE" in p.get("whale_signal", "")]
+                                    [
+                                        p
+                                        for p in high_vol
+                                        if "🐳 WHALE" in p.get("whale_signal", "")
+                                    ]
                                 )
                                 print(f"   📊 WHALE АКТИВНОСТ: {len(high_vol)} сигнала")
                                 print(
@@ -1117,25 +1160,23 @@ class BNBTradingSystem:
 
                                 # Biggest signal
                                 if high_vol:
-                                    biggest = max(high_vol, key=lambda x: x.get("volume_ratio", 0))
+                                    biggest = max(
+                                        high_vol, key=lambda x: x.get("volume_ratio", 0)
+                                    )
                                     print(
                                         f"      Най-голям сигнал: {biggest.get('whale_signal', 'UNKNOWN')}"
                                     )
                                     print(
                                         f"         Volume: {
-                                            biggest.get(
-                                                'volume',
-                                                0):,.0f} BNB ({
-                                            biggest.get(
-                                                'volume_ratio',
-                                                0):.1f}x)"
+                                            biggest.get('volume', 0):,.0f} BNB ({
+                                            biggest.get('volume_ratio', 0):.1f}x)"
                                     )
             except Exception as e:
                 logger.warning(f"Грешка при показване на Whale Tracker анализ: {e}")
 
             # Ichimoku Cloud Analysis - ново!
             try:
-                if "ichimoku_analysis" in signal and signal["ichimoku_analysis"]:
+                if signal.get("ichimoku_analysis"):
                     ichimoku_analysis = signal["ichimoku_analysis"]
                     if ichimoku_analysis and "error" not in ichimoku_analysis:
                         print("\n☁️ ICHIMOKU CLOUD АНАЛИЗ (японски технически анализ):")
@@ -1145,7 +1186,9 @@ class BNBTradingSystem:
                         print(f"   ☁️ CLOUD СТАТУС: {cloud_status}")
 
                         # Overall trend
-                        overall_trend = ichimoku_analysis.get("overall_trend", "UNKNOWN")
+                        overall_trend = ichimoku_analysis.get(
+                            "overall_trend", "UNKNOWN"
+                        )
                         print(f"   📈 ОБЩ ТРЕНД: {overall_trend}")
 
                         # Action
@@ -1174,15 +1217,20 @@ class BNBTradingSystem:
                                     cloud_position = (
                                         "ABOVE"
                                         if current_price > cloud_top
-                                        else "BELOW" if current_price < cloud_top else "IN"
+                                        else (
+                                            "BELOW"
+                                            if current_price < cloud_top
+                                            else "IN"
+                                        )
                                     )
                                     cloud_distance = abs(current_price - cloud_top)
-                                    cloud_distance_pct = (cloud_distance / current_price) * 100
+                                    cloud_distance_pct = (
+                                        cloud_distance / current_price
+                                    ) * 100
                                     print("   ☁️ CLOUD АНАЛИЗ:")
                                     print(f"      Позиция: {cloud_position} облака")
                                     print(
-                                        f"      Разстояние: ${
-                                            cloud_distance:.2f} ({
+                                        f"      Разстояние: ${cloud_distance:.2f} ({
                                             cloud_distance_pct:.1f}%)"
                                     )
                                     print(f"      Cloud Top: ${cloud_top:.2f}")
@@ -1197,7 +1245,9 @@ class BNBTradingSystem:
                         print("\n🎭 MARKET SENTIMENT АНАЛИЗ (психология на пазара):")
 
                         # Overall sentiment
-                        overall_sentiment = sentiment_analysis.get("overall_sentiment", "UNKNOWN")
+                        overall_sentiment = sentiment_analysis.get(
+                            "overall_sentiment", "UNKNOWN"
+                        )
                         print(f"   🎯 ОБЩ SENTIMENT: {overall_sentiment}")
 
                         # Composite score
@@ -1212,8 +1262,12 @@ class BNBTradingSystem:
                         if "individual_scores" in sentiment_analysis:
                             scores = sentiment_analysis["individual_scores"]
                             print("   📈 КОМПОНЕНТИ:")
-                            print(f"      Fear & Greed: {scores.get('fear_greed', 0)}/100")
-                            print(f"      Social Media: {scores.get('social_media', 0)}/100")
+                            print(
+                                f"      Fear & Greed: {scores.get('fear_greed', 0)}/100"
+                            )
+                            print(
+                                f"      Social Media: {scores.get('social_media', 0)}/100"
+                            )
                             print(f"      News: {scores.get('news', 0)}/100")
                             print(f"      Momentum: {scores.get('momentum', 0)}/100")
             except Exception as e:
@@ -1232,10 +1286,13 @@ class BNBTradingSystem:
                             print(
                                 f"   🎯 ОСНОВЕН ТРЕНД: {combined.get('primary_trend', 'UNKNOWN')}"
                             )
-                            print(f"      Увереност: {combined.get('trend_confidence', 'UNKNOWN')}")
+                            print(
+                                f"      Увереност: {combined.get('trend_confidence', 'UNKNOWN')}"
+                            )
                             print(
                                 f"      Приключил: {
-                                    'ДА' if combined.get('trend_completed') else 'НЕ'}"
+                                    'ДА' if combined.get('trend_completed') else 'НЕ'
+                                }"
                             )
 
                         # Дневен тренд
@@ -1243,24 +1300,14 @@ class BNBTradingSystem:
                             daily = trend_analysis["daily_trend"]
                             print(
                                 f"   📅 ДНЕВЕН ТРЕНД: {
-                                    daily.get(
-                                        'direction',
-                                        'UNKNOWN')} ({
-                                    daily.get(
-                                        'strength',
-                                        'UNKNOWN')})"
+                                    daily.get('direction', 'UNKNOWN')
+                                } ({daily.get('strength', 'UNKNOWN')})"
                             )
                             print(
                                 f"      Промяна: {
-                                    daily.get(
-                                        'price_change_pct',
-                                        0):+.2f}% (${
-                                    daily.get(
-                                        'start_price',
-                                        0):.0f} → ${
-                                    daily.get(
-                                        'end_price',
-                                        0):.0f})"
+                                    daily.get('price_change_pct', 0):+.2f}% (${
+                                    daily.get('start_price', 0):.0f} → ${
+                                    daily.get('end_price', 0):.0f})"
                             )
 
                         # Седмичен тренд
@@ -1268,24 +1315,14 @@ class BNBTradingSystem:
                             weekly = trend_analysis["weekly_trend"]
                             print(
                                 f"   📊 СЕДМИЧЕН ТРЕНД: {
-                                    weekly.get(
-                                        'direction',
-                                        'UNKNOWN')} ({
-                                    weekly.get(
-                                        'strength',
-                                        'UNKNOWN')})"
+                                    weekly.get('direction', 'UNKNOWN')
+                                } ({weekly.get('strength', 'UNKNOWN')})"
                             )
                             print(
                                 f"      Промяна: {
-                                    weekly.get(
-                                        'price_change_pct',
-                                        0):+.2f}% (${
-                                    weekly.get(
-                                        'start_price',
-                                        0):.0f} → ${
-                                    weekly.get(
-                                        'end_price',
-                                        0):.0f})"
+                                    weekly.get('price_change_pct', 0):+.2f}% (${
+                                    weekly.get('start_price', 0):.0f} → ${
+                                    weekly.get('end_price', 0):.0f})"
                             )
 
                         # Range анализ
@@ -1293,21 +1330,16 @@ class BNBTradingSystem:
                             range_analysis = trend_analysis["range_analysis"]
                             print(
                                 f"   📏 RANGE АНАЛИЗ: {
-                                    range_analysis.get(
-                                        'range_status',
-                                        'UNKNOWN')}"
+                                    range_analysis.get('range_status', 'UNKNOWN')
+                                }"
                             )
                             print(
                                 f"      Текущ range: {
-                                    range_analysis.get(
-                                        'current_range_pct',
-                                        0):.1f}%"
+                                    range_analysis.get('current_range_pct', 0):.1f}%"
                             )
                             print(
                                 f"      Позиция в range: {
-                                    range_analysis.get(
-                                        'range_position',
-                                        0):.1%}"
+                                    range_analysis.get('range_position', 0):.1%}"
                             )
 
                         # Адаптивна стратегия
@@ -1318,11 +1350,15 @@ class BNBTradingSystem:
                                 if "trend_based_entry" in strategy:
                                     entry = strategy["trend_based_entry"]
                                     print(f"      Тип: {entry.get('type', 'UNKNOWN')}")
-                                    print(f"      Описание: {entry.get('description', '')}")
+                                    print(
+                                        f"      Описание: {entry.get('description', '')}"
+                                    )
 
                                 if "timing_recommendation" in strategy:
                                     timing = strategy["timing_recommendation"]
-                                    print(f"      Време: {timing.get('timing', 'UNKNOWN')}")
+                                    print(
+                                        f"      Време: {timing.get('timing', 'UNKNOWN')}"
+                                    )
                                     print(f"      Причина: {timing.get('reason', '')}")
             except Exception as e:
                 logger.warning(f"Грешка при показване на Trend анализ: {e}")
@@ -1352,7 +1388,9 @@ class BNBTradingSystem:
             logger.error(f"Грешка при показване на детайлния анализ: {e}")
             print(f"❌ Грешка при показване на детайлния анализ: {e}")
 
-    def export_results(self, results: Dict, output_file: str = "data/analysis_results.txt"):
+    def export_results(
+        self, results: dict, output_file: str = "data/analysis_results.txt"
+    ):
         """
         Експортира резултатите в текстов файл
 
@@ -1386,11 +1424,9 @@ class BNBTradingSystem:
                     f.write("FIBONACCI НИВА:\n")
                     for level in results["fibonacci_levels"]:
                         f.write(
-                            f"  {
-                                level['level']}: {
-                                level['price']} (разстояние: {
-                                level['distance']}, {
-                                level['distance_pct']})\n"
+                            f"  {level['level']}: {level['price']} (разстояние: {
+                                level['distance']
+                            }, {level['distance_pct']})\n"
                         )
                     f.write("\n")
 
@@ -1399,12 +1435,9 @@ class BNBTradingSystem:
                     f.write("СЕДМИЧНИ ОПАШКИ:\n")
                     for tail in results["weekly_tails"]:
                         f.write(
-                            f"  {
-                                tail['date']}: {
-                                tail['type']} опашка, сила: {
-                                tail['strength']}, сигнал: {
-                                tail['signal']}, цена: {
-                                tail['price']}\n"
+                            f"  {tail['date']}: {tail['type']} опашка, сила: {
+                                tail['strength']
+                            }, сигнал: {tail['signal']}, цена: {tail['price']}\n"
                         )
                     f.write("\n")
 
@@ -1416,12 +1449,19 @@ class BNBTradingSystem:
                     f.write("\n")
 
                 # Статистика
-                if "accuracy_stats" in results and "error" not in results["accuracy_stats"]:
+                if (
+                    "accuracy_stats" in results
+                    and "error" not in results["accuracy_stats"]
+                ):
                     stats = results["accuracy_stats"]
                     f.write("СТАТИСТИКА ЗА ТОЧНОСТТА:\n")
                     f.write(f"  Обща точност: {stats['overall_accuracy']:.1f}%\n")
-                    f.write(f"  LONG сигнали: {stats['long_signals']['accuracy']:.1f}%\n")
-                    f.write(f"  SHORT сигнали: {stats['short_signals']['accuracy']:.1f}%\n")
+                    f.write(
+                        f"  LONG сигнали: {stats['long_signals']['accuracy']:.1f}%\n"
+                    )
+                    f.write(
+                        f"  SHORT сигнали: {stats['short_signals']['accuracy']:.1f}%\n"
+                    )
                     f.write(f"  Среден P&L: {stats['avg_profit_loss_pct']:+.2f}%\n\n")
 
                 analysis_date = results.get("analysis_date", pd.Timestamp.now())

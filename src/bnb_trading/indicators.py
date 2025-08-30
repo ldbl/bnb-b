@@ -91,7 +91,7 @@ DATE: 2024-01-01
 """
 
 import logging
-from typing import Any, Dict
+from typing import Any
 
 import pandas as pd
 import talib
@@ -168,7 +168,7 @@ class TechnicalIndicators:
         Minimum periods vary by indicator (RSI: 14, MACD: 33, BB: 20).
     """
 
-    def __init__(self, config: Dict[str, Any]) -> None:
+    def __init__(self, config: dict[str, Any]) -> None:
         """
         Initialize the Technical Indicators engine with configuration.
 
@@ -214,10 +214,9 @@ class TechnicalIndicators:
 
         logger.info("Технически индикатори инициализирани")
         logger.info(
-            f"RSI: период={
-                self.rsi_period}, overbought={
-                self.rsi_overbought}, oversold={
-                self.rsi_oversold}"
+            f"RSI: период={self.rsi_period}, overbought={
+                self.rsi_overbought
+            }, oversold={self.rsi_oversold}"
         )
         logger.info(
             f"MACD: fast={self.macd_fast}, slow={self.macd_slow}, signal={self.macd_signal}"
@@ -262,7 +261,9 @@ class TechnicalIndicators:
             # Премахваме NaN стойности
             df_with_indicators.dropna(inplace=True)
 
-            logger.info(f"Технически индикатори изчислени за {len(df_with_indicators)} редове")
+            logger.info(
+                f"Технически индикатори изчислени за {len(df_with_indicators)} редове"
+            )
 
             return df_with_indicators
 
@@ -287,7 +288,7 @@ class TechnicalIndicators:
             logger.error(f"Грешка при изчисляване на RSI: {e}")
             return pd.Series(index=prices.index)
 
-    def _calculate_macd(self, prices: pd.Series) -> Dict[str, pd.Series]:
+    def _calculate_macd(self, prices: pd.Series) -> dict[str, pd.Series]:
         """
         Изчислява MACD (Moving Average Convergence Divergence)
 
@@ -318,7 +319,7 @@ class TechnicalIndicators:
                 "histogram": pd.Series(index=prices.index),
             }
 
-    def _calculate_bollinger_bands(self, prices: pd.Series) -> Dict[str, pd.Series]:
+    def _calculate_bollinger_bands(self, prices: pd.Series) -> dict[str, pd.Series]:
         """
         Изчислява Bollinger Bands
 
@@ -394,7 +395,7 @@ class TechnicalIndicators:
             logger.error(f"Грешка при изчисляване на ATR: {e}")
             return pd.Series(index=df.index, dtype=float)
 
-    def get_rsi_signal(self, current_rsi: float) -> Dict[str, any]:
+    def get_rsi_signal(self, current_rsi: float) -> dict[str, any]:
         """
         Генерира RSI сигнал
 
@@ -440,7 +441,9 @@ class TechnicalIndicators:
             logger.error(f"Грешка при генериране на RSI сигнал: {e}")
             return {"signal": "HOLD", "reason": f"Грешка: {e}", "strength": 0.0}
 
-    def get_macd_signal(self, macd: float, signal: float, histogram: float) -> Dict[str, any]:
+    def get_macd_signal(
+        self, macd: float, signal: float, histogram: float
+    ) -> dict[str, any]:
         """
         Генерира MACD сигнал
 
@@ -454,7 +457,11 @@ class TechnicalIndicators:
         """
         try:
             if pd.isna(macd) or pd.isna(signal):
-                return {"signal": "HOLD", "reason": "MACD не е наличен", "strength": 0.0}
+                return {
+                    "signal": "HOLD",
+                    "reason": "MACD не е наличен",
+                    "strength": 0.0,
+                }
 
             # Проверяваме за bullish cross (MACD > Signal)
             if macd > signal:
@@ -495,7 +502,7 @@ class TechnicalIndicators:
 
     def get_bollinger_signal(
         self, current_price: float, upper: float, lower: float, position: float
-    ) -> Dict[str, any]:
+    ) -> dict[str, any]:
         """
         Генерира Bollinger Bands сигнал
 
@@ -520,16 +527,12 @@ class TechnicalIndicators:
             if current_price <= lower:
                 signal = "LONG"
                 strength = 0.6
-                reason = (
-                    f"Цената е под долната Bollinger Band (${current_price:.2f} <= ${lower:.2f})"
-                )
+                reason = f"Цената е под долната Bollinger Band (${current_price:.2f} <= ${lower:.2f})"
             # Проверяваме дали цената е над горната band (overbought)
             elif current_price >= upper:
                 signal = "SHORT"
                 strength = 0.6
-                reason = (
-                    f"Цената е над горната Bollinger Band (${current_price:.2f} >= ${upper:.2f})"
-                )
+                reason = f"Цената е над горната Bollinger Band (${current_price:.2f} >= ${upper:.2f})"
             # Проверяваме позицията в bands
             elif position <= 0.2:
                 signal = "LONG"
@@ -542,7 +545,9 @@ class TechnicalIndicators:
             else:
                 signal = "HOLD"
                 strength = 0.3
-                reason = f"Цената е в средата на Bollinger Bands (позиция: {position:.1%})"
+                reason = (
+                    f"Цената е в средата на Bollinger Bands (позиция: {position:.1%})"
+                )
 
             return {
                 "signal": signal,
@@ -558,7 +563,7 @@ class TechnicalIndicators:
             logger.error(f"Грешка при генериране на Bollinger Bands сигнал: {e}")
             return {"signal": "HOLD", "reason": f"Грешка: {e}", "strength": 0.0}
 
-    def get_atr_signal(self, current_atr: float) -> Dict[str, any]:
+    def get_atr_signal(self, current_atr: float) -> dict[str, any]:
         """
         Генерира ATR сигнал базиран на волатилност
 
@@ -600,7 +605,7 @@ class TechnicalIndicators:
             logger.error(f"Грешка при генериране на ATR сигнал: {e}")
             return {"signal": "HOLD", "strength": 0.0, "reason": "Грешка в ATR сигнал"}
 
-    def get_all_indicators_signals(self, df: pd.DataFrame) -> Dict[str, any]:
+    def get_all_indicators_signals(self, df: pd.DataFrame) -> dict[str, any]:
         """
         Връща сигналите от всички индикатори
 
@@ -627,7 +632,10 @@ class TechnicalIndicators:
 
             # Bollinger Bands сигнал
             bb_signal = self.get_bollinger_signal(
-                latest["Close"], latest["BB_Upper"], latest["BB_Lower"], latest["BB_Position"]
+                latest["Close"],
+                latest["BB_Upper"],
+                latest["BB_Lower"],
+                latest["BB_Position"],
             )
 
             # ATR сигнал
@@ -653,7 +661,7 @@ class TechnicalIndicators:
             logger.error(f"Грешка при генериране на всички индикаторни сигнали: {e}")
             return {"error": f"Грешка: {e}"}
 
-    def get_volume_signal(self, df: pd.DataFrame) -> Dict[str, any]:
+    def get_volume_signal(self, df: pd.DataFrame) -> dict[str, any]:
         """
         Enhanced Volume Confirmation Analysis for 85%+ LONG Accuracy
 
@@ -665,7 +673,11 @@ class TechnicalIndicators:
         """
         try:
             if df.empty or "Volume" not in df.columns:
-                return {"signal": "HOLD", "reason": "Volume data unavailable", "volume_ratio": 0.0}
+                return {
+                    "signal": "HOLD",
+                    "reason": "Volume data unavailable",
+                    "volume_ratio": 0.0,
+                }
 
             # Calculate volume metrics
             current_volume = df["Volume"].iloc[-1]
@@ -673,8 +685,12 @@ class TechnicalIndicators:
             volume_sma_50 = df["Volume"].rolling(window=50).mean().iloc[-1]
 
             # Volume ratio calculations
-            volume_ratio_20 = current_volume / volume_sma_20 if volume_sma_20 > 0 else 0.0
-            volume_ratio_50 = current_volume / volume_sma_50 if volume_sma_50 > 0 else 0.0
+            volume_ratio_20 = (
+                current_volume / volume_sma_20 if volume_sma_20 > 0 else 0.0
+            )
+            volume_ratio_50 = (
+                current_volume / volume_sma_50 if volume_sma_50 > 0 else 0.0
+            )
 
             # Enhanced volume confirmation logic for LONG signals
             signal = "HOLD"
@@ -700,7 +716,9 @@ class TechnicalIndicators:
             elif volume_ratio_20 < 0.8:
                 signal = "HOLD"
                 strength = 0.0
-                reason = f"Low volume warning ({volume_ratio_20:.1f}x avg) - Weak conviction"
+                reason = (
+                    f"Low volume warning ({volume_ratio_20:.1f}x avg) - Weak conviction"
+                )
 
             # Volume spike detection for additional confirmation
             volume_spike = False
@@ -732,7 +750,11 @@ class TechnicalIndicators:
             logger.exception(
                 "Error in volume signal analysis"
             )  # Use logging.exception for full traceback
-            return {"signal": "HOLD", "reason": f"Volume analysis error: {e}", "volume_ratio": 0.0}
+            return {
+                "signal": "HOLD",
+                "reason": f"Volume analysis error: {e}",
+                "volume_ratio": 0.0,
+            }
 
 
 if __name__ == "__main__":

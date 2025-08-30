@@ -135,7 +135,6 @@ DATE: 2024-01-01
 
 import logging
 from datetime import datetime, timedelta
-from typing import Dict
 
 import requests
 
@@ -324,14 +323,16 @@ class SentimentAnalyzer:
             "volatility",
         ]
 
-    def get_fear_greed_index(self) -> Dict:
+    def get_fear_greed_index(self) -> dict:
         """Get Fear & Greed Index (simulated - would use real API)"""
         # This would normally call the actual Fear & Greed API
         # For demo purposes, we'll simulate based on current market conditions
 
         try:
             # Get market data to simulate Fear & Greed
-            response = requests.get(f"{self.base_url}/ticker/24hr", params={"symbol": "BNBUSDT"})
+            response = requests.get(
+                f"{self.base_url}/ticker/24hr", params={"symbol": "BNBUSDT"}
+            )
 
             if response.status_code == 200:
                 data = response.json()
@@ -393,7 +394,7 @@ class SentimentAnalyzer:
                 return level
         return "neutral"
 
-    def analyze_social_sentiment(self) -> Dict:
+    def analyze_social_sentiment(self) -> dict:
         """Simulate social media sentiment analysis"""
         # This would normally integrate with Twitter API, Reddit API, etc.
         # For demo purposes, we'll simulate sentiment based on market conditions
@@ -472,7 +473,7 @@ class SentimentAnalyzer:
             "timestamp": current_time,
         }
 
-    def analyze_news_sentiment(self) -> Dict:
+    def analyze_news_sentiment(self) -> dict:
         """Simulate news sentiment analysis"""
         # This would normally use news APIs like NewsAPI, CoinAPI, etc.
         # For demo purposes, we'll simulate recent news sentiment
@@ -544,12 +545,18 @@ class SentimentAnalyzer:
             "news_sentiment": news_level,
             "news_score": news_score,
             "recent_news": simulated_news,
-            "positive_count": len([n for n in simulated_news if n["sentiment"] == "positive"]),
-            "negative_count": len([n for n in simulated_news if n["sentiment"] == "negative"]),
-            "neutral_count": len([n for n in simulated_news if n["sentiment"] == "neutral"]),
+            "positive_count": len(
+                [n for n in simulated_news if n["sentiment"] == "positive"]
+            ),
+            "negative_count": len(
+                [n for n in simulated_news if n["sentiment"] == "negative"]
+            ),
+            "neutral_count": len(
+                [n for n in simulated_news if n["sentiment"] == "neutral"]
+            ),
         }
 
-    def get_market_momentum_indicators(self) -> Dict:
+    def get_market_momentum_indicators(self) -> dict:
         """Get momentum indicators that affect sentiment"""
         try:
             # Get multiple timeframe data
@@ -573,7 +580,9 @@ class SentimentAnalyzer:
                             "trend": (
                                 "🟢 UP"
                                 if price_change > 0
-                                else "🔴 DOWN" if price_change < 0 else "🟡 FLAT"
+                                else "🔴 DOWN"
+                                if price_change < 0
+                                else "🟡 FLAT"
                             ),
                         }
 
@@ -599,7 +608,9 @@ class SentimentAnalyzer:
                 "overall_momentum": (
                     "🟢 BULLISH"
                     if momentum_score > 60
-                    else "🔴 BEARISH" if momentum_score < 40 else "🟡 NEUTRAL"
+                    else "🔴 BEARISH"
+                    if momentum_score < 40
+                    else "🟡 NEUTRAL"
                 ),
             }
 
@@ -608,8 +619,8 @@ class SentimentAnalyzer:
             return {"momentum_score": 50, "error": str(e)}
 
     def calculate_composite_sentiment(
-        self, fear_greed: Dict, social: Dict, news: Dict, momentum: Dict
-    ) -> Dict:
+        self, fear_greed: dict, social: dict, news: dict, momentum: dict
+    ) -> dict:
         """Calculate composite sentiment score from all sources"""
 
         # Weights for different sentiment sources
@@ -668,7 +679,7 @@ class SentimentAnalyzer:
             "confidence": min(95, 60 + abs(composite_score - 50)),
         }
 
-    def get_sentiment_trading_signals(self, composite: Dict) -> Dict:
+    def get_sentiment_trading_signals(self, composite: dict) -> dict:
         """Generate trading signals based on sentiment analysis"""
 
         score = composite["composite_score"]
@@ -687,7 +698,9 @@ class SentimentAnalyzer:
 
         # Get current price for calculations
         try:
-            response = requests.get(f"{self.base_url}/ticker/price", params={"symbol": "BNBUSDT"})
+            response = requests.get(
+                f"{self.base_url}/ticker/price", params={"symbol": "BNBUSDT"}
+            )
             if response.status_code == 200:
                 current_price = float(response.json()["price"])
 
@@ -752,7 +765,9 @@ class SentimentAnalyzer:
         momentum = self.get_market_momentum_indicators()
 
         print("🧮 Computing composite sentiment...")
-        composite = self.calculate_composite_sentiment(fear_greed, social, news, momentum)
+        composite = self.calculate_composite_sentiment(
+            fear_greed, social, news, momentum
+        )
 
         # Display Fear & Greed Index
         print("\n😨 FEAR & GREED INDEX:")
@@ -785,25 +800,25 @@ class SentimentAnalyzer:
         twitter_data = social["platforms"]["twitter"]
         print(f"   🐦 Twitter: {twitter_data['total_mentions']} mentions")
         print(
-            f"     • Bullish: {
-                twitter_data['bullish_mentions']} | Bearish: {
-                twitter_data['bearish_mentions']}"
+            f"     • Bullish: {twitter_data['bullish_mentions']} | Bearish: {
+                twitter_data['bearish_mentions']
+            }"
         )
 
         reddit_data = social["platforms"]["reddit"]
         print(f"   📺 Reddit: {reddit_data['total_posts']} posts")
         print(
-            f"     • Upvoted: {
-                reddit_data['upvoted_posts']} | Downvoted: {
-                reddit_data['downvoted_posts']}"
+            f"     • Upvoted: {reddit_data['upvoted_posts']} | Downvoted: {
+                reddit_data['downvoted_posts']
+            }"
         )
 
         telegram_data = social["platforms"]["telegram"]
         print(f"   💬 Telegram: {telegram_data['group_mentions']} mentions")
         print(
-            f"     • Positive: {
-                telegram_data['positive_reactions']} | Negative: {
-                telegram_data['negative_reactions']}"
+            f"     • Positive: {telegram_data['positive_reactions']} | Negative: {
+                telegram_data['negative_reactions']
+            }"
         )
 
         # Display News Sentiment
@@ -821,7 +836,9 @@ class SentimentAnalyzer:
             sentiment_icon = (
                 "🟢"
                 if article["sentiment"] == "positive"
-                else "🔴" if article["sentiment"] == "negative" else "🟡"
+                else "🔴"
+                if article["sentiment"] == "negative"
+                else "🟡"
             )
             time_str = article["timestamp"].strftime("%H:%M")
             print(f"     {i}. {sentiment_icon} {article['title'][:50]}...")
@@ -839,7 +856,9 @@ class SentimentAnalyzer:
 
             print("   Timeframe Analysis:")
             for timeframe, data in momentum["timeframe_data"].items():
-                print(f"     {timeframe}: {data['trend']} ({data['price_change']:+.2f}%)")
+                print(
+                    f"     {timeframe}: {data['trend']} ({data['price_change']:+.2f}%)"
+                )
 
         # Display Composite Sentiment
         print("\n🎯 COMPOSITE SENTIMENT ANALYSIS:")
@@ -857,9 +876,13 @@ class SentimentAnalyzer:
         print(
             f"     Fear & Greed: {scores['fear_greed']}/100 (Weight: {weights['fear_greed']:.0%})"
         )
-        print(f"     Social Media: {scores['social_media']}/100 (Weight: {weights['social']:.0%})")
+        print(
+            f"     Social Media: {scores['social_media']}/100 (Weight: {weights['social']:.0%})"
+        )
         print(f"     News: {scores['news']}/100 (Weight: {weights['news']:.0%})")
-        print(f"     Momentum: {scores['momentum']}/100 (Weight: {weights['momentum']:.0%})")
+        print(
+            f"     Momentum: {scores['momentum']}/100 (Weight: {weights['momentum']:.0%})"
+        )
 
         # Generate and display trading signals
         print("\n💡 SENTIMENT-BASED TRADING SIGNALS:")
