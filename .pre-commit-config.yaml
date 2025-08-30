@@ -39,6 +39,16 @@ repos:
         args: [--config-file=pyproject.toml]
         files: ^src/
 
+  # Documentation health check (custom)
+  - repo: local
+    hooks:
+      - id: docs-health-check
+        name: Documentation Health Check
+        entry: python3 docs_framework.py health-check
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+
   # NOTE: Additional CI checks that run on GitHub but not locally:
   # - bandit security scan: runs in CI to catch security issues
   # - pytest tests: runs in CI with full test suite
