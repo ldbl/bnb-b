@@ -219,7 +219,7 @@ class FibonacciAnalyzer:
             return swing_high_price, swing_low_price, swing_high_pos, swing_low_pos
 
         except Exception as e:
-            logger.error(f"Грешка при търсене на swing points: {e}")
+            logger.exception(f"Грешка при търсене на swing points: {e}")
             return None, None, None, None
 
     def calculate_fibonacci_levels(
@@ -260,7 +260,7 @@ class FibonacciAnalyzer:
             return fib_levels
 
         except Exception as e:
-            logger.error(f"Грешка при изчисляване на Fibonacci нива: {e}")
+            logger.exception(f"Грешка при изчисляване на Fibonacci нива: {e}")
             return {}
 
     def check_fib_proximity(
@@ -337,7 +337,7 @@ class FibonacciAnalyzer:
             return proximity_info
 
         except Exception as e:
-            logger.error(f"Грешка при проверка на Fibonacci близост: {e}")
+            logger.exception(f"Грешка при проверка на Fibonacci близост: {e}")
             return {}
 
     def get_fibonacci_signal(
@@ -466,7 +466,7 @@ class FibonacciAnalyzer:
             return signal_info
 
         except Exception as e:
-            logger.error(f"Грешка при генериране на Fibonacci сигнал: {e}")
+            logger.exception(f"Грешка при генериране на Fibonacci сигнал: {e}")
             return {"signal": "HOLD", "reason": f"Грешка: {e}"}
 
     def _check_resistance_rejection(
@@ -531,7 +531,7 @@ class FibonacciAnalyzer:
             return False
 
         except Exception as e:
-            logger.error(f"Грешка при проверка на resistance rejection: {e}")
+            logger.exception(f"Грешка при проверка на resistance rejection: {e}")
             return False
 
     def analyze_fibonacci_trend(self, df: pd.DataFrame) -> dict[str, Any]:
@@ -640,7 +640,7 @@ class FibonacciAnalyzer:
             return trend_analysis
 
         except Exception as e:
-            logger.error(f"Грешка при Fibonacci тренд анализ: {e}")
+            logger.exception(f"Грешка при Fibonacci тренд анализ: {e}")
             return {"error": f"Грешка: {e}"}
 
     def calculate_fibonacci_extensions(
@@ -679,7 +679,7 @@ class FibonacciAnalyzer:
             return fib_extensions
 
         except Exception as e:
-            logger.error(f"Грешка при изчисляване на Fibonacci extensions: {e}")
+            logger.exception(f"Грешка при изчисляване на Fibonacci extensions: {e}")
             return {}
 
 

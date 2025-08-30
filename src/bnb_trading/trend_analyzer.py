@@ -354,7 +354,7 @@ class TrendAnalyzer:
             return trend_analysis
 
         except Exception as e:
-            logger.error(f"Грешка при анализ на тренда: {e}")
+            logger.exception(f"Грешка при анализ на тренда: {e}")
             return {"error": f"Грешка: {e}"}
 
     def _analyze_daily_trend(self, df: pd.DataFrame) -> dict:
@@ -424,7 +424,7 @@ class TrendAnalyzer:
             return daily_trend
 
         except Exception as e:
-            logger.error(f"Грешка при анализ на дневния тренд: {e}")
+            logger.exception(f"Грешка при анализ на дневния тренд: {e}")
             return {"error": f"Грешка: {e}"}
 
     def _analyze_weekly_trend(self, df: pd.DataFrame) -> dict:
@@ -503,7 +503,7 @@ class TrendAnalyzer:
             return weekly_trend
 
         except Exception as e:
-            logger.error(f"Грешка при анализ на седмичния тренд: {e}")
+            logger.exception(f"Грешка при анализ на седмичния тренд: {e}")
             return {"error": f"Грешка: {e}"}
 
     def _analyze_price_range(self, df: pd.DataFrame) -> dict:
@@ -582,7 +582,7 @@ class TrendAnalyzer:
             return range_analysis
 
         except Exception as e:
-            logger.error(f"Грешка при range анализ: {e}")
+            logger.exception(f"Грешка при range анализ: {e}")
             return {"error": f"Грешка: {e}"}
 
     def _combine_trend_analysis(
@@ -945,7 +945,7 @@ class TrendAnalyzer:
             return strategy
 
         except Exception as e:
-            logger.error(f"Грешка при генериране на адаптивна стратегия: {e}")
+            logger.exception(f"Грешка при генериране на адаптивна стратегия: {e}")
             return {"error": f"Грешка: {e}"}
 
     def _analyze_medium_term_trend(self, df: pd.DataFrame) -> dict:
@@ -1034,7 +1034,7 @@ class TrendAnalyzer:
             return medium_trend
 
         except Exception as e:
-            logger.error(f"Грешка при анализ на средносрочния тренд: {e}")
+            logger.exception(f"Грешка при анализ на средносрочния тренд: {e}")
             return {"error": f"Грешка: {e}"}
 
     def _analyze_long_term_trend(self, df: pd.DataFrame) -> dict:
@@ -1123,7 +1123,7 @@ class TrendAnalyzer:
             return long_trend
 
         except Exception as e:
-            logger.error(f"Грешка при анализ на дългосрочния тренд: {e}")
+            logger.exception(f"Грешка при анализ на дългосрочния тренд: {e}")
             return {"error": f"Грешка: {e}"}
 
     def _detect_market_regime(
@@ -1220,7 +1220,7 @@ class TrendAnalyzer:
             return market_regime
 
         except Exception as e:
-            logger.error(f"Грешка при определяне на market regime: {e}")
+            logger.exception(f"Грешка при определяне на market regime: {e}")
             return {"regime": "UNKNOWN", "confidence": 0.0, "reason": f"Грешка: {e}"}
 
     def _estimate_bull_duration(self, df: pd.DataFrame) -> int:

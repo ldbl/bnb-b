@@ -266,7 +266,7 @@ class OptimalLevelsAnalyzer:
             return analysis
 
         except Exception as e:
-            logger.error(f"Грешка при анализ на оптимални нива: {e}")
+            logger.exception(f"Грешка при анализ на оптимални нива: {e}")
             return {"error": f"Грешка: {e}"}
 
     def _create_price_levels(self, df: pd.DataFrame) -> list[float]:
@@ -293,7 +293,7 @@ class OptimalLevelsAnalyzer:
             return all_levels
 
         except Exception as e:
-            logger.error(f"Грешка при създаване на ценови нива: {e}")
+            logger.exception(f"Грешка при създаване на ценови нива: {e}")
             return []
 
     def _count_level_touches(
@@ -315,7 +315,7 @@ class OptimalLevelsAnalyzer:
             return dict(level_touches)
 
         except Exception as e:
-            logger.error(f"Грешка при броене на докосвания: {e}")
+            logger.exception(f"Грешка при броене на докосвания: {e}")
             return {}
 
     def _find_optimal_levels(
@@ -366,7 +366,7 @@ class OptimalLevelsAnalyzer:
             return optimal_levels
 
         except Exception as e:
-            logger.error(f"Грешка при намиране на оптимални нива: {e}")
+            logger.exception(f"Грешка при намиране на оптимални нива: {e}")
             return {}
 
     def _calculate_averaged_support(
@@ -395,7 +395,7 @@ class OptimalLevelsAnalyzer:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при изчисляване на усреднено support: {e}")
+            logger.exception(f"Грешка при изчисляване на усреднено support: {e}")
             return {}
 
     def get_trading_recommendations(self, optimal_levels: dict) -> dict:
@@ -482,7 +482,7 @@ class OptimalLevelsAnalyzer:
             return recommendations
 
         except Exception as e:
-            logger.error(f"Грешка при генериране на trading препоръки: {e}")
+            logger.exception(f"Грешка при генериране на trading препоръки: {e}")
             return {"error": f"Грешка: {e}"}
 
 

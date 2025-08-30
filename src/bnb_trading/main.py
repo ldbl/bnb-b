@@ -203,10 +203,16 @@ class BNBTradingSystem:
             # Инициализираме компонентите
             self.data_fetcher = BNBDataFetcher(self.config["data"]["symbol"])
             self.signal_generator = SignalGenerator(self.config)
-            self.validator = SignalValidator("data/results.csv")
+
+            # Получаваме results path от конфигурацията или използваме default
+            results_path = self.config.get(
+                "results_path",
+                self.config.get("files", {}).get("results_path", "data/results.csv"),
+            )
+            self.validator = SignalValidator(results_path)
 
         except Exception as e:
-            logger.error(f"Грешка при инициализиране на системата: {e}")
+            logger.exception(f"Грешка при инициализиране на системата: {e}")
             raise
 
     def run_analysis(self) -> dict:
@@ -265,7 +271,7 @@ class BNBTradingSystem:
             return results
 
         except Exception as e:
-            logger.error(f"Грешка при изпълнение на анализа: {e}")
+            logger.exception(f"Грешка при изпълнение на анализа: {e}")
             return {"error": f"Грешка: {e}"}
 
     def _prepare_results_for_display(
@@ -402,7 +408,7 @@ class BNBTradingSystem:
             return formatted_results
 
         except Exception as e:
-            logger.error(f"Грешка при форматиране на резултатите: {e}")
+            logger.exception(f"Грешка при форматиране на резултатите: {e}")
             return {"error": f"Грешка при форматиране: {e}"}
 
     def display_results(self, results: dict):
@@ -660,7 +666,7 @@ class BNBTradingSystem:
             print("=" * 80)
 
         except Exception as e:
-            logger.error(f"Грешка при показване на резултатите: {e}")
+            logger.exception(f"Грешка при показване на резултатите: {e}")
             print(f"❌ Грешка при показване на резултатите: {e}")
 
     def display_current_signal_detailed(self, signal: dict):
@@ -1385,7 +1391,7 @@ class BNBTradingSystem:
             print("🎯" * 20)
 
         except Exception as e:
-            logger.error(f"Грешка при показване на детайлния анализ: {e}")
+            logger.exception(f"Грешка при показване на детайлния анализ: {e}")
             print(f"❌ Грешка при показване на детайлния анализ: {e}")
 
     def export_results(
@@ -1472,7 +1478,7 @@ class BNBTradingSystem:
                 f.write(f"Анализът е извършен на: {date_str}\n")
 
         except Exception as e:
-            logger.error(f"Грешка при експортиране на резултатите: {e}")
+            logger.exception(f"Грешка при експортиране на резултатите: {e}")
 
 
 def main():
@@ -1507,7 +1513,7 @@ def main():
         print("📁 Резултатите са записани в data/ директорията")
 
     except Exception as e:
-        logger.error(f"Критична грешка: {e}")
+        logger.exception(f"Критична грешка: {e}")
         print(f"❌ Критична грешка: {e}")
         print("Проверете лог файла 'bnb_trading.log' за повече детайли")
 

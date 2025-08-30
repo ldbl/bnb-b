@@ -156,7 +156,7 @@ class HistoricalTester:
                 total_signals=51,
             )
         except Exception as e:
-            logger.error(f"❌ Грешка при зареждане на baseline metrics: {e}")
+            logger.exception(f"❌ Грешка при зареждане на baseline metrics: {e}")
             # Fallback to default values
             return BaselineMetrics(
                 long_accuracy=100.0,
@@ -206,7 +206,9 @@ class HistoricalTester:
                     results[period_name] = result
 
                 except Exception as e:
-                    logger.error(f"❌ Грешка при тестване на период {period_name}: {e}")
+                    logger.exception(
+                        f"❌ Грешка при тестване на период {period_name}: {e}"
+                    )
                     results[period_name] = None
 
         return results
@@ -275,7 +277,7 @@ class HistoricalTester:
                 )
 
         except Exception as e:
-            logger.error(f"❌ Грешка при fetch на данни: {e}")
+            logger.exception(f"❌ Грешка при fetch на данни: {e}")
             raise
 
         # Проверяваме дали имаме достатъчно данни
@@ -321,7 +323,7 @@ class HistoricalTester:
             # signals е dict, трябва да го конвертираме в DataFrame
             signals_df = pd.DataFrame([signals]) if signals else pd.DataFrame()
         except Exception as e:
-            logger.error(f"Грешка при конвертиране на сигнали: {e}")
+            logger.exception(f"Грешка при конвертиране на сигнали: {e}")
             return TestResult(
                 period_name=period_name,
                 start_date=start_date,
@@ -501,7 +503,7 @@ class HistoricalTester:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при симулиране на backtest анализ: {e}")
+            logger.exception(f"Грешка при симулиране на backtest анализ: {e}")
             return {
                 "total_signals": 0,
                 "long_signals": 0,
@@ -627,7 +629,7 @@ class HistoricalTester:
             logger.info("💾 Baseline metrics запазени успешно")
 
         except Exception as e:
-            logger.error(f"❌ Грешка при запазване на baseline metrics: {e}")
+            logger.exception(f"❌ Грешка при запазване на baseline metrics: {e}")
 
     def get_test_summary(self, test_results: dict[str, TestResult]) -> str:
         """

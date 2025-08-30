@@ -19,10 +19,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+# Logging should be configured by the application/CLI
 logger = logging.getLogger(__name__)
 
 
@@ -143,7 +140,7 @@ class MarketRegimeDetector:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при market regime detection: {e}")
+            logger.exception(f"Грешка при market regime detection: {e}")
             return {
                 "regime": "UNKNOWN",
                 "error": str(e),
@@ -161,7 +158,7 @@ class MarketRegimeDetector:
                 # Try with capitalized first letter
                 column = column.capitalize()
                 if column not in df.columns:
-                    logger.error(f"Колона {column} не е намерена в DataFrame")
+                    logger.exception(f"Колона {column} не е намерена в DataFrame")
                     return 0.0
 
             prices = df[column].tail(lookback)
@@ -183,7 +180,7 @@ class MarketRegimeDetector:
             return max(-3.0, min(3.0, normalized_slope))
 
         except Exception as e:
-            logger.error(f"Грешка при trend strength calculation: {e}")
+            logger.exception(f"Грешка при trend strength calculation: {e}")
             return 0.0
 
     def _analyze_volume_trend(self, df: pd.DataFrame, lookback: int) -> str:
@@ -210,7 +207,7 @@ class MarketRegimeDetector:
             return "stable"
 
         except Exception as e:
-            logger.error(f"Грешка при volume trend analysis: {e}")
+            logger.exception(f"Грешка при volume trend analysis: {e}")
             return "unknown"
 
     def _classify_regime(
@@ -445,7 +442,7 @@ class SmartShortSignalGenerator:
             return candidates[:10]  # Return top 10 candidates
 
         except Exception as e:
-            logger.error(f"❌ Грешка при SHORT сигнал генерация: {e}")
+            logger.exception(f"❌ Грешка при SHORT сигнал генерация: {e}")
             return []
 
     def _scan_for_short_setups(self, daily_df: pd.DataFrame) -> list[dict[str, Any]]:
@@ -492,7 +489,7 @@ class SmartShortSignalGenerator:
                     setups.append(setup)
 
         except Exception as e:
-            logger.error(f"Грешка при scanning for SHORT setups: {e}")
+            logger.exception(f"Грешка при scanning for SHORT setups: {e}")
 
         return setups
 
@@ -523,7 +520,7 @@ class SmartShortSignalGenerator:
             return False
 
         except Exception as e:
-            logger.error(f"Грешка при bearish price action check: {e}")
+            logger.exception(f"Грешка при bearish price action check: {e}")
             return False
 
     def _validate_short_setup(
@@ -594,7 +591,7 @@ class SmartShortSignalGenerator:
             )
 
         except Exception as e:
-            logger.error(f"Грешка при SHORT setup validation: {e}")
+            logger.exception(f"Грешка при SHORT setup validation: {e}")
             return None
 
     def _check_volume_divergence(self, df: pd.DataFrame, index: int) -> bool:
@@ -629,7 +626,7 @@ class SmartShortSignalGenerator:
             return price_trend > 0.02 and volume_trend < -0.1
 
         except Exception as e:
-            logger.error(f"Грешка при volume divergence check: {e}")
+            logger.exception(f"Грешка при volume divergence check: {e}")
             return False
 
     def _check_technical_alignment(
@@ -669,7 +666,7 @@ class SmartShortSignalGenerator:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при technical alignment check: {e}")
+            logger.exception(f"Грешка при technical alignment check: {e}")
             return {"aligned": False, "reasons": []}
 
     def _check_timeframe_alignment(
@@ -696,7 +693,7 @@ class SmartShortSignalGenerator:
             return daily_weakness
 
         except Exception as e:
-            logger.error(f"Грешка при timeframe alignment check: {e}")
+            logger.exception(f"Грешка при timeframe alignment check: {e}")
             return False
 
     def _calculate_risk_reward(
@@ -724,7 +721,7 @@ class SmartShortSignalGenerator:
             return reward / risk if risk > 0 else 0
 
         except Exception as e:
-            logger.error(f"Грешка при risk/reward calculation: {e}")
+            logger.exception(f"Грешка при risk/reward calculation: {e}")
             return 0
 
     def _should_allow_short_signals(self, market_regime: dict[str, Any]) -> bool:

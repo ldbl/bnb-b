@@ -230,7 +230,7 @@ class WeeklyTailsAnalyzer:
             return tails_analysis
 
         except Exception as e:
-            logger.error(f"Грешка при анализ на седмични опашки: {e}")
+            logger.exception(f"Грешка при анализ на седмични опашки: {e}")
             return []
 
     def _analyze_single_tail(self, row: pd.Series, date: pd.Timestamp) -> dict | None:
@@ -344,7 +344,7 @@ class WeeklyTailsAnalyzer:
             return tail_info
 
         except Exception as e:
-            logger.error(f"Грешка при анализ на единична опашка: {e}")
+            logger.exception(f"Грешка при анализ на единична опашка: {e}")
             return None
 
     def calculate_tail_strength(self, tail_info: dict) -> float:
@@ -379,7 +379,7 @@ class WeeklyTailsAnalyzer:
             return final_strength
 
         except Exception as e:
-            logger.error(f"Грешка при изчисляване на силата на опашката: {e}")
+            logger.exception(f"Грешка при изчисляване на силата на опашката: {e}")
             return 0.0
 
     def check_fib_tail_confluence(
@@ -486,7 +486,9 @@ class WeeklyTailsAnalyzer:
             return confluence_info
 
         except Exception as e:
-            logger.error(f"Грешка при проверка на Fibonacci + опашки съвпадения: {e}")
+            logger.exception(
+                f"Грешка при проверка на Fibonacci + опашки съвпадения: {e}"
+            )
             return {
                 "confluence_points": [],
                 "strong_confluence": False,
@@ -579,7 +581,7 @@ class WeeklyTailsAnalyzer:
             return signal_info
 
         except Exception as e:
-            logger.error(f"Грешка при генериране на weekly tails сигнал: {e}")
+            logger.exception(f"Грешка при генериране на weekly tails сигнал: {e}")
             return {"signal": "HOLD", "reason": f"Грешка: {e}"}
 
     def _check_tail_above_fibonacci_resistance(
@@ -643,7 +645,9 @@ class WeeklyTailsAnalyzer:
             return False
 
         except Exception as e:
-            logger.error(f"Грешка при проверка на tail above fibonacci resistance: {e}")
+            logger.exception(
+                f"Грешка при проверка на tail above fibonacci resistance: {e}"
+            )
             return False
 
     def analyze_weekly_tails_trend(self, weekly_df: pd.DataFrame) -> dict[str, Any]:
@@ -711,7 +715,7 @@ class WeeklyTailsAnalyzer:
             return trend_analysis
 
         except Exception as e:
-            logger.error(f"Грешка при Weekly Tails тренд анализ: {e}")
+            logger.exception(f"Грешка при Weekly Tails тренд анализ: {e}")
             return {"error": f"Грешка: {e}"}
 
     def _analyze_market_trend(self, weekly_df: pd.DataFrame) -> str:
@@ -741,7 +745,7 @@ class WeeklyTailsAnalyzer:
             return "NEUTRAL"
 
         except Exception as e:
-            logger.error(f"Error analyzing market trend: {e}")
+            logger.exception(f"Error analyzing market trend: {e}")
             return "NEUTRAL"
 
     def _apply_trend_weighting(
@@ -827,7 +831,7 @@ class WeeklyTailsAnalyzer:
             return weighted_tails
 
         except Exception as e:
-            logger.error(f"Error applying trend weighting: {e}")
+            logger.exception(f"Error applying trend weighting: {e}")
             return tails_analysis
 
     def _categorize_strength(self, strength: float) -> str:

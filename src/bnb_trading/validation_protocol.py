@@ -644,7 +644,7 @@ class ValidationProtocol:
             logger.info(f"💾 Validation report запазен в: {output_file}")
 
         except Exception as e:
-            logger.error(f"❌ Грешка при запазване на validation report: {e}")
+            logger.exception(f"❌ Грешка при запазване на validation report: {e}")
 
 
 # Utility functions

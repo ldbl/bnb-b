@@ -225,7 +225,7 @@ class BNBDataFetcher:
             return {"daily": daily_df, "weekly": weekly_df}
 
         except Exception as e:
-            logger.error(f"Грешка при извличане на данни: {e}")
+            logger.exception(f"Грешка при извличане на данни: {e}")
             raise
 
     def add_ath_analysis(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -271,7 +271,7 @@ class BNBDataFetcher:
             return df
 
         except Exception as e:
-            logger.error(f"Грешка при ATH анализ: {e}")
+            logger.exception(f"Грешка при ATH анализ: {e}")
             return df
 
     def _convert_to_dataframe(self, ohlcv_data: list, timeframe: str) -> pd.DataFrame:
@@ -320,7 +320,7 @@ class BNBDataFetcher:
             ticker = self.exchange.fetch_ticker(self.symbol)
             return ticker["last"]
         except Exception as e:
-            logger.error(f"Грешка при извличане на последната цена: {e}")
+            logger.exception(f"Грешка при извличане на последната цена: {e}")
             return None
 
     def validate_data_quality(self, df: pd.DataFrame) -> dict[str, Any]:
@@ -398,7 +398,7 @@ class BNBDataFetcher:
             return burn_dates
 
         except Exception as e:
-            logger.error(f"Грешка при извличане на burn дати: {e}")
+            logger.exception(f"Грешка при извличане на burn дати: {e}")
             return []
 
     def add_bnb_burn_columns(self, df: pd.DataFrame, config: dict) -> pd.DataFrame:
@@ -472,7 +472,7 @@ class BNBDataFetcher:
             return df_with_burn
 
         except Exception as e:
-            logger.error(f"Грешка при добавяне на burn колони: {e}")
+            logger.exception(f"Грешка при добавяне на burn колони: {e}")
             # Връщаме оригиналния DataFrame без burn колони при грешка
             return df
 

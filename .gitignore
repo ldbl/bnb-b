@@ -83,3 +83,14 @@ coverage.xml
 *.cover
 .hypothesis/
 .pytest_cache/
+
+# Development tools
+.mypy_cache/
+.bandit
+.pre-commit-config.yaml.backup
+.coverage.*
+
+# Environment variables
+.env
+.env.local
+.env.*.local

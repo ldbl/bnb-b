@@ -281,14 +281,26 @@ class WhaleTracker:
                 limit = min(42, days_back * 6)  # 6 x 4h = 24h x days
 
             # Get klines data
-            response = requests.get(
-                f"{self.base_url}/klines",
-                params={"symbol": "BNBUSDT", "interval": interval, "limit": limit},
-            )
+            try:
+                response = requests.get(
+                    f"{self.base_url}/klines",
+                    params={"symbol": "BNBUSDT", "interval": interval, "limit": limit},
+                    timeout=5,
+                )
+                response.raise_for_status()
 
-            if response.status_code == 200:
-                klines = response.json()
+                try:
+                    klines = response.json()
+                except (ValueError, requests.exceptions.JSONDecodeError) as e:
+                    self.logger.error(
+                        f"Failed to parse JSON response from /klines: {e}"
+                    )
+                    return {}
+            except requests.exceptions.RequestException as e:
+                self.logger.error(f"Request failed for /klines: {e}")
+                return {}
 
+            if klines:
                 whale_activity = {
                     "period": f"{days_back} days",
                     "interval": interval,
@@ -363,10 +375,15 @@ class WhaleTracker:
 
                 return whale_activity
 
+        except requests.exceptions.RequestException as e:
+            self.logger.error(f"Network error fetching whale summary: {e}")
+            return {}
+        except (ValueError, KeyError) as e:
+            self.logger.error(f"Data processing error in whale summary: {e}")
+            return {}
         except Exception as e:
-            print(f"Error fetching whale summary: {e}")
-
-        return {}
+            self.logger.exception(f"Unexpected error fetching whale summary: {e}")
+            return {}
 
     def classify_whale_signal(
         self, volume: float, price_change: float, avg_volume: float
@@ -409,13 +426,26 @@ class WhaleTracker:
     def analyze_order_book_whales(self) -> dict:
         """Analyze order book for whale walls"""
         try:
-            orderbook_response = requests.get(
-                f"{self.base_url}/depth", params={"symbol": "BNBUSDT", "limit": 100}
-            )
+            try:
+                orderbook_response = requests.get(
+                    f"{self.base_url}/depth",
+                    params={"symbol": "BNBUSDT", "limit": 100},
+                    timeout=5,
+                )
+                orderbook_response.raise_for_status()
 
-            if orderbook_response.status_code == 200:
-                data = orderbook_response.json()
+                try:
+                    data = orderbook_response.json()
+                except (ValueError, requests.exceptions.JSONDecodeError) as e:
+                    self.logger.error(f"Failed to parse JSON response from /depth: {e}")
+                    return {}
+            except requests.exceptions.RequestException as e:
+                self.logger.error(
+                    f"Request failed for /depth - URL: {self.base_url}/depth, params: {{'symbol': 'BNBUSDT', 'limit': 100}}, timeout: 5, error: {e}"
+                )
+                return {}
 
+            if data:
                 # Analyze bids (buy orders)
                 bids = [(float(price), float(qty)) for price, qty in data["bids"]]
                 asks = [(float(price), float(qty)) for price, qty in data["asks"]]
@@ -455,8 +485,12 @@ class WhaleTracker:
                     "whale_ask_count": len(whale_asks),
                 }
 
+        except requests.exceptions.RequestException as e:
+            self.logger.error(f"Network error in order book analysis: {e}")
+        except (ValueError, KeyError) as e:
+            self.logger.error(f"Data processing error in order book analysis: {e}")
         except Exception as e:
-            print(f"Error analyzing order book: {e}")
+            self.logger.exception(f"Unexpected error in order book analysis: {e}")
 
         return {}
 
@@ -800,6 +834,9 @@ class WhaleTracker:
 
         print(f"⏰ Analysis Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
+        # Initialize default sentiment
+        sentiment = {"sentiment": "🟡 NEUTRAL", "confidence": 0}
+
         # Get whale activity summary for the specified period
         print(f"\n🔍 Analyzing whale activity for last {period_name}...")
         whale_summary = self.get_whale_activity_summary(days_back=days_back)
@@ -881,6 +918,12 @@ class WhaleTracker:
                 print("-" * 40)
                 print("   ✅ No significant whale activity detected")
                 print("   📊 Volume levels remain within normal ranges")
+                sentiment = {
+                    "sentiment": "🟡 NEUTRAL",
+                    "confidence": 0,
+                    "buy_ratio": 50,
+                    "sell_ratio": 50,
+                }
         else:
             print("❌ Could not fetch whale activity data")
             sentiment = {"sentiment": "🟡 NO DATA", "confidence": 0}

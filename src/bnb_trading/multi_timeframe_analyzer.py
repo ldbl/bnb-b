@@ -333,7 +333,7 @@ class MultiTimeframeAnalyzer:
             return result
 
         except Exception as e:
-            logger.error(f"Грешка при multi-timeframe alignment анализ: {e}")
+            logger.exception(f"Грешка при multi-timeframe alignment анализ: {e}")
             return {
                 "overall_alignment": "ERROR",
                 "confidence_bonus": 0.0,
@@ -397,7 +397,7 @@ class MultiTimeframeAnalyzer:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при trend alignment анализ: {e}")
+            logger.exception(f"Грешка при trend alignment анализ: {e}")
             return {
                 "score": 0.5,
                 "aligned": False,
@@ -440,7 +440,7 @@ class MultiTimeframeAnalyzer:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при Fibonacci alignment анализ: {e}")
+            logger.exception(f"Грешка при Fibonacci alignment анализ: {e}")
             return {
                 "score": 0.5,
                 "aligned": False,
@@ -483,7 +483,7 @@ class MultiTimeframeAnalyzer:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при MACD alignment анализ: {e}")
+            logger.exception(f"Грешка при MACD alignment анализ: {e}")
             return {
                 "score": 0.5,
                 "aligned": False,
@@ -525,7 +525,7 @@ class MultiTimeframeAnalyzer:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при volume alignment анализ: {e}")
+            logger.exception(f"Грешка при volume alignment анализ: {e}")
             return {
                 "score": 0.5,
                 "aligned": False,
@@ -572,7 +572,7 @@ class MultiTimeframeAnalyzer:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при weekly tails confirmation анализ: {e}")
+            logger.exception(f"Грешка при weekly tails confirmation анализ: {e}")
             return {
                 "score": 0.5,
                 "aligned": False,
@@ -610,7 +610,7 @@ class MultiTimeframeAnalyzer:
             return overall_alignment, confidence_bonus
 
         except Exception as e:
-            logger.error(f"Грешка при изчисление на overall alignment: {e}")
+            logger.exception(f"Грешка при изчисление на overall alignment: {e}")
             return "UNKNOWN", 0.0
 
     def _generate_recommendation(
@@ -641,7 +641,7 @@ class MultiTimeframeAnalyzer:
             return "HOLD"
 
         except Exception as e:
-            logger.error(f"Грешка при генериране на recommendation: {e}")
+            logger.exception(f"Грешка при генериране на recommendation: {e}")
             return "HOLD"
 
 

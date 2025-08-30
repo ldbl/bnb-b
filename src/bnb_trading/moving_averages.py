@@ -274,7 +274,7 @@ class MovingAveragesAnalyzer:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при изчисляване на EMA: {e}")
+            logger.exception(f"Грешка при изчисляване на EMA: {e}")
             return {"error": f"Грешка: {e}"}
 
     def _calculate_ema(self, prices: np.ndarray, period: int) -> np.ndarray:
@@ -300,7 +300,7 @@ class MovingAveragesAnalyzer:
             return ema
 
         except Exception as e:
-            logger.error(f"Грешка при изчисляване на EMA: {e}")
+            logger.exception(f"Грешка при изчисляване на EMA: {e}")
             return np.array([])
 
     def _detect_crossover(self, fast_ema: np.ndarray, slow_ema: np.ndarray) -> dict:
@@ -398,7 +398,7 @@ class MovingAveragesAnalyzer:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при откриване на crossover: {e}")
+            logger.exception(f"Грешка при откриване на crossover: {e}")
             return {"signal": "NONE", "confidence": 0, "reason": f"Грешка: {e}"}
 
     def _check_volume_confirmation(self, price_data: pd.DataFrame) -> bool:
@@ -431,7 +431,7 @@ class MovingAveragesAnalyzer:
             return current_volume > volume_threshold
 
         except Exception as e:
-            logger.error(f"Грешка при проверка на volume confirmation: {e}")
+            logger.exception(f"Грешка при проверка на volume confirmation: {e}")
             return False
 
     def get_ma_trading_signals(self, ma_analysis: dict) -> dict:
@@ -515,7 +515,7 @@ class MovingAveragesAnalyzer:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при генериране на MA trading сигнали: {e}")
+            logger.exception(f"Грешка при генериране на MA trading сигнали: {e}")
             return {
                 "signal": "HOLD",
                 "confidence": 0,
@@ -583,7 +583,7 @@ class MovingAveragesAnalyzer:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при анализ на MA сила: {e}")
+            logger.exception(f"Грешка при анализ на MA сила: {e}")
             return {"strength": "UNKNOWN", "reason": f"Грешка: {e}"}
 
 

@@ -54,21 +54,28 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-# Set up logging first
+# Core analysis modules
+from .divergence_detector import DivergenceDetector
+from .elliott_wave_analyzer import ElliottWaveAnalyzer
+from .fibonacci import FibonacciAnalyzer
+from .ichimoku_module import IchimokuAnalyzer
+from .indicators import TechnicalIndicators
+from .moving_averages import MovingAveragesAnalyzer
+from .multi_timeframe_analyzer import MultiTimeframeAnalyzer
+from .optimal_levels import OptimalLevelsAnalyzer
+from .price_action_patterns import PriceActionPatternsAnalyzer
+from .sentiment_module import SentimentAnalyzer
+from .trend_analyzer import TrendAnalyzer
+from .weekly_tails import WeeklyTailsAnalyzer
+from .whale_tracker import WhaleTracker
+
+# Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Core analysis modules
-from elliott_wave_analyzer import ElliottWaveAnalyzer  # noqa: E402
-from fibonacci import FibonacciAnalyzer  # noqa: E402
-from indicators import TechnicalIndicators  # noqa: E402
-from optimal_levels import OptimalLevelsAnalyzer  # noqa: E402
-from trend_analyzer import TrendAnalyzer  # noqa: E402
-from weekly_tails import WeeklyTailsAnalyzer  # noqa: E402
-
 # Phase 2.2: Integration of Smart SHORT Signals
 try:
-    from smart_short_generator import (
+    from .smart_short_generator import (
         SmartShortSignalGenerator,
         create_short_signal_dict,
     )
@@ -79,15 +86,6 @@ except ImportError:
     logger.warning(
         "SmartShortSignalGenerator не е наличен - SHORT сигнали ще бъдат ограничени"
     )
-
-# Additional analysis modules
-from divergence_detector import DivergenceDetector  # noqa: E402
-from ichimoku_module import IchimokuAnalyzer  # noqa: E402
-from moving_averages import MovingAveragesAnalyzer  # noqa: E402
-from multi_timeframe_analyzer import MultiTimeframeAnalyzer  # noqa: E402
-from price_action_patterns import PriceActionPatternsAnalyzer  # noqa: E402
-from sentiment_module import SentimentAnalyzer  # noqa: E402
-from whale_tracker import WhaleTracker  # noqa: E402
 
 
 class SignalGenerator:
@@ -533,7 +531,7 @@ class SignalGenerator:
                         }
 
                 except Exception as e:
-                    logger.error(f"Грешка при multi-timeframe анализ: {e}")
+                    logger.exception(f"Грешка при multi-timeframe анализ: {e}")
                     multi_timeframe_analysis = {
                         "overall_alignment": "ERROR",
                         "confidence_bonus": 0.0,
@@ -614,7 +612,7 @@ class SignalGenerator:
             return signal_details
 
         except Exception as e:
-            logger.error(f"Грешка при генериране на сигнал: {e}")
+            logger.exception(f"Грешка при генериране на сигнал: {e}")
             return {
                 "signal": "HOLD",
                 "confidence": 0.0,
@@ -1613,7 +1611,7 @@ class SignalGenerator:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при комбиниране на сигнали: {e}")
+            logger.exception(f"Грешка при комбиниране на сигнали: {e}")
             return {
                 "signal": "HOLD",
                 "confidence": 0.0,
@@ -1715,7 +1713,7 @@ class SignalGenerator:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при прилагане на trend filter: {e}")
+            logger.exception(f"Грешка при прилагане на trend filter: {e}")
             return {
                 "blocked": False,  # По подразбиране не блокираме при грешка
                 "reason": f"Error in trend filter: {e}",
@@ -1832,7 +1830,7 @@ class SignalGenerator:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при Fibonacci resistance filter: {e}")
+            logger.exception(f"Грешка при Fibonacci resistance filter: {e}")
             return {
                 "blocked": False,  # По подразбиране не блокираме при грешка
                 "reason": f"Error in Fibonacci resistance filter: {e}",
@@ -1931,7 +1929,7 @@ class SignalGenerator:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при volume confirmation check: {e}")
+            logger.exception(f"Грешка при volume confirmation check: {e}")
             return {
                 "confirmed": False,  # По подразбиране не потвърждаваме при грешка
                 "reason": f"Error in volume confirmation: {e}",
@@ -2010,7 +2008,7 @@ class SignalGenerator:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при BNB burn filter check: {e}")
+            logger.exception(f"Грешка при BNB burn filter check: {e}")
             return {
                 "blocked": False,  # По подразбиране не блокираме при грешка
                 "reason": f"Error in BNB burn filter: {e}",
@@ -2078,7 +2076,7 @@ class SignalGenerator:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при price action rejection check: {e}")
+            logger.exception(f"Грешка при price action rejection check: {e}")
             return {
                 "confirmed": False,  # По подразбиране не потвърждаваме при грешка
                 "reason": f"Error in price action rejection: {e}",
@@ -2240,7 +2238,7 @@ class SignalGenerator:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при multi-timeframe alignment check: {e}")
+            logger.exception(f"Грешка при multi-timeframe alignment check: {e}")
             return {
                 "aligned": False,  # По подразбиране не alignment при грешка
                 "reason": f"Error in multi-timeframe alignment: {e}",
@@ -2416,7 +2414,7 @@ class SignalGenerator:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при market regime detection: {e}")
+            logger.exception(f"Грешка при market regime detection: {e}")
             return {
                 "regime": "UNKNOWN",
                 "short_policy": "SHORT_ENABLED",  # По подразбиране разрешаваме при грешка
@@ -2539,7 +2537,7 @@ class SignalGenerator:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при market regime check: {e}")
+            logger.exception(f"Грешка при market regime check: {e}")
             return {
                 "allowed": True,  # По подразбиране разрешаваме при грешка
                 "reason": f"Error in market regime check: {e}",
@@ -2638,7 +2636,7 @@ class SignalGenerator:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при volume confirmation за LONG: {e}")
+            logger.exception(f"Грешка при volume confirmation за LONG: {e}")
             return {
                 "bonus": 0.0,
                 "reason": f"Error in LONG volume confirmation: {e}",
@@ -2731,7 +2729,7 @@ class SignalGenerator:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при divergence confirmation за LONG: {e}")
+            logger.exception(f"Грешка при divergence confirmation за LONG: {e}")
             return {
                 "bonus": 0.0,
                 "reason": f"Error in LONG divergence confirmation: {e}",
@@ -2852,7 +2850,7 @@ class SignalGenerator:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при market regime анализ за LONG: {e}")
+            logger.exception(f"Грешка при market regime анализ за LONG: {e}")
             return {
                 "bonus": 0.0,
                 "reason": f"Error in LONG market regime analysis: {e}",
@@ -3070,7 +3068,7 @@ class SignalGenerator:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при signal quality scoring: {e}")
+            logger.exception(f"Грешка при signal quality scoring: {e}")
             return {
                 "total_score": 0,
                 "max_possible_score": 100,
@@ -3224,11 +3222,11 @@ class SignalGenerator:
                         logger.info("ℹ️ Няма подходящи SHORT сигнали за текущия пазар")
 
                 except Exception as e:
-                    logger.error(f"❌ Грешка при SHORT сигнал интеграция: {e}")
-                    logger.error(f"Error details: {e!s}")
+                    logger.exception(f"❌ Грешка при SHORT сигнал интеграция: {e}")
+                    logger.exception(f"Error details: {e!s}")
                     import traceback
 
-                    logger.error(f"Traceback: {traceback.format_exc()}")
+                    logger.exception(f"Traceback: {traceback.format_exc()}")
 
             # Добавяме SHORT сигнали в signal_details за анализ
             signal_details["short_signals"] = short_signals
@@ -3236,7 +3234,7 @@ class SignalGenerator:
             return signal_details
 
         except Exception as e:
-            logger.error(f"Грешка при създаване на детайли за сигнала: {e}")
+            logger.exception(f"Грешка при създаване на детайли за сигнала: {e}")
             return final_signal
 
     def _determine_priority(
@@ -3281,7 +3279,7 @@ class SignalGenerator:
             return "LOW"
 
         except Exception as e:
-            logger.error(f"Грешка при определяне на приоритет: {e}")
+            logger.exception(f"Грешка при определяне на приоритет: {e}")
             return "UNKNOWN"
 
     def _get_next_targets(
@@ -3377,7 +3375,7 @@ class SignalGenerator:
             return next_targets
 
         except Exception as e:
-            logger.error(f"Грешка при определяне на следващите цели: {e}")
+            logger.exception(f"Грешка при определяне на следващите цели: {e}")
             return {}
 
     def _calculate_risk_level(
@@ -3426,7 +3424,7 @@ class SignalGenerator:
             return "HIGH"
 
         except Exception as e:
-            logger.error(f"Грешка при изчисляване на нивото на риска: {e}")
+            logger.exception(f"Грешка при изчисляване на нивото на риска: {e}")
             return "UNKNOWN"
 
     # Phase 3: Advanced LONG Signal Confirmations
@@ -3461,7 +3459,7 @@ class SignalGenerator:
             return {"bonus": bonus, "reason": reason}
 
         except Exception as e:
-            logger.error(f"Грешка при Ichimoku LONG confirmation: {e}")
+            logger.exception(f"Грешка при Ichimoku LONG confirmation: {e}")
             return {"bonus": 0.0, "reason": f"Error in Ichimoku check: {e}"}
 
     def _check_sentiment_confirmation_for_long(
@@ -3494,7 +3492,7 @@ class SignalGenerator:
             return {"bonus": bonus, "reason": reason}
 
         except Exception as e:
-            logger.error(f"Грешка при Sentiment LONG confirmation: {e}")
+            logger.exception(f"Грешка при Sentiment LONG confirmation: {e}")
             return {"bonus": 0.0, "reason": f"Error in Sentiment check: {e}"}
 
     def _check_whale_confirmation_for_long(
@@ -3527,7 +3525,7 @@ class SignalGenerator:
             return {"bonus": bonus, "reason": reason}
 
         except Exception as e:
-            logger.error(f"Грешка при Whale LONG confirmation: {e}")
+            logger.exception(f"Грешка при Whale LONG confirmation: {e}")
             return {"bonus": 0.0, "reason": f"Error in Whale check: {e}"}
 
     def _check_price_patterns_confirmation_for_long(
@@ -3587,7 +3585,7 @@ class SignalGenerator:
             return {"bonus": bonus, "reason": reason}
 
         except Exception as e:
-            logger.error(f"Грешка при Price Patterns LONG confirmation: {e}")
+            logger.exception(f"Грешка при Price Patterns LONG confirmation: {e}")
             return {"bonus": 0.0, "reason": f"Error in Patterns check: {e}"}
 
     def _check_elliott_wave_confirmation_for_long(
@@ -3619,7 +3617,7 @@ class SignalGenerator:
             return {"bonus": bonus, "reason": reason}
 
         except Exception as e:
-            logger.error(f"Грешка при Elliott Wave LONG confirmation: {e}")
+            logger.exception(f"Грешка при Elliott Wave LONG confirmation: {e}")
             return {"bonus": 0.0, "reason": f"Error in Elliott Wave check: {e}"}
 
     def _check_optimal_levels_confirmation_for_long(
@@ -3650,7 +3648,7 @@ class SignalGenerator:
             return {"bonus": bonus, "reason": reason}
 
         except Exception as e:
-            logger.error(f"Грешка при Optimal Levels LONG confirmation: {e}")
+            logger.exception(f"Грешка при Optimal Levels LONG confirmation: {e}")
             return {"bonus": 0.0, "reason": f"Error in Optimal Levels check: {e}"}
 
     def _fetch_bnb_burn_dates(self) -> list[pd.Timestamp]:
@@ -3666,7 +3664,7 @@ class SignalGenerator:
             fetcher = BNBDataFetcher("BNB/USDT")
             return fetcher._fetch_bnb_burn_dates(self.config)
         except Exception as e:
-            logger.error(f"Грешка при извличане на BNB burn дати: {e}")
+            logger.exception(f"Грешка при извличане на BNB burn дати: {e}")
             return []
 
 

@@ -290,7 +290,7 @@ class SignalValidator:
             return df
 
         except Exception as e:
-            logger.error(f"Грешка при зареждане на резултати: {e}")
+            logger.exception(f"Грешка при зареждане на резултати: {e}")
             # Създаваме празен DataFrame
             columns = [
                 "signal_date",
@@ -391,7 +391,7 @@ class SignalValidator:
             return True
 
         except Exception as e:
-            logger.error(f"Грешка при записване на сигнал: {e}")
+            logger.exception(f"Грешка при записване на сигнал: {e}")
             return False
 
     def check_signal_result(
@@ -509,7 +509,7 @@ class SignalValidator:
             return validation_result
 
         except Exception as e:
-            logger.error(f"Грешка при валидация на сигнал: {e}")
+            logger.exception(f"Грешка при валидация на сигнал: {e}")
             return {"error": f"Грешка: {e}"}
 
     def get_accuracy_stats(self, lookback_days: int = 30) -> dict[str, Any]:
@@ -622,7 +622,7 @@ class SignalValidator:
             return stats
 
         except Exception as e:
-            logger.error(f"Грешка при изчисляване на статистиката: {e}")
+            logger.exception(f"Грешка при изчисляване на статистиката: {e}")
             return {"error": f"Грешка: {e}"}
 
     def get_recent_signals(self, count: int = 20) -> pd.DataFrame:
@@ -646,7 +646,7 @@ class SignalValidator:
             return recent_signals
 
         except Exception as e:
-            logger.error(f"Грешка при извличане на последните сигнали: {e}")
+            logger.exception(f"Грешка при извличане на последните сигнали: {e}")
             return pd.DataFrame()
 
     def _save_results(self) -> bool:
@@ -661,7 +661,7 @@ class SignalValidator:
             logger.info(f"Резултати записани в {self.results_file}")
             return True
         except Exception as e:
-            logger.error(f"Грешка при записване на резултати: {e}")
+            logger.exception(f"Грешка при записване на резултати: {e}")
             return False
 
     def export_results_summary(self, output_file: str = "results_summary.txt") -> bool:
@@ -732,7 +732,7 @@ class SignalValidator:
             return True
 
         except Exception as e:
-            logger.error(f"Грешка при експортиране на обобщение: {e}")
+            logger.exception(f"Грешка при експортиране на обобщение: {e}")
             return False
 
 

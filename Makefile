@@ -42,11 +42,10 @@ pre-commit:
 
 # Code quality
 format:
-	black src/ tests/ --line-length=100
-	isort src/ tests/ --profile=black --line-length=100
+	ruff format src/ tests/
 
 lint:
-	flake8 src/ tests/ --max-line-length=100 --extend-ignore=E203,W503
+	ruff check src/ tests/
 	mypy src/ --ignore-missing-imports
 
 # Testing
@@ -64,13 +63,13 @@ test-slow:
 
 # Trading analysis
 analyze:
-	python main.py
+	python3 -m bnb_trading.main
 
 backtest:
-	python backtester.py
+	python3 -m bnb_trading.backtester
 
 signal:
-	python signal_generator.py
+	python3 -m bnb_trading.signal_generator
 
 # Maintenance
 clean:

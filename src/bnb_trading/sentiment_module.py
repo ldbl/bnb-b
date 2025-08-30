@@ -241,8 +241,13 @@ class SentimentAnalyzer:
         Results are most accurate when multiple sentiment sources are available.
     """
 
-    def __init__(self) -> None:
-        self.base_url = "https://api.binance.com/api/v3"
+    def __init__(self, base_url: str = "https://api.binance.com/api/v3") -> None:
+        """Initialize SentimentAnalyzer with configurable base URL
+
+        Args:
+            base_url: Binance API base URL (default: "https://api.binance.com/api/v3")
+        """
+        self.base_url = base_url
 
         # Fear & Greed thresholds
         self.fear_greed_levels = {

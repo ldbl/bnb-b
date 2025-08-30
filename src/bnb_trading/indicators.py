@@ -93,6 +93,7 @@ DATE: 2024-01-01
 import logging
 from typing import Any
 
+import numpy as np
 import pandas as pd
 import talib
 
@@ -268,7 +269,7 @@ class TechnicalIndicators:
             return df_with_indicators
 
         except Exception as e:
-            logger.error(f"Грешка при изчисляване на индикатори: {e}")
+            logger.exception(f"Грешка при изчисляване на индикатори: {e}")
             return df
 
     def _calculate_rsi(self, prices: pd.Series) -> pd.Series:
@@ -285,7 +286,7 @@ class TechnicalIndicators:
             rsi = talib.RSI(prices.values, timeperiod=self.rsi_period)
             return pd.Series(rsi, index=prices.index)
         except Exception as e:
-            logger.error(f"Грешка при изчисляване на RSI: {e}")
+            logger.exception(f"Грешка при изчисляване на RSI: {e}")
             return pd.Series(index=prices.index)
 
     def _calculate_macd(self, prices: pd.Series) -> dict[str, pd.Series]:
@@ -312,7 +313,7 @@ class TechnicalIndicators:
                 "histogram": pd.Series(histogram, index=prices.index),
             }
         except Exception as e:
-            logger.error(f"Грешка при изчисляване на MACD: {e}")
+            logger.exception(f"Грешка при изчисляване на MACD: {e}")
             return {
                 "macd": pd.Series(index=prices.index),
                 "signal": pd.Series(index=prices.index),
@@ -338,9 +339,17 @@ class TechnicalIndicators:
                 matype=0,
             )
 
-            # Изчисляваме допълнителни метрики
-            width = (upper - lower) / middle  # Bollinger Band Width
-            position = (prices - lower) / (upper - lower)  # Position within bands (0-1)
+            # Изчисляваме допълнителни метрики с безопасност срещу деление на нула
+            eps = np.finfo(float).eps
+
+            # Безопасно изчисляване на width
+            safe_middle = np.where(np.abs(middle) < eps, eps, middle)
+            width = (upper - lower) / safe_middle
+
+            # Безопасно изчисляване на position
+            safe_denominator = np.where(np.abs(upper - lower) < eps, eps, upper - lower)
+            position = (prices - lower) / safe_denominator
+            position = np.clip(position, 0, 1)  # Ограничаваме до [0, 1]
 
             return {
                 "upper": pd.Series(upper, index=prices.index),
@@ -350,7 +359,7 @@ class TechnicalIndicators:
                 "position": pd.Series(position, index=prices.index),
             }
         except Exception as e:
-            logger.error(f"Грешка при изчисляване на Bollinger Bands: {e}")
+            logger.exception(f"Грешка при изчисляване на Bollinger Bands: {e}")
             return {
                 "upper": pd.Series(index=prices.index),
                 "middle": pd.Series(index=prices.index),
@@ -392,7 +401,7 @@ class TechnicalIndicators:
             return atr
 
         except Exception as e:
-            logger.error(f"Грешка при изчисляване на ATR: {e}")
+            logger.exception(f"Грешка при изчисляване на ATR: {e}")
             return pd.Series(index=df.index, dtype=float)
 
     def get_rsi_signal(self, current_rsi: float) -> dict[str, Any]:
@@ -438,7 +447,7 @@ class TechnicalIndicators:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при генериране на RSI сигнал: {e}")
+            logger.exception(f"Грешка при генериране на RSI сигнал: {e}")
             return {"signal": "HOLD", "reason": f"Грешка: {e}", "strength": 0.0}
 
     def get_macd_signal(
@@ -497,7 +506,7 @@ class TechnicalIndicators:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при генериране на MACD сигнал: {e}")
+            logger.exception(f"Грешка при генериране на MACD сигнал: {e}")
             return {"signal": "HOLD", "reason": f"Грешка: {e}", "strength": 0.0}
 
     def get_bollinger_signal(
@@ -560,7 +569,7 @@ class TechnicalIndicators:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при генериране на Bollinger Bands сигнал: {e}")
+            logger.exception(f"Грешка при генериране на Bollinger Bands сигнал: {e}")
             return {"signal": "HOLD", "reason": f"Грешка: {e}", "strength": 0.0}
 
     def get_atr_signal(self, current_atr: float) -> dict[str, Any]:
@@ -602,7 +611,7 @@ class TechnicalIndicators:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при генериране на ATR сигнал: {e}")
+            logger.exception(f"Грешка при генериране на ATR сигнал: {e}")
             return {"signal": "HOLD", "strength": 0.0, "reason": "Грешка в ATR сигнал"}
 
     def get_all_indicators_signals(self, df: pd.DataFrame) -> dict[str, Any]:
@@ -658,7 +667,9 @@ class TechnicalIndicators:
             return all_signals
 
         except Exception as e:
-            logger.error(f"Грешка при генериране на всички индикаторни сигнали: {e}")
+            logger.exception(
+                f"Грешка при генериране на всички индикаторни сигнали: {e}"
+            )
             return {"error": f"Грешка: {e}"}
 
     def get_volume_signal(self, df: pd.DataFrame) -> dict[str, Any]:

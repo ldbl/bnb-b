@@ -312,7 +312,7 @@ class PriceActionPatternsAnalyzer:
             return patterns
 
         except Exception as e:
-            logger.error(f"Грешка при откриване на patterns: {e}")
+            logger.exception(f"Грешка при откриване на patterns: {e}")
             return {"error": f"Грешка: {e}"}
 
     def _detect_double_top(self, price_data: pd.DataFrame) -> dict:
@@ -414,7 +414,7 @@ class PriceActionPatternsAnalyzer:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при откриване на double top: {e}")
+            logger.exception(f"Грешка при откриване на double top: {e}")
             return {"detected": False, "confidence": 0, "reason": f"Грешка: {e}"}
 
     def _detect_double_bottom(self, price_data: pd.DataFrame) -> dict:
@@ -521,7 +521,7 @@ class PriceActionPatternsAnalyzer:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при откриване на double bottom: {e}")
+            logger.exception(f"Грешка при откриване на double bottom: {e}")
             return {"detected": False, "confidence": 0, "reason": f"Грешка: {e}"}
 
     def _detect_head_shoulders(self, price_data: pd.DataFrame) -> dict:
@@ -592,7 +592,7 @@ class PriceActionPatternsAnalyzer:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при откриване на Head & Shoulders: {e}")
+            logger.exception(f"Грешка при откриване на Head & Shoulders: {e}")
             return {"detected": False, "confidence": 0, "reason": f"Грешка: {e}"}
 
     def _detect_inverse_head_shoulders(self, price_data: pd.DataFrame) -> dict:
@@ -666,7 +666,7 @@ class PriceActionPatternsAnalyzer:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при откриване на Inverse Head & Shoulders: {e}")
+            logger.exception(f"Грешка при откриване на Inverse Head & Shoulders: {e}")
             return {"detected": False, "confidence": 0, "reason": f"Грешка: {e}"}
 
     def _detect_triangle(self, price_data: pd.DataFrame) -> dict:
@@ -711,7 +711,7 @@ class PriceActionPatternsAnalyzer:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при откриване на triangle: {e}")
+            logger.exception(f"Грешка при откриване на triangle: {e}")
             return {"detected": False, "confidence": 0, "reason": f"Грешка: {e}"}
 
     def _detect_wedge(self, price_data: pd.DataFrame) -> dict:
@@ -732,7 +732,7 @@ class PriceActionPatternsAnalyzer:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при откриване на wedge: {e}")
+            logger.exception(f"Грешка при откриване на wedge: {e}")
             return {"detected": False, "confidence": 0, "reason": f"Грешка: {e}"}
 
     def _find_peaks(self, data: np.ndarray, peak_type: str) -> list[tuple[int, float]]:
@@ -752,7 +752,7 @@ class PriceActionPatternsAnalyzer:
             return peaks
 
         except Exception as e:
-            logger.error(f"Грешка при намиране на пикове: {e}")
+            logger.exception(f"Грешка при намиране на пикове: {e}")
             return []
 
     def _find_neckline(
@@ -779,7 +779,7 @@ class PriceActionPatternsAnalyzer:
             return float(between_data[low_col].min())
 
         except Exception as e:
-            logger.error(f"Грешка при намиране на neckline: {e}")
+            logger.exception(f"Грешка при намиране на neckline: {e}")
             return 0.0
 
     def _check_volume_confirmation(
@@ -803,7 +803,7 @@ class PriceActionPatternsAnalyzer:
             return volumes[pattern_idx] > avg_volume * 1.2
 
         except Exception as e:
-            logger.error(f"Грешка при проверка на volume confirmation: {e}")
+            logger.exception(f"Грешка при проверка на volume confirmation: {e}")
             return False
 
     def _check_bearish_candle(self, price_data: pd.DataFrame, pattern_idx: int) -> bool:
@@ -831,7 +831,7 @@ class PriceActionPatternsAnalyzer:
             return False
 
         except Exception as e:
-            logger.error(f"Грешка при проверка на bearish candle: {e}")
+            logger.exception(f"Грешка при проверка на bearish candle: {e}")
             return False
 
     def _check_bullish_candle(self, price_data: pd.DataFrame, pattern_idx: int) -> bool:
@@ -859,7 +859,7 @@ class PriceActionPatternsAnalyzer:
             return False
 
         except Exception as e:
-            logger.error(f"Грешка при проверка на bullish candle: {e}")
+            logger.exception(f"Грешка при проверка на bullish candle: {e}")
             return False
 
     def analyze_rejection_patterns(self, price_data: pd.DataFrame) -> dict[str, Any]:
@@ -990,7 +990,7 @@ class PriceActionPatternsAnalyzer:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при анализ на rejection patterns: {e}")
+            logger.exception(f"Грешка при анализ на rejection patterns: {e}")
             return {
                 "rejection_detected": False,
                 "reason": f"Error in rejection analysis: {e}",
@@ -1027,7 +1027,7 @@ class PriceActionPatternsAnalyzer:
             return "NONE"
 
         except Exception as e:
-            logger.error(f"Грешка при определяне на overall pattern: {e}")
+            logger.exception(f"Грешка при определяне на overall pattern: {e}")
             return "NONE"
 
     def get_pattern_trading_signals(self, patterns: dict) -> dict:
@@ -1071,7 +1071,7 @@ class PriceActionPatternsAnalyzer:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при генериране на pattern trading сигнали: {e}")
+            logger.exception(f"Грешка при генериране на pattern trading сигнали: {e}")
             return {
                 "signal": "HOLD",
                 "confidence": 0,

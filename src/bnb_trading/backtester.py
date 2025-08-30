@@ -106,23 +106,18 @@ DATE: 2024-01-01
 """
 
 import logging
-import os
-import sys
 
 import numpy as np
 import pandas as pd
 import toml
 from tqdm import tqdm
 
-# Add current directory to Python path for module imports
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
-# Import after path setup to avoid import errors
-from data_fetcher import BNBDataFetcher
-from fibonacci import FibonacciAnalyzer
-from indicators import TechnicalIndicators
-from signal_generator import SignalGenerator
-from weekly_tails import WeeklyTailsAnalyzer
+# Package-relative imports
+from .data_fetcher import BNBDataFetcher
+from .fibonacci import FibonacciAnalyzer
+from .indicators import TechnicalIndicators
+from .signal_generator import SignalGenerator
+from .weekly_tails import WeeklyTailsAnalyzer
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -244,7 +239,7 @@ class Backtester:
             self.signal_generator = SignalGenerator(self.config)
 
         except Exception as e:
-            logger.error(f"Грешка при инициализиране на backtester: {e}")
+            logger.exception(f"Грешка при инициализиране на backtester: {e}")
             raise
 
     def run_backtest(self, months: int = 18) -> dict:
@@ -282,7 +277,7 @@ class Backtester:
             return backtest_results
 
         except Exception as e:
-            logger.error(f"Грешка при изпълнение на backtest: {e}")
+            logger.exception(f"Грешка при изпълнение на backtest: {e}")
             # Връщаме пълен error dict с всички нужни ключове
             return {
                 "error": f"Грешка: {e}",
@@ -423,7 +418,7 @@ class Backtester:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при изпълнение на backtest логиката: {e}")
+            logger.exception(f"Грешка при изпълнение на backtest логиката: {e}")
             # Връщаме пълен error dict с всички нужни ключове
             return {
                 "error": f"Грешка при изпълнение: {e}",
@@ -480,7 +475,7 @@ class Backtester:
             return signal
 
         except Exception as e:
-            logger.error(f"Грешка при генериране на исторически сигнал: {e}")
+            logger.exception(f"Грешка при генериране на исторически сигнал: {e}")
             return None
 
     def _validate_historical_signal(
@@ -591,7 +586,7 @@ class Backtester:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при валидация на исторически сигнал: {e}")
+            logger.exception(f"Грешка при валидация на исторически сигнал: {e}")
             return None
 
     def _analyze_backtest_results(self, signals: list[dict]) -> dict:
@@ -719,7 +714,7 @@ class Backtester:
             return analysis
 
         except Exception as e:
-            logger.error(f"Грешка при анализ на backtest резултатите: {e}")
+            logger.exception(f"Грешка при анализ на backtest резултатите: {e}")
             # Връщаме пълен error dict с всички нужни ключове за да не се счупи main функцията
             return {
                 "error": f"Грешка при анализ: {e}",
@@ -920,7 +915,7 @@ class Backtester:
 
                         # Намираме най-близкото Fibonacci ниво
                         closest_level = None
-                        min_distance = float("in")
+                        min_distance = float("inf")
                         for level, price in fib_levels.items():
                             distance = abs(current_price - price)
                             if distance < min_distance:
@@ -1055,7 +1050,7 @@ class Backtester:
                 )
 
         except Exception as e:
-            logger.error(f"Грешка при експортиране на backtest резултатите: {e}")
+            logger.exception(f"Грешка при експортиране на backtest резултатите: {e}")
 
 
 def main():
@@ -1192,7 +1187,7 @@ def main():
         print("📁 Детайлни резултати записани в data/backtest_results.txt")
 
     except Exception as e:
-        logger.error(f"Критична грешка: {e}")
+        logger.exception(f"Критична грешка: {e}")
         print(f"❌ Критична грешка: {e}")
     finally:
         # Възстановяваме оригиналните logging нива
@@ -1247,7 +1242,7 @@ def main():
             return round(sharpe_ratio, 3)
 
         except Exception as e:
-            logger.error(f"Грешка при изчисляване на Sharpe ratio: {e}")
+            logger.exception(f"Грешка при изчисляване на Sharpe ratio: {e}")
             return 0.0
 
     def _calculate_max_drawdown(self, pnl_returns: list[float]) -> float:
@@ -1287,7 +1282,7 @@ def main():
             return round(max_drawdown * 100, 2)  # В проценти
 
         except Exception as e:
-            logger.error(f"Грешка при изчисляване на max drawdown: {e}")
+            logger.exception(f"Грешка при изчисляване на max drawdown: {e}")
             return 0.0
 
     def _calculate_profit_factor(self, signals: list[dict]) -> float:
@@ -1312,13 +1307,13 @@ def main():
                     gross_loss += abs(pnl_pct)
 
             if gross_loss == 0:
-                return float("in") if gross_profit > 0 else 0.0
+                return float("inf") if gross_profit > 0 else 0.0
 
             profit_factor = gross_profit / gross_loss
             return round(profit_factor, 3)
 
         except Exception as e:
-            logger.error(f"Грешка при изчисляване на profit factor: {e}")
+            logger.exception(f"Грешка при изчисляване на profit factor: {e}")
             return 0.0
 
     def _calculate_recovery_factor(
@@ -1341,13 +1336,13 @@ def main():
             net_profit = sum(pnl_returns)
 
             if max_drawdown == 0:
-                return float("in") if net_profit > 0 else 0.0
+                return float("inf") if net_profit > 0 else 0.0
 
             recovery_factor = net_profit / max_drawdown
             return round(recovery_factor, 3)
 
         except Exception as e:
-            logger.error(f"Грешка при изчисляване на recovery factor: {e}")
+            logger.exception(f"Грешка при изчисляване на recovery factor: {e}")
             return 0.0
 
     def _calculate_calmar_ratio(
@@ -1373,13 +1368,13 @@ def main():
             annual_return = (total_return * 365) / days if days > 0 else 0
 
             if max_drawdown == 0:
-                return float("in") if annual_return > 0 else 0.0
+                return float("inf") if annual_return > 0 else 0.0
 
             calmar_ratio = annual_return / max_drawdown
             return round(calmar_ratio, 3)
 
         except Exception as e:
-            logger.error(f"Грешка при изчисляване на Calmar ratio: {e}")
+            logger.exception(f"Грешка при изчисляване на Calmar ratio: {e}")
             return 0.0
 
 

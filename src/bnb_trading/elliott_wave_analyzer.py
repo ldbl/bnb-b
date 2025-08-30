@@ -341,17 +341,24 @@ class ElliottWaveAnalyzer:
             return combined_analysis
 
         except Exception as e:
-            logger.error(f"Грешка при Elliott Wave анализ: {e}")
+            logger.exception(f"Грешка при Elliott Wave анализ: {e}")
             return {"error": f"Грешка: {e}"}
 
     def _analyze_timeframe(self, df: pd.DataFrame, timeframe: str) -> dict:
         """Анализира конкретен timeframe"""
         try:
             # Извличаме цените
-            prices = df["close"].values if "close" in df.columns else df["Close"].values
+            price_column = "close" if "close" in df.columns else "Close"
+            price_series = pd.Series(df[price_column])
 
-            if len(prices) < 20:
-                return {"error": f"Недостатъчно данни за {timeframe} анализ"}
+            # Нормализираме NaN стойности
+            price_series = price_series.fillna(method="ffill").fillna(method="bfill")
+
+            # Проверяваме за останали NaN стойности
+            if price_series.isna().any() or len(price_series) < 20:
+                return {"error": f"Недостатъчно валидни данни за {timeframe} анализ"}
+
+            prices = price_series.values
 
             # Намираме pivot точки
             pivots = self._find_pivot_points(prices)
@@ -386,7 +393,7 @@ class ElliottWaveAnalyzer:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при анализ на {timeframe}: {e}")
+            logger.exception(f"Грешка при анализ на {timeframe}: {e}")
             return {"error": f"Грешка при {timeframe} анализ: {e}"}
 
     def _find_pivot_points(self, prices: np.ndarray, lookback: int = 2) -> list[dict]:
@@ -667,7 +674,7 @@ class ElliottWaveAnalyzer:
             }
 
         except Exception as e:
-            logger.error(f"Грешка при комбиниране на анализите: {e}")
+            logger.exception(f"Грешка при комбиниране на анализите: {e}")
             return {"error": f"Грешка при комбиниране: {e}"}
 
     def _generate_trading_signals(
