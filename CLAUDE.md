@@ -197,6 +197,34 @@ quality_over_quantity = true
 
 3. **100% LONG accuracy requirement**: Any PR that breaks 21/21 LONG signals is immediately rejected
 
+### Git Commit Best Practices
+
+**CRITICAL: Handle Pre-commit Hook Formatting**
+
+Pre-commit hooks automatically format files but leave changes unstaged. Always use this workflow:
+
+```bash
+# Method 1: Commit then amend (PREFERRED)
+git add <files>
+git commit -m "Your commit message"
+git add -A                    # Stage pre-commit formatting changes
+git commit --amend --no-edit  # Amend with formatting
+git push --force-with-lease   # Safe force push
+
+# Method 2: Pre-format then commit
+pre-commit run --all-files    # Format files first
+git add -A                    # Stage all formatted files
+git commit -m "Your message"  # Clean single commit
+git push
+
+# Method 3: One-liner for amendments
+git add -A && git commit --amend --no-edit
+```
+
+**Why this happens**: Pre-commit hooks (prettier, end-of-file-fixer, trim-whitespace) modify files during commit but don't auto-stage the changes, leaving uncommitted modifications.
+
+**Never ignore**: Always handle pre-commit changes - they ensure code quality standards.
+
 4. **No exceptions**: Signal accuracy is THE ONLY metric that matters for merge approval
 
 ## Performance Status & Achievements

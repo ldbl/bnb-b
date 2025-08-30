@@ -46,6 +46,26 @@ bb_period = 20
 bb_std = 2
 
 [trend_analysis]
+# Pattern trend analyzer configuration
+lookback_days = 20                    # Days to analyze for patterns
+min_consecutive_patterns = 2          # Minimum consecutive patterns for trend
+weight = 0.10                        # Weight in signal combination
+
+# Window size and scoring configuration
+window_size = 3                      # Window size for pattern comparison
+score_base = 0.5                     # Base score for patterns
+score_increment = 0.1                # Score increment per streak strength
+score_max = 0.8                      # Maximum possible score
+
+# EMA analysis configuration
+ema_recent_window = 10               # Recent window for EMA analysis
+min_valid_ema = 5                    # Minimum valid EMA data points
+zero_threshold = 0.0                 # Threshold for zero/invalid values
+score_bull = 0.7                     # Score for strong bullish signals
+score_bear = 0.5                     # Score for moderate signals
+score_neutral = 0.3                  # Score for neutral signals
+
+# Legacy parameters (kept for compatibility)
 trend_lookback_days = 30
 trend_threshold = 0.015
 
