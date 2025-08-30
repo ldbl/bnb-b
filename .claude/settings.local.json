@@ -38,7 +38,8 @@
       "Bash(PYTHONPATH=src python3:*)",
       "Bash(make pytest:*)",
       "Bash(make:*)",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Bash(gh run list:*)"
     ],
     "deny": [],
     "ask": []
