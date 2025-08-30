@@ -57,7 +57,8 @@
       "Bash(PYTHONPATH=src python -m pytest tests/ -v)",
       "Bash(PYTHONPATH=src python -m pytest tests/ -v --tb=short)",
       "Bash(PYTHONPATH=src python -m pytest tests/ --cov=bnb_trading --cov-report=term-missing)",
-      "Bash(PYTHONPATH=src python -m pytest -v --collect-only)"
+      "Bash(PYTHONPATH=src python -m pytest -v --collect-only)",
+      "Bash(PYTHONPATH=src python -m pytest tests/analysis/test_fibonacci.py -v)"
     ],
     "deny": [],
     "ask": []
