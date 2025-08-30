@@ -206,11 +206,11 @@ quality_over_quantity = true
 Pre-commit hooks automatically format files but leave changes unstaged. Always use this workflow:
 
 ```bash
-# Method 1: Commit then amend (PREFERRED)
+# Method 1: Commit then amend (PREFERRED for feature branches)
 git add <files>
 git commit -m "Your commit message"
 git add -A && git commit --amend --no-edit
-git push --force-with-lease
+git push --force-with-lease  # ONLY for feature branches, NEVER for main
 
 # Method 2: Pre-format then commit
 pre-commit run --all-files
@@ -233,8 +233,15 @@ git branch --show-current
 
 # NEVER commit to main branch directly
 # ALWAYS work on feature branches for PRs
+# NEVER force push to main branch
 ```
 
+**ABSOLUTE RULES:**
+
+-   ❌ **NEVER `git push --force` to main branch**
+-   ❌ **NEVER `git push --force-with-lease` to main branch**
+-   ✅ **Always use regular `git push` for main branch**
+-   ✅ **If push fails, use `git pull` then `git push`**
 ### Clean Repository Rules
 
 **CRITICAL: Keep repository completely clean**
@@ -370,3 +377,4 @@ This system represents **PERFECT LONG SIGNAL MASTERY** with:
 
 -   винаги lint и backtest преди да кажеш , че е готово!
 -   също така не преминаваме към следваша задача ако има регресия от 100% точност
+-   никога не прави force push в main !
