@@ -395,7 +395,7 @@ class TechnicalIndicators:
             logger.error(f"Грешка при изчисляване на ATR: {e}")
             return pd.Series(index=df.index, dtype=float)
 
-    def get_rsi_signal(self, current_rsi: float) -> dict[str, any]:
+    def get_rsi_signal(self, current_rsi: float) -> dict[str, Any]:
         """
         Генерира RSI сигнал
 
@@ -443,7 +443,7 @@ class TechnicalIndicators:
 
     def get_macd_signal(
         self, macd: float, signal: float, histogram: float
-    ) -> dict[str, any]:
+    ) -> dict[str, Any]:
         """
         Генерира MACD сигнал
 
@@ -502,7 +502,7 @@ class TechnicalIndicators:
 
     def get_bollinger_signal(
         self, current_price: float, upper: float, lower: float, position: float
-    ) -> dict[str, any]:
+    ) -> dict[str, Any]:
         """
         Генерира Bollinger Bands сигнал
 
@@ -563,7 +563,7 @@ class TechnicalIndicators:
             logger.error(f"Грешка при генериране на Bollinger Bands сигнал: {e}")
             return {"signal": "HOLD", "reason": f"Грешка: {e}", "strength": 0.0}
 
-    def get_atr_signal(self, current_atr: float) -> dict[str, any]:
+    def get_atr_signal(self, current_atr: float) -> dict[str, Any]:
         """
         Генерира ATR сигнал базиран на волатилност
 
@@ -605,7 +605,7 @@ class TechnicalIndicators:
             logger.error(f"Грешка при генериране на ATR сигнал: {e}")
             return {"signal": "HOLD", "strength": 0.0, "reason": "Грешка в ATR сигнал"}
 
-    def get_all_indicators_signals(self, df: pd.DataFrame) -> dict[str, any]:
+    def get_all_indicators_signals(self, df: pd.DataFrame) -> dict[str, Any]:
         """
         Връща сигналите от всички индикатори
 
@@ -661,7 +661,7 @@ class TechnicalIndicators:
             logger.error(f"Грешка при генериране на всички индикаторни сигнали: {e}")
             return {"error": f"Грешка: {e}"}
 
-    def get_volume_signal(self, df: pd.DataFrame) -> dict[str, any]:
+    def get_volume_signal(self, df: pd.DataFrame) -> dict[str, Any]:
         """
         Enhanced Volume Confirmation Analysis for 85%+ LONG Accuracy
 

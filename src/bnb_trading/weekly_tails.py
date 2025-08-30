@@ -380,7 +380,7 @@ class WeeklyTailsAnalyzer:
         fib_levels: dict[float, float],
         current_price: float,
         tails_analysis: list[dict],
-    ) -> dict[str, any]:
+    ) -> dict[str, Any]:
         """
         Проверява съвпадение между Fibonacci нива и седмични опашки
 
@@ -487,7 +487,7 @@ class WeeklyTailsAnalyzer:
                 "best_entry_points": [],
             }
 
-    def get_weekly_tails_signal(self, tails_analysis: list[dict]) -> dict[str, any]:
+    def get_weekly_tails_signal(self, tails_analysis: list[dict]) -> dict[str, Any]:
         """
         Генерира сигнал базиран на седмични опашки
 
@@ -639,7 +639,7 @@ class WeeklyTailsAnalyzer:
             logger.error(f"Грешка при проверка на tail above fibonacci resistance: {e}")
             return False
 
-    def analyze_weekly_tails_trend(self, weekly_df: pd.DataFrame) -> dict[str, any]:
+    def analyze_weekly_tails_trend(self, weekly_df: pd.DataFrame) -> dict[str, Any]:
         """
         Анализира тренда на седмични опашки с trend-based weighting
 

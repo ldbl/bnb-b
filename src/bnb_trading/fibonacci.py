@@ -265,7 +265,7 @@ class FibonacciAnalyzer:
 
     def check_fib_proximity(
         self, current_price: float, fib_levels: dict[float, float]
-    ) -> dict[str, any]:
+    ) -> dict[str, Any]:
         """
         Проверява дали текущата цена е близо до Fibonacci ниво
 
@@ -342,7 +342,7 @@ class FibonacciAnalyzer:
 
     def get_fibonacci_signal(
         self, current_price: float, fib_levels: dict[float, float]
-    ) -> dict[str, any]:
+    ) -> dict[str, Any]:
         """
         Генерира Fibonacci сигнал базиран на текущата цена
 

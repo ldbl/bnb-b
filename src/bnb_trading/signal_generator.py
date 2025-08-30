@@ -624,23 +624,23 @@ class SignalGenerator:
 
     def _combine_signals(
         self,
-        fib_analysis: dict,
-        tails_analysis: dict,
-        indicators_signals: dict,
-        confluence_info: dict,
-        trend_analysis: dict = None,
-        daily_df: pd.DataFrame = None,
-        weekly_df: pd.DataFrame = None,
-        divergence_analysis: dict = None,
-        ichimoku_analysis: dict = None,
-        sentiment_analysis: dict = None,
-        whale_analysis: dict = None,
-        price_patterns_analysis: dict = None,
-        elliott_wave_analysis: dict = None,
-        optimal_levels_analysis: dict = None,
-        moving_averages_analysis: dict = None,
-        multi_timeframe_analysis: dict = None,
-    ) -> dict[str, any]:
+        fib_analysis: dict[str, Any],
+        tails_analysis: dict[str, Any],
+        indicators_signals: dict[str, Any],
+        confluence_info: dict[str, Any],
+        trend_analysis: dict[str, Any] | None = None,
+        daily_df: pd.DataFrame | None = None,
+        weekly_df: pd.DataFrame | None = None,
+        divergence_analysis: dict[str, Any] | None = None,
+        ichimoku_analysis: dict[str, Any] | None = None,
+        sentiment_analysis: dict[str, Any] | None = None,
+        whale_analysis: dict[str, Any] | None = None,
+        price_patterns_analysis: dict[str, Any] | None = None,
+        elliott_wave_analysis: dict[str, Any] | None = None,
+        optimal_levels_analysis: dict[str, Any] | None = None,
+        moving_averages_analysis: dict[str, Any] | None = None,
+        multi_timeframe_analysis: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Комбинира сигналите от различните източници
 
@@ -1634,7 +1634,9 @@ class SignalGenerator:
             return "WEAK"
         return "VERY_WEAK"
 
-    def _apply_trend_filter_for_short(self, trend_analysis: dict) -> dict[str, any]:
+    def _apply_trend_filter_for_short(
+        self, trend_analysis: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Phase 1: Прилага trend filter за SHORT сигнали
 
@@ -1722,7 +1724,7 @@ class SignalGenerator:
 
     def _apply_fibonacci_resistance_filter_for_short(
         self, tails_analysis: dict, fib_analysis: dict
-    ) -> dict[str, any]:
+    ) -> dict[str, Any]:
         """TEMPORARILY DISABLED FOR TESTING"""
         return {
             "blocked": False,
@@ -1839,7 +1841,7 @@ class SignalGenerator:
 
     def _check_volume_confirmation_for_short(
         self, daily_df: pd.DataFrame
-    ) -> dict[str, any]:
+    ) -> dict[str, Any]:
         """
         Phase 1.4: Проверява volume confirmation за SHORT сигнали
 
@@ -1938,7 +1940,7 @@ class SignalGenerator:
 
     def _check_bnb_burn_filter_for_short(
         self, daily_df: pd.DataFrame
-    ) -> dict[str, any]:
+    ) -> dict[str, Any]:
         """
         Phase 1.5: Проверява BNB burn filter за SHORT сигнали
 
@@ -2017,7 +2019,7 @@ class SignalGenerator:
 
     def _check_price_action_rejection_for_short(
         self, daily_df: pd.DataFrame, price_action_analyzer: Any = None
-    ) -> dict[str, any]:
+    ) -> dict[str, Any]:
         """
         Phase 1.6: Проверява price action rejection patterns за SHORT сигнали
 
@@ -2084,8 +2086,8 @@ class SignalGenerator:
             }
 
     def _check_multi_timeframe_alignment_for_short(
-        self, trend_analysis: dict
-    ) -> dict[str, any]:
+        self, trend_analysis: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Phase 1.7: Проверява multi-timeframe alignment за SHORT сигнали
 
@@ -2246,7 +2248,10 @@ class SignalGenerator:
             }
 
     def _detect_market_regime(
-        self, daily_df: pd.DataFrame, weekly_df: pd.DataFrame, trend_analysis: dict
+        self,
+        daily_df: pd.DataFrame,
+        weekly_df: pd.DataFrame,
+        trend_analysis: dict[str, Any],
     ) -> dict[str, Any]:
         """
         Phase 1.8: Детектира текущия market regime за SHORT сигнали
@@ -2423,9 +2428,9 @@ class SignalGenerator:
         self,
         daily_df: pd.DataFrame,
         weekly_df: pd.DataFrame,
-        trend_analysis: dict,
+        trend_analysis: dict[str, Any],
         current_confidence: float,
-    ) -> dict[str, any]:
+    ) -> dict[str, Any]:
         """
         Phase 1.8: Проверява market regime и прилага SHORT политики
 
@@ -2545,7 +2550,7 @@ class SignalGenerator:
 
     def _check_volume_confirmation_for_long(
         self, daily_df: pd.DataFrame
-    ) -> dict[str, any]:
+    ) -> dict[str, Any]:
         """
         Phase 2: Проверява volume confirmation за LONG сигнали
 
@@ -2643,7 +2648,7 @@ class SignalGenerator:
 
     def _check_divergence_confirmation_for_long(
         self, divergence_analysis: dict
-    ) -> dict[str, any]:
+    ) -> dict[str, Any]:
         """
         Phase 2: Проверява divergence confirmation за LONG сигнали
 
@@ -2736,7 +2741,7 @@ class SignalGenerator:
 
     def _check_market_regime_for_long(
         self, daily_df: pd.DataFrame, weekly_df: pd.DataFrame
-    ) -> dict[str, any]:
+    ) -> dict[str, Any]:
         """
         Phase 2: Проверява market regime за LONG сигнали
 
@@ -2859,7 +2864,7 @@ class SignalGenerator:
         self,
         fib_analysis: dict,
         tails_analysis: dict,
-        trend_analysis: dict,
+        trend_analysis: dict[str, Any],
         volume_confirmation: bool = False,
         divergence_analysis: dict = None,
         ath_proximity_score: float = 0.0,
@@ -3078,23 +3083,23 @@ class SignalGenerator:
 
     def _create_signal_details(
         self,
-        final_signal: dict,
-        fib_analysis: dict,
-        tails_analysis: dict,
-        indicators_signals: dict,
-        confluence_info: dict,
-        optimal_levels_analysis: dict = None,
-        trend_analysis: dict = None,
-        elliott_wave_analysis: dict = None,
-        whale_analysis: dict = None,
-        ichimoku_analysis: dict = None,
-        sentiment_analysis: dict = None,
-        divergence_analysis: dict = None,
-        ma_analysis: dict = None,
-        patterns_analysis: dict = None,
-        daily_df: pd.DataFrame = None,
-        weekly_df: pd.DataFrame = None,
-    ) -> dict[str, any]:
+        final_signal: dict[str, Any],
+        fib_analysis: dict[str, Any],
+        tails_analysis: dict[str, Any],
+        indicators_signals: dict[str, Any],
+        confluence_info: dict[str, Any],
+        optimal_levels_analysis: dict[str, Any] | None = None,
+        trend_analysis: dict[str, Any] | None = None,
+        elliott_wave_analysis: dict[str, Any] | None = None,
+        whale_analysis: dict[str, Any] | None = None,
+        ichimoku_analysis: dict[str, Any] | None = None,
+        sentiment_analysis: dict[str, Any] | None = None,
+        divergence_analysis: dict[str, Any] | None = None,
+        ma_analysis: dict[str, Any] | None = None,
+        patterns_analysis: dict[str, Any] | None = None,
+        daily_df: pd.DataFrame | None = None,
+        weekly_df: pd.DataFrame | None = None,
+    ) -> dict[str, Any]:
         """
         Създава детайлна информация за сигнала
 
@@ -3281,7 +3286,7 @@ class SignalGenerator:
 
     def _get_next_targets(
         self, final_signal: dict, fib_analysis: dict, tails_analysis: dict
-    ) -> dict[str, any]:
+    ) -> dict[str, Any]:
         """
         Определя следващите целеви нива
 
@@ -3427,7 +3432,7 @@ class SignalGenerator:
     # Phase 3: Advanced LONG Signal Confirmations
     def _check_ichimoku_confirmation_for_long(
         self, ichimoku_analysis: dict, current_price: float
-    ) -> dict[str, any]:
+    ) -> dict[str, Any]:
         """
         Phase 3.1: Ichimoku Cloud Confirmation за LONG сигнали
 
@@ -3461,7 +3466,7 @@ class SignalGenerator:
 
     def _check_sentiment_confirmation_for_long(
         self, sentiment_analysis: dict
-    ) -> dict[str, any]:
+    ) -> dict[str, Any]:
         """
         Phase 3.2: Sentiment Confirmation за LONG сигнали
 
@@ -3494,7 +3499,7 @@ class SignalGenerator:
 
     def _check_whale_confirmation_for_long(
         self, whale_analysis: dict
-    ) -> dict[str, any]:
+    ) -> dict[str, Any]:
         """
         Phase 3.3: Whale Activity Confirmation за LONG сигнали
 
@@ -3527,7 +3532,7 @@ class SignalGenerator:
 
     def _check_price_patterns_confirmation_for_long(
         self, daily_df: pd.DataFrame, current_price: float
-    ) -> dict[str, any]:
+    ) -> dict[str, Any]:
         """
         Phase 3.4: Price Action Patterns Confirmation за LONG сигнали
 
@@ -3587,7 +3592,7 @@ class SignalGenerator:
 
     def _check_elliott_wave_confirmation_for_long(
         self, elliott_wave_analysis: dict
-    ) -> dict[str, any]:
+    ) -> dict[str, Any]:
         """
         Phase 3.5: Elliott Wave Confirmation за LONG сигнали
 
@@ -3619,7 +3624,7 @@ class SignalGenerator:
 
     def _check_optimal_levels_confirmation_for_long(
         self, optimal_levels_analysis: dict, current_price: float
-    ) -> dict[str, any]:
+    ) -> dict[str, Any]:
         """
         Phase 3.6: Optimal Levels Confirmation за LONG сигнали
 

@@ -67,6 +67,7 @@ DATE: 2024-01-01
 """
 
 import logging
+from typing import Any
 
 import ccxt
 import numpy as np
@@ -322,7 +323,7 @@ class BNBDataFetcher:
             logger.error(f"Грешка при извличане на последната цена: {e}")
             return None
 
-    def validate_data_quality(self, df: pd.DataFrame) -> dict[str, any]:
+    def validate_data_quality(self, df: pd.DataFrame) -> dict[str, Any]:
         """
         Валидира качеството на данните
 

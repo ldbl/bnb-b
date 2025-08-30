@@ -117,6 +117,7 @@ DATE: 2024-01-01
 
 import logging
 import os
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -398,7 +399,7 @@ class SignalValidator:
         signal_date: pd.Timestamp,
         current_price: float,
         target_price: float | None = None,
-    ) -> dict[str, any]:
+    ) -> dict[str, Any]:
         """
         Проверява резултата на сигнал след 2 седмици
 
@@ -511,7 +512,7 @@ class SignalValidator:
             logger.error(f"Грешка при валидация на сигнал: {e}")
             return {"error": f"Грешка: {e}"}
 
-    def get_accuracy_stats(self, lookback_days: int = 30) -> dict[str, any]:
+    def get_accuracy_stats(self, lookback_days: int = 30) -> dict[str, Any]:
         """
         Връща статистика за точността на сигналите
 
