@@ -1,0 +1,221 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bnb-trading-system"
+version = "2.1.0"
+description = "Advanced Technical Analysis for BNB/USDT Trading"
+readme = "README.md"
+authors = [
+    {name = "BNB Trading System Team", email = "team@bnbtrading.system"}
+]
+license = {text = "MIT"}
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Financial and Insurance Industry",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Office/Business :: Financial :: Investment",
+]
+requires-python = ">=3.13"
+dependencies = [
+    "pandas>=2.0.0",
+    "numpy>=1.24.0",
+    "ccxt>=4.0.0",
+    "ta-lib>=0.4.25",
+    "scipy>=1.11.0",
+    "matplotlib>=3.7.0",
+    "seaborn>=0.12.0",
+    "toml>=0.10.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "flake8>=6.0.0",
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "mypy>=1.5.0",
+    "pre-commit>=3.3.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/ldbl/bnb-b"
+Repository = "https://github.com/ldbl/bnb-b"
+Issues = "https://github.com/ldbl/bnb-b/issues"
+
+[project.scripts]
+bnb-trade = "bnb_trading.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"bnb_trading" = ["*.toml", "*.txt"]
+
+# Ruff configuration - Unified formatting and linting
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+src = ["src"]
+extend-exclude = [
+    ".eggs",
+    ".git",
+    ".hg",
+    ".mypy_cache",
+    ".tox",
+    ".venv",
+    "strict_lint",
+    "build",
+    "dist",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "YTT", # flake8-2020
+    "BLE", # flake8-blind-except
+    "B",   # flake8-bugbear
+    "A",   # flake8-builtins
+    "COM", # flake8-commas
+    "C4",  # flake8-comprehensions
+    "DTZ", # flake8-datetimez
+    "ISC", # flake8-implicit-str-concat
+    "G",   # flake8-logging-format
+    "PIE", # flake8-pie
+    "T20", # flake8-print
+    "PT",  # flake8-pytest-style
+    "Q",   # flake8-quotes
+    "RSE", # flake8-raise
+    "RET", # flake8-return
+    "SIM", # flake8-simplify
+    "TID", # flake8-tidy-imports
+    "ARG", # flake8-unused-arguments
+    "PTH", # flake8-use-pathlib
+    "PGH", # pygrep-hooks
+    "PL",  # pylint
+    "TRY", # tryceratops
+    "RUF", # Ruff-specific rules
+]
+ignore = [
+    "E501",   # line too long (handled by formatter)
+    "COM812", # trailing comma missing (handled by formatter)
+    "ISC001", # single line implicit string concatenation
+    "PLR0913", # too many arguments
+    "PLR0912", # too many branches
+    "TRY003",  # avoid specifying messages outside exception class
+    "B008",    # do not perform function calls in argument defaults
+
+    # Trading system specific ignores (practical for production code)
+    "T201",    # print statements (needed for user interaction & debugging)
+    "PLR2004", # magic values (common in trading: 0.5, 100, thresholds)
+    "RUF002",  # ambiguous unicode (Bulgarian comments are intentional)
+    "RUF003",  # ambiguous unicode (Bulgarian comments are intentional)
+    "G004",    # f-string in logging (more readable than %)
+    "BLE001",  # blind except Exception (needed for robustness in trading)
+    "TRY400",  # logging.error vs logging.exception (both are fine)
+    "TRY300",  # consider moving to else block (not always better)
+    "TRY301",  # abstract raise to inner function (overkill)
+    "RET504",  # unnecessary assignment before return (sometimes clearer)
+    "RUF001",  # ambiguous unicode in strings (Bulgarian text is intentional)
+    "ARG002",  # unused method argument (common in API/interface methods)
+    "RUF013",  # implicit optional (PEP 484 style is fine)
+    "PLR0915", # too many statements (complex trading logic)
+    "TRY401",  # verbose log message (detailed logging needed for trading)
+    "DTZ005",  # datetime without timezone (local times are fine for trading)
+    "DTZ006",  # fromtimestamp without timezone (local times OK)
+    "PLR0911", # too many return statements (complex trading logic)
+    "B007",    # unused loop control variable (common pattern i, _)
+    "PLC0415", # import outside top-level (sometimes needed for conditional imports)
+    "PTH123",  # builtin open vs Path.open (both are fine)
+    "ARG001",  # unused function argument (API compatibility)
+    "SIM102",  # collapsible if (sometimes clearer separate)
+    "PTH100",  # os.path.abspath vs Path.resolve (both work)
+    "PTH120",  # os.path.dirname vs Path.parent (both work)
+    "PTH110",  # os.path.exists vs Path.exists (both work)
+    "SIM108",  # if-else vs ternary (readability choice)
+    "C414",    # unnecessary double cast (sometimes needed for type safety)
+    "PLC0206", # dict index missing items (performance choice)
+    "SIM103",  # needless bool (explicit is better than implicit)
+    "UP038",   # non-PEP604 isinstance (older Python compatibility)
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+# pytest configuration
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = [
+    "--cov=src/bnb_trading",
+    "--cov-report=html",
+    "--cov-report=term-missing",
+    "--cov-fail-under=80",
+    "--strict-markers",
+    "--strict-config",
+    "--verbose",
+]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+    "slow: Slow tests that require market data",
+]
+
+# mypy configuration
+[tool.mypy]
+python_version = "3.13"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = [
+    "ccxt.*",
+    "talib.*",
+]
+ignore_missing_imports = true
+
+# Coverage configuration
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__pycache__/*",
+    "*/.*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]

@@ -66,14 +66,16 @@ VERSION: 2.0.0
 DATE: 2024-01-01
 """
 
-import ccxt
-import pandas as pd
-import numpy as np
-from typing import Dict, List, Tuple, Optional, Any
 import logging
+from typing import Any
+
+import ccxt
+import numpy as np
+import pandas as pd
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 class BNBDataFetcher:
     """
@@ -171,21 +173,18 @@ class BNBDataFetcher:
             immediately fetch data. Use fetch_bnb_data() method for data retrieval.
         """
         self.symbol = symbol
-        self.exchange = ccxt.binance({
-            'enableRateLimit': True,
-            'options': {
-                'defaultType': 'spot'
-            }
-        })
+        self.exchange = ccxt.binance(
+            {"enableRateLimit": True, "options": {"defaultType": "spot"}}
+        )
         logger.info(f"Инициализиран Binance API за {symbol}")
-    
-    def fetch_bnb_data(self, lookback_days: int = 500) -> Dict[str, pd.DataFrame]:
+
+    def fetch_bnb_data(self, lookback_days: int = 500) -> dict[str, pd.DataFrame]:
         """
         Извлича BNB данни за daily и weekly timeframes
-        
+
         Args:
             lookback_days: Брой дни за lookback (по подразбиране 500)
-            
+
         Returns:
             Dict с daily и weekly DataFrames
         """
@@ -193,46 +192,40 @@ class BNBDataFetcher:
             # Изчисляваме timestamps
             end_time = self.exchange.milliseconds()
             start_time = end_time - (lookback_days * 24 * 60 * 60 * 1000)
-            
+
             logger.info(f"Извличане на {lookback_days} дни BNB данни...")
-            
+
             # Извличаме daily данни (Binance limit е max 1000)
             daily_limit = min(lookback_days, 1000)
             daily_data = self.exchange.fetch_ohlcv(
-                symbol=self.symbol,
-                timeframe='1d',
-                since=start_time,
-                limit=daily_limit
+                symbol=self.symbol, timeframe="1d", since=start_time, limit=daily_limit
             )
 
             # Извличаме weekly данни (Binance limit е max 1000)
             weekly_limit = min(lookback_days // 7, 1000)
-            if weekly_limit < 1:
-                weekly_limit = 1
+            weekly_limit = max(weekly_limit, 1)
 
             weekly_data = self.exchange.fetch_ohlcv(
-                symbol=self.symbol,
-                timeframe='1w',
-                since=start_time,
-                limit=weekly_limit
+                symbol=self.symbol, timeframe="1w", since=start_time, limit=weekly_limit
             )
-            
+
             # Конвертираме в DataFrames
-            daily_df = self._convert_to_dataframe(daily_data, '1d')
-            weekly_df = self._convert_to_dataframe(weekly_data, '1w')
+            daily_df = self._convert_to_dataframe(daily_data, "1d")
+            weekly_df = self._convert_to_dataframe(weekly_data, "1w")
 
             # Добавяме ATH анализ към daily данни
             daily_df = self.add_ath_analysis(daily_df)
 
-            logger.info(f"Успешно извлечени данни: Daily={len(daily_df)} редове, Weekly={len(weekly_df)} редове")
+            logger.info(
+                f"Успешно извлечени данни: Daily={len(daily_df)} редове, Weekly={
+                    len(weekly_df)
+                } редове"
+            )
 
-            return {
-                'daily': daily_df,
-                'weekly': weekly_df
-            }
-            
+            return {"daily": daily_df, "weekly": weekly_df}
+
         except Exception as e:
-            logger.error(f"Грешка при извличане на данни: {e}")
+            logger.exception(f"Грешка при извличане на данни: {e}")
             raise
 
     def add_ath_analysis(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -251,82 +244,86 @@ class BNBDataFetcher:
 
             # 🔥 НОВА ЛОГИКА: Rolling ATH от последните 30 дни вместо All-Time ATH
             # Това позволява SHORT сигнали в текущия пазарен контекст
-            df['ATH'] = df['High'].rolling(window=30, min_periods=1).max()
+            df["ATH"] = df["High"].rolling(window=30, min_periods=1).max()
 
             # Изчисляваме разстоянието до ATH в проценти
-            df['ATH_Distance_Pct'] = ((df['ATH'] - df['Close']) / df['ATH']) * 100
+            df["ATH_Distance_Pct"] = ((df["ATH"] - df["Close"]) / df["ATH"]) * 100
 
             # Определяме дали цената е близо до ATH (< 10% - по-релакс за SHORT)
-            df['Near_ATH'] = df['ATH_Distance_Pct'] < 10.0
+            df["Near_ATH"] = df["ATH_Distance_Pct"] < 10.0
 
             # ATH Proximity Score (по-висок = по-близо до ATH)
-            df['ATH_Proximity_Score'] = np.where(
-                df['ATH_Distance_Pct'] < 10.0,
-                1.0 - (df['ATH_Distance_Pct'] / 10.0),  # 0.0 до 1.0
-                0.0
+            df["ATH_Proximity_Score"] = np.where(
+                df["ATH_Distance_Pct"] < 10.0,
+                1.0 - (df["ATH_Distance_Pct"] / 10.0),  # 0.0 до 1.0
+                0.0,
             )
 
             # ATH Trend - дали сме в ATH режим
-            df['ATH_Trend'] = df['ATH'] == df['High']
+            df["ATH_Trend"] = df["ATH"] == df["High"]
 
-            logger.info(f"ROLLING ATH анализ добавен (180 дни). Текуща ATH: ${df['ATH'].iloc[-1]:.2f}")
+            logger.info(
+                f"ROLLING ATH анализ добавен (180 дни). Текуща ATH: ${df['ATH'].iloc[-1]:.2f}"
+            )
             logger.info(f"Разстояние до ATH: {df['ATH_Distance_Pct'].iloc[-1]:.2f}%")
             logger.info(f"Близо до ATH: {df['Near_ATH'].iloc[-1]}")
 
             return df
 
         except Exception as e:
-            logger.error(f"Грешка при ATH анализ: {e}")
+            logger.exception(f"Грешка при ATH анализ: {e}")
             return df
 
-    def _convert_to_dataframe(self, ohlcv_data: List, timeframe: str) -> pd.DataFrame:
+    def _convert_to_dataframe(self, ohlcv_data: list, timeframe: str) -> pd.DataFrame:
         """
         Конвертира OHLCV данни в pandas DataFrame
-        
+
         Args:
             ohlcv_data: Списък с OHLCV данни от CCXT
             timeframe: Времеви интервал ('1d' или '1w')
-            
+
         Returns:
             DataFrame с колони: Date, Open, High, Low, Close, Volume
         """
-        df = pd.DataFrame(ohlcv_data, columns=['timestamp', 'Open', 'High', 'Low', 'Close', 'Volume'])
-        
+        df = pd.DataFrame(
+            ohlcv_data, columns=["timestamp", "Open", "High", "Low", "Close", "Volume"]
+        )
+
         # Конвертираме timestamp в datetime
-        df['Date'] = pd.to_datetime(df['timestamp'], unit='ms')
-        
+        df["Date"] = pd.to_datetime(df["timestamp"], unit="ms")
+
         # Премахваме timestamp колоната и пренареждаме
-        df = df[['Date', 'Open', 'High', 'Low', 'Close', 'Volume']]
-        
+        df = df[["Date", "Open", "High", "Low", "Close", "Volume"]]
+
         # Задаваме Date като index
-        df.set_index('Date', inplace=True)
-        
+        df.set_index("Date", inplace=True)
+
         # Конвертираме в numeric типове
-        numeric_columns = ['Open', 'High', 'Low', 'Close', 'Volume']
+        numeric_columns = ["Open", "High", "Low", "Close", "Volume"]
         for col in numeric_columns:
-            df[col] = pd.to_numeric(df[col], errors='coerce')
-        
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+
         # Премахваме NaN стойности
         df.dropna(inplace=True)
-        
+
         logger.info(f"Конвертирани {len(df)} {timeframe} данни")
         return df
-    
+
     def get_latest_price(self) -> float:
         """
         Връща най-новата цена на BNB
-        
+
         Returns:
             Последната Close цена
         """
         try:
             ticker = self.exchange.fetch_ticker(self.symbol)
-            return ticker['last']
+            return ticker["last"]
         except Exception as e:
-            logger.error(f"Грешка при извличане на последната цена: {e}")
+            logger.exception(f"Грешка при извличане на последната цена: {e}")
             return None
-    
-    def validate_data_quality(self, df: pd.DataFrame) -> Dict[str, any]:
+
+    def validate_data_quality(self, df: pd.DataFrame) -> dict[str, Any]:
         """
         Валидира качеството на данните
 
@@ -341,24 +338,28 @@ class BNBDataFetcher:
         duplicate_dates = df.index.duplicated().sum()
 
         # Проверяваме за аномални цени
-        price_range = df['High'].max() - df['Low'].min()
-        avg_price = df['Close'].mean()
+        price_range = df["High"].max() - df["Low"].min()
+        avg_price = df["Close"].mean()
         price_volatility = price_range / avg_price
 
         quality_report = {
-            'total_rows': total_rows,
-            'missing_data': missing_data,
-            'duplicate_dates': duplicate_dates,
-            'price_range': price_range,
-            'avg_price': avg_price,
-            'price_volatility': price_volatility,
-            'data_quality_score': (total_rows - missing_data - duplicate_dates) / total_rows if total_rows > 0 else 0
+            "total_rows": total_rows,
+            "missing_data": missing_data,
+            "duplicate_dates": duplicate_dates,
+            "price_range": price_range,
+            "avg_price": avg_price,
+            "price_volatility": price_volatility,
+            "data_quality_score": (
+                (total_rows - missing_data - duplicate_dates) / total_rows
+                if total_rows > 0
+                else 0
+            ),
         }
 
         logger.info(f"Качество на данните: {quality_report['data_quality_score']:.2%}")
         return quality_report
 
-    def _fetch_bnb_burn_dates(self, config: Dict) -> List[pd.Timestamp]:
+    def _fetch_bnb_burn_dates(self, config: dict) -> list[pd.Timestamp]:
         """
         Phase 1.5: Извлича BNB burn дати от конфигурацията
 
@@ -375,19 +376,21 @@ class BNBDataFetcher:
             В бъдеще ще се разшири с API интеграция към bnbburn.info
         """
         try:
-            burn_config = config.get('bnb_burn', {})
-            burn_dates_source = burn_config.get('burn_dates_source', 'manual')
-            burn_dates_list = burn_config.get('burn_dates', [])
+            burn_config = config.get("bnb_burn", {})
+            burn_dates_source = burn_config.get("burn_dates_source", "manual")
+            burn_dates_list = burn_config.get("burn_dates", [])
 
             burn_dates = []
 
-            if burn_dates_source == 'manual' and burn_dates_list:
+            if burn_dates_source == "manual" and burn_dates_list:
                 for date_str in burn_dates_list:
                     try:
                         # Конвертираме string в Timestamp
                         burn_date = pd.to_datetime(date_str)
                         burn_dates.append(burn_date)
-                        logger.info(f"Добавена burn дата: {burn_date.strftime('%Y-%m-%d')}")
+                        logger.info(
+                            f"Добавена burn дата: {burn_date.strftime('%Y-%m-%d')}"
+                        )
                     except ValueError as e:
                         logger.warning(f"Невалидна burn дата: {date_str} - {e}")
 
@@ -395,10 +398,10 @@ class BNBDataFetcher:
             return burn_dates
 
         except Exception as e:
-            logger.error(f"Грешка при извличане на burn дати: {e}")
+            logger.exception(f"Грешка при извличане на burn дати: {e}")
             return []
 
-    def add_bnb_burn_columns(self, df: pd.DataFrame, config: Dict) -> pd.DataFrame:
+    def add_bnb_burn_columns(self, df: pd.DataFrame, config: dict) -> pd.DataFrame:
         """
         Phase 1.5: Добавя BNB burn колони към DataFrame
 
@@ -422,8 +425,8 @@ class BNBDataFetcher:
             df_with_burn = df.copy()
 
             # Инициализираме burn колоните с False
-            df_with_burn['burn_event'] = False
-            df_with_burn['burn_window'] = False
+            df_with_burn["burn_event"] = False
+            df_with_burn["burn_window"] = False
 
             # Извличаме burn дати
             burn_dates = self._fetch_bnb_burn_dates(config)
@@ -432,40 +435,47 @@ class BNBDataFetcher:
                 logger.info("Няма burn дати - всички burn колони остават False")
                 return df_with_burn
 
-            burn_config = config.get('bnb_burn', {})
-            pre_burn_days = burn_config.get('pre_burn_window_days', 14)
-            post_burn_days = burn_config.get('post_burn_window_days', 7)
+            burn_config = config.get("bnb_burn", {})
+            pre_burn_days = burn_config.get("pre_burn_window_days", 14)
+            post_burn_days = burn_config.get("post_burn_window_days", 7)
 
             # За всяка burn дата маркираме съответните дати
             for burn_date in burn_dates:
                 # Burn event - точната дата
                 if burn_date in df_with_burn.index:
-                    df_with_burn.loc[burn_date, 'burn_event'] = True
+                    df_with_burn.loc[burn_date, "burn_event"] = True
 
                 # Burn window - преди и след burn
                 burn_window_start = burn_date - pd.Timedelta(days=pre_burn_days)
                 burn_window_end = burn_date + pd.Timedelta(days=post_burn_days)
 
                 # Филтрираме датите в burn прозореца
-                burn_window_mask = (df_with_burn.index >= burn_window_start) & (df_with_burn.index <= burn_window_end)
-                df_with_burn.loc[burn_window_mask, 'burn_window'] = True
+                burn_window_mask = (df_with_burn.index >= burn_window_start) & (
+                    df_with_burn.index <= burn_window_end
+                )
+                df_with_burn.loc[burn_window_mask, "burn_window"] = True
 
-                logger.info(f"Обработена burn дата {burn_date.strftime('%Y-%m-%d')}: "
-                           f"прозорец {burn_window_start.strftime('%Y-%m-%d')} до {burn_window_end.strftime('%Y-%m-%d')}")
+                logger.info(
+                    f"Обработена burn дата {burn_date.strftime('%Y-%m-%d')}: "
+                    f"прозорец {burn_window_start.strftime('%Y-%m-%d')} до {burn_window_end.strftime('%Y-%m-%d')}"
+                )
 
             # Статистика
-            burn_events_count = df_with_burn['burn_event'].sum()
-            burn_window_days = df_with_burn['burn_window'].sum()
+            burn_events_count = df_with_burn["burn_event"].sum()
+            burn_window_days = df_with_burn["burn_window"].sum()
 
-            logger.info(f"Добавени burn колони: {burn_events_count} burn събития, "
-                       f"{burn_window_days} дни в burn прозорци")
+            logger.info(
+                f"Добавени burn колони: {burn_events_count} burn събития, "
+                f"{burn_window_days} дни в burn прозорци"
+            )
 
             return df_with_burn
 
         except Exception as e:
-            logger.error(f"Грешка при добавяне на burn колони: {e}")
+            logger.exception(f"Грешка при добавяне на burn колони: {e}")
             # Връщаме оригиналния DataFrame без burn колони при грешка
             return df
+
 
 if __name__ == "__main__":
     # Тест на модула
