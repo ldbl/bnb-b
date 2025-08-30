@@ -46,16 +46,15 @@ jobs:
         # Use same relaxed mypy config as pre-commit hooks
         python -m mypy src/ --config-file=pyproject.toml
 
-    # Security check disabled until bandit works reliably locally
-    # - name: Security check with bandit
-    #   run: |
-    #     bandit -r src/ -f json
-    #   continue-on-error: true
+    - name: Security check with bandit
+      run: |
+        bandit -r src/ -f json
+      continue-on-error: true  # Allow security warnings for now
 
     - name: Test with pytest
       run: |
-        echo "Tests temporarily disabled - clean testing approach in development"
-        # pytest tests/ -v --cov=src/bnb_trading --cov-report=xml --cov-report=term-missing
+        # Run tests with lower coverage requirement for now
+        pytest tests/ --tb=short --cov=src/bnb_trading --cov-report=xml --cov-report=term-missing --cov-fail-under=15
       env:
         # Add any required environment variables here
         PYTHONPATH: src
