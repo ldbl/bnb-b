@@ -163,6 +163,8 @@ class DocumentationManager:
                 r"(?:LONG\s*accuracy|accuracy.*LONG):\s*\d+\.?\d*%",
                 "LONG accuracy: 100.0%",
             ),
+            # Fix standalone "100%" to "100.0%" in LONG context
+            (r"100%(?!\.)(?=\s+accuracy)", "100.0%"),
         ]
 
         for pattern, replacement in patterns:
