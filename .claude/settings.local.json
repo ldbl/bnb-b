@@ -39,7 +39,8 @@
       "Bash(make pytest:*)",
       "Bash(make:*)",
       "Bash(git pull:*)",
-      "Bash(gh run list:*)"
+      "Bash(gh run list:*)",
+      "Bash(ruff format:*)"
     ],
     "deny": [],
     "ask": []
