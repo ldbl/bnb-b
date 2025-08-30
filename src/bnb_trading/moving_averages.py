@@ -116,6 +116,8 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from bnb_trading.core.models import ModuleResult
+
 logger = logging.getLogger(__name__)
 
 
@@ -585,6 +587,108 @@ class MovingAveragesAnalyzer:
         except Exception as e:
             logger.exception(f"Грешка при анализ на MA сила: {e}")
             return {"strength": "UNKNOWN", "reason": f"Грешка: {e}"}
+
+    def analyze_with_module_result(self, price_data: pd.DataFrame) -> ModuleResult:
+        """
+        New ModuleResult-based moving averages analysis.
+
+        Implements the semantic signal system from PR 1-2:
+        - Simple EMA50 vs EMA200 logic
+        - Returns UP/NEUTRAL/DOWN state
+        - Calculates score and contrib correctly
+
+        Args:
+            price_data: DataFrame with OHLCV data
+
+        Returns:
+            ModuleResult with state, score, contrib
+        """
+        try:
+            # Check data sufficiency
+            if len(price_data) < max(self.fast_period, self.slow_period):
+                return ModuleResult(
+                    status="DISABLED",
+                    state="NEUTRAL",
+                    score=0.0,
+                    contrib=0.0,
+                    reason=f"Insufficient data: need {max(self.fast_period, self.slow_period)} periods, got {len(price_data)}",
+                    meta={"data_length": len(price_data)},
+                )
+
+            # Get current price
+            current_price = (
+                price_data["close"].iloc[-1]
+                if "close" in price_data.columns
+                else price_data["Close"].iloc[-1]
+            )
+
+            # Calculate EMAs
+            closes = (
+                price_data["close"].values
+                if "close" in price_data.columns
+                else price_data["Close"].values
+            )
+            ema50 = self._calculate_ema(closes, 50)
+            ema200 = self._calculate_ema(closes, 200)
+
+            if len(ema50) == 0 or len(ema200) == 0:
+                return ModuleResult(
+                    status="ERROR",
+                    state="NEUTRAL",
+                    score=0.0,
+                    contrib=0.0,
+                    reason="EMA calculation failed",
+                    meta={},
+                )
+
+            # Current EMA values
+            current_ema50 = ema50[-1]
+            current_ema200 = ema200[-1]
+
+            # Get weight from config
+            weight_ma = (
+                self.config.get("signals", {})
+                .get("weights", {})
+                .get("moving_avg", 0.10)
+            )
+
+            # Simple logic as per SONNET_TASK.md:
+            if current_ema50 > current_ema200 and current_price > current_ema50:
+                score = 0.7
+                state = "UP"
+            elif current_ema50 > current_ema200 and current_price <= current_ema50:
+                score = 0.5
+                state = "NEUTRAL"
+            else:
+                score = 0.0
+                state = "DOWN"
+
+            contrib = score * weight_ma
+
+            return ModuleResult(
+                status="OK",
+                state=state,
+                score=score,
+                contrib=contrib,
+                reason=f"EMA50={current_ema50:.2f}, EMA200={current_ema200:.2f}, Price={current_price:.2f}",
+                meta={
+                    "ema50": current_ema50,
+                    "ema200": current_ema200,
+                    "price": current_price,
+                    "weight": weight_ma,
+                },
+            )
+
+        except Exception as e:
+            logger.exception(f"Moving averages analysis error: {e}")
+            return ModuleResult(
+                status="ERROR",
+                state="NEUTRAL",
+                score=0.0,
+                contrib=0.0,
+                reason=f"Analysis failed: {e}",
+                meta={"error": str(e)},
+            )
 
     def analyze_moving_averages(self, price_data: pd.DataFrame) -> dict:
         """

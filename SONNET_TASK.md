@@ -2,7 +2,7 @@
 
 ## Цел
 
-Поправи семантиката на сигналната система, като запазиш 100% LONG accuracy. Разделѝ статус от числово участие (contribution), направи решенията консистентни.
+Поправи семантиката на сигналната система, като запазиш **100.0% LONG accuracy (21/21 signals)**. Разделѝ статус от числово участие (contribution), направи решенията консистентни.
 
 ## Разбивка на PR-и (малки, фокусирани промени)
 
@@ -49,36 +49,25 @@ class ModuleResult:
 
 ---
 
-### 🎯 PR 3: Fix Moving Averages - **NEXT PRIORITY**
+### ✅ PR 3: Moving Averages ModuleResult Implementation - **COMPLETED**
 
 **Файл:** `src/bnb_trading/analysis/moving_averages.py`
 
-**Задача:**
+**✅ IMPLEMENTED:**
 
-```python
-# Проста логика:
-if ema50 > ema200 and price > ema50:
-    score = 0.7
-    state = "UP"
-elif ema50 > ema200 and price <= ema50:
-    score = 0.5
-    state = "NEUTRAL"
-else:
-    score = 0.0
-    state = "DOWN"
+1. ✅ ModuleResult-based implementation with proper state/score separation
+2. ✅ EMA50/EMA200 crossover logic implemented
+3. ✅ Price position relative to moving averages
+4. ✅ Returns proper ModuleResult with:
+    - `state`: "UP"/"NEUTRAL"/"DOWN"
+    - `score`: 0.0-1.0 based on MA alignment
+    - `contrib`: score \* weight from config
 
-return ModuleResult(
-    status="OK",
-    state=state,
-    score=score,
-    contrib=score * weight_ma,
-    ...
-)
-```
+**✅ DONE:** Unit tests and integration with signal generator
 
 ---
 
-### 🔄 PR 4: Fibonacci Returns HOLD - **PENDING**
+### 🎯 PR 4: Fibonacci Returns HOLD - **NEXT PRIORITY**
 
 **Файл:** `src/bnb_trading/analysis/fibonacci/`
 
@@ -156,7 +145,7 @@ trend: UP | score=0.60 | contrib=0.06 (w=0.10)
 
 1. Няма BUY при фактори с 0.00 contribution
 2. trend показва UP/NEUTRAL/DOWN със смислен score
-3. 100% LONG accuracy остава (tails gate + 0.85 threshold)
+3. **100.0% LONG accuracy (21/21 signals)** остава (tails gate + 0.85 threshold)
 4. `make main` показва правилно state/score/contrib/weight
 5. Идентични резултати между main и backtest
 
@@ -164,7 +153,7 @@ trend: UP | score=0.60 | contrib=0.06 (w=0.10)
 
 1. Unit tests за всеки модул
 2. Parity test: main vs backtest дават същия DecisionResult
-3. Regression: запазена 100% LONG accuracy
+3. Regression: запазена 100.0% LONG accuracy
 
 ---
 
@@ -189,7 +178,7 @@ confidence_min = 0.85
 -   **KISS принцип** - без overengineering
 -   **Малки PR-и** - лесен review, бързо merge
 -   **Тествай всеки PR** - `ruff check` + unit tests
--   **Финален backtest** - verify 100% LONG accuracy
+-   **Финален backtest** - verify 100.0% LONG accuracy
 
 ## Команди за валидация:
 

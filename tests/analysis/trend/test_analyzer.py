@@ -1,5 +1,5 @@
 """
-Unit tests for TrendAnalyzer - Simple HH/HL Logic
+Unit tests for PatternTrendAnalyzer - Simple HH/HL Logic
 
 Tests various market conditions to ensure proper trend detection:
 - Strong uptrends (consecutive higher highs/lows)
@@ -8,15 +8,14 @@ Tests various market conditions to ensure proper trend detection:
 - Insufficient data scenarios
 """
 
-import numpy as np
 import pandas as pd
 import pytest
 
-from bnb_trading.analysis.trend.analyzer import TrendAnalyzer
+from bnb_trading.analysis.trend.analyzer import PatternTrendAnalyzer
 
 
-class TestTrendAnalyzer:
-    """Test suite for TrendAnalyzer."""
+class TestPatternTrendAnalyzer:
+    """Test suite for PatternTrendAnalyzer."""
 
     @pytest.fixture
     def config(self):
@@ -31,48 +30,48 @@ class TestTrendAnalyzer:
 
     @pytest.fixture
     def analyzer(self, config):
-        """Create TrendAnalyzer instance."""
-        return TrendAnalyzer(config)
+        """Create PatternTrendAnalyzer instance."""
+        return PatternTrendAnalyzer(config)
 
     def create_trend_data(self, days: int, trend: str) -> pd.DataFrame:
         """Create synthetic OHLCV data with specific trend characteristics."""
         dates = pd.date_range("2024-01-01", periods=days, freq="D")
 
         if trend == "strong_up":
-            # Create strong uptrend with higher highs/lows
+            # Create strong uptrend with higher highs/lows - DETERMINISTIC
             base_price = 400.0
             closes = []
             highs = []
             lows = []
 
             for i in range(days):
-                # Upward trend with some noise
-                trend_component = base_price * (1 + i * 0.02)  # 2% per day trend
-                noise = np.random.uniform(-10, 10)
+                # Upward trend - deterministic growth (reasonable rate)
+                trend_component = base_price * (1 + i * 0.005)  # 0.5% per day trend
+                noise = (i % 3 - 1) * 2  # Smaller deterministic noise
                 close = trend_component + noise
 
-                high = close * np.random.uniform(1.001, 1.02)  # 0.1-2% above close
-                low = close * np.random.uniform(0.98, 0.999)  # 0.1-2% below close
+                high = close * 1.01  # Fixed 1% above close
+                low = close * 0.99  # Fixed 1% below close
 
                 closes.append(close)
                 highs.append(high)
                 lows.append(low)
 
         elif trend == "strong_down":
-            # Create strong downtrend with lower highs/lows
+            # Create strong downtrend with lower highs/lows - DETERMINISTIC
             base_price = 600.0
             closes = []
             highs = []
             lows = []
 
             for i in range(days):
-                # Downward trend with some noise
-                trend_component = base_price * (1 - i * 0.015)  # -1.5% per day trend
-                noise = np.random.uniform(-10, 10)
-                close = trend_component + noise
+                # Downward trend - deterministic decline (more reasonable rate)
+                trend_component = base_price * (1 - i * 0.005)  # -0.5% per day trend
+                noise = (i % 3 - 1) * 2  # Smaller deterministic noise
+                close = max(trend_component + noise, 50)  # Never go below $50
 
-                high = close * np.random.uniform(1.001, 1.02)
-                low = close * np.random.uniform(0.98, 0.999)
+                high = close * 1.01  # Fixed 1% above close
+                low = close * 0.99  # Fixed 1% below close
 
                 closes.append(close)
                 highs.append(high)
@@ -96,10 +95,10 @@ class TestTrendAnalyzer:
                 else:
                     price_delta = 5  # Up
 
-                close = base_price + price_delta + np.random.uniform(-2, 2)
+                close = base_price + price_delta + (i % 5 - 2)  # Deterministic noise
 
-                high = close * np.random.uniform(1.001, 1.003)  # Very small ranges
-                low = close * np.random.uniform(0.997, 0.999)
+                high = close * 1.01  # Fixed 1% above close
+                low = close * 0.99  # Fixed 1% below close
 
                 closes.append(close)
                 highs.append(high)
@@ -108,14 +107,14 @@ class TestTrendAnalyzer:
         else:
             raise ValueError(f"Unknown trend type: {trend}")
 
-        # Create OHLCV DataFrame
+        # Create OHLCV DataFrame - DETERMINISTIC
         df = pd.DataFrame(
             {
-                "Open": [c * np.random.uniform(0.995, 1.005) for c in closes],
+                "Open": [c * 0.999 for c in closes],  # Fixed 0.1% below close
                 "High": highs,
                 "Low": lows,
                 "Close": closes,
-                "Volume": [np.random.uniform(100000, 500000) for _ in range(days)],
+                "Volume": [300000] * days,  # Fixed volume
             },
             index=dates,
         )
@@ -193,7 +192,7 @@ class TestTrendAnalyzer:
             }
         }
 
-        analyzer = TrendAnalyzer(config)
+        analyzer = PatternTrendAnalyzer(config)
         assert analyzer.lookback_days == 15
         assert analyzer.min_consecutive == 3
         assert analyzer.weight == 0.15
