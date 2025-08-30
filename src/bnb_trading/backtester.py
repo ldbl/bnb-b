@@ -108,31 +108,94 @@ DATE: 2024-01-01
 import logging
 import os
 
+# Robust import handling for CI/local development compatibility
+import sys
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import toml
 from tqdm import tqdm
 
-# Check if we are running as installed package (CI) or development mode
-try:
-    # First try absolute imports (works when installed via pip install -e .)
-    from bnb_trading.data.fetcher import BNBDataFetcher
-    from bnb_trading.fibonacci import FibonacciAnalyzer
-    from bnb_trading.indicators import TechnicalIndicators
-    from bnb_trading.signals.generator import SignalGenerator
-    from bnb_trading.weekly_tails import WeeklyTailsAnalyzer
-except ImportError:
-    # Fallback to relative imports (for local development without installation)
+
+def _try_imports():
+    """Try different import strategies until one works."""
+    errors = []
+
+    # Strategy 1: Try absolute imports (CI with installed package)
+    try:
+        from bnb_trading.data.fetcher import BNBDataFetcher
+        from bnb_trading.fibonacci import FibonacciAnalyzer
+        from bnb_trading.indicators import TechnicalIndicators
+        from bnb_trading.signals.generator import SignalGenerator
+        from bnb_trading.weekly_tails import WeeklyTailsAnalyzer
+
+        return (
+            BNBDataFetcher,
+            FibonacciAnalyzer,
+            TechnicalIndicators,
+            SignalGenerator,
+            WeeklyTailsAnalyzer,
+        )
+    except ImportError as e:
+        errors.append(f"Absolute imports failed: {e}")
+
+    # Strategy 2: Try relative imports (local development)
     try:
         from .data.fetcher import BNBDataFetcher
         from .fibonacci import FibonacciAnalyzer
         from .indicators import TechnicalIndicators
         from .signals.generator import SignalGenerator
         from .weekly_tails import WeeklyTailsAnalyzer
+
+        return (
+            BNBDataFetcher,
+            FibonacciAnalyzer,
+            TechnicalIndicators,
+            SignalGenerator,
+            WeeklyTailsAnalyzer,
+        )
     except ImportError as e:
-        raise ImportError(
-            f"Cannot import required modules. Make sure all dependencies are available. Error: {e}"
-        ) from e
+        errors.append(f"Relative imports failed: {e}")
+
+    # Strategy 3: Add src to path and try absolute (CI fallback)
+    try:
+        current_file = Path(__file__).resolve()
+        src_path = current_file.parent.parent.parent  # Go up to src/
+        if src_path.name == "src" and str(src_path) not in sys.path:
+            sys.path.insert(0, str(src_path))
+
+        from bnb_trading.data.fetcher import BNBDataFetcher
+        from bnb_trading.fibonacci import FibonacciAnalyzer
+        from bnb_trading.indicators import TechnicalIndicators
+        from bnb_trading.signals.generator import SignalGenerator
+        from bnb_trading.weekly_tails import WeeklyTailsAnalyzer
+
+        return (
+            BNBDataFetcher,
+            FibonacciAnalyzer,
+            TechnicalIndicators,
+            SignalGenerator,
+            WeeklyTailsAnalyzer,
+        )
+    except ImportError as e:
+        errors.append(f"Path-adjusted imports failed: {e}")
+
+    # If all strategies fail, raise comprehensive error
+    error_msg = "All import strategies failed:\n" + "\n".join(
+        f"  - {err}" for err in errors
+    )
+    raise ImportError(error_msg)
+
+
+# Execute import strategy
+(
+    BNBDataFetcher,
+    FibonacciAnalyzer,
+    TechnicalIndicators,
+    SignalGenerator,
+    WeeklyTailsAnalyzer,
+) = _try_imports()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
