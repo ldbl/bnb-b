@@ -17,7 +17,12 @@ __version__ = "2.1.0"
 __author__ = "BNB Trading System Team"
 
 # Core modules - using new modular structure
-from .backtester import Backtester
+try:
+    from .backtester import Backtester
+except ImportError:
+    # Backtester will be imported on demand to avoid circular import issues
+    Backtester = None
+
 from .data.fetcher import BNBDataFetcher
 from .divergence_detector import DivergenceDetector
 from .elliott_wave_analyzer import ElliottWaveAnalyzer
@@ -38,7 +43,6 @@ from .weekly_tails import WeeklyTailsAnalyzer
 
 __all__ = [
     "BNBDataFetcher",
-    "Backtester",
     "DivergenceDetector",
     "ElliottWaveAnalyzer",
     "FibonacciAnalyzer",
@@ -50,3 +54,7 @@ __all__ = [
     "TrendAnalyzer",
     "WeeklyTailsAnalyzer",
 ]
+
+# Add Backtester to __all__ if successfully imported
+if Backtester is not None:
+    __all__.append("Backtester")
