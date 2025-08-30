@@ -113,21 +113,26 @@ import pandas as pd
 import toml
 from tqdm import tqdm
 
-# Try modern import structure first, fallback to legacy if needed
+# Check if we are running as installed package (CI) or development mode
 try:
-    # Modern package imports (CI/testing compatible)
+    # First try absolute imports (works when installed via pip install -e .)
     from bnb_trading.data.fetcher import BNBDataFetcher
     from bnb_trading.fibonacci import FibonacciAnalyzer
     from bnb_trading.indicators import TechnicalIndicators
     from bnb_trading.signals.generator import SignalGenerator
     from bnb_trading.weekly_tails import WeeklyTailsAnalyzer
 except ImportError:
-    # Fallback to relative imports
-    from .data.fetcher import BNBDataFetcher
-    from .fibonacci import FibonacciAnalyzer
-    from .indicators import TechnicalIndicators
-    from .signals.generator import SignalGenerator
-    from .weekly_tails import WeeklyTailsAnalyzer
+    # Fallback to relative imports (for local development without installation)
+    try:
+        from .data.fetcher import BNBDataFetcher
+        from .fibonacci import FibonacciAnalyzer
+        from .indicators import TechnicalIndicators
+        from .signals.generator import SignalGenerator
+        from .weekly_tails import WeeklyTailsAnalyzer
+    except ImportError as e:
+        raise ImportError(
+            f"Cannot import required modules. Make sure all dependencies are available. Error: {e}"
+        ) from e
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
