@@ -173,6 +173,7 @@ quality_over_quantity = true
 -   **Handle NaN values** with `np.nan_to_num()` - avoid data quality issues
 -   **Clean logging** - ERROR level only for professional console output
 -   **Save results to CSV** - track all signals and performance data
+-   **🔥 MANDATORY: Update task files before main branch updates** - Always mark completed work in SONNET_TASK.md, TODO.md before updating main branch
 
 ### Testing Philosophy (PROVEN)
 
@@ -206,11 +207,11 @@ quality_over_quantity = true
 Pre-commit hooks automatically format files but leave changes unstaged. Always use this workflow:
 
 ```bash
-# Method 1: Commit then amend (PREFERRED)
+# Method 1: Commit then amend (PREFERRED for feature branches)
 git add <files>
 git commit -m "Your commit message"
 git add -A && git commit --amend --no-edit
-git push --force-with-lease
+git push --force-with-lease  # ONLY for feature branches, NEVER for main
 
 # Method 2: Pre-format then commit
 pre-commit run --all-files
@@ -233,7 +234,15 @@ git branch --show-current
 
 # NEVER commit to main branch directly
 # ALWAYS work on feature branches for PRs
+# NEVER force push to main branch
 ```
+
+**ABSOLUTE RULES:**
+
+-   ❌ **NEVER `git push --force` to main branch**
+-   ❌ **NEVER `git push --force-with-lease` to main branch**
+-   ✅ **Always use regular `git push` for main branch**
+-   ✅ **If push fails, use `git pull` then `git push`**
 
 ### Clean Repository Rules
 
@@ -370,3 +379,4 @@ This system represents **PERFECT LONG SIGNAL MASTERY** with:
 
 -   винаги lint и backtest преди да кажеш , че е готово!
 -   също така не преминаваме към следваша задача ако има регресия от 100% точност
+-   никога не прави force push в main !

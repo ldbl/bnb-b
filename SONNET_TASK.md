@@ -6,12 +6,12 @@
 
 ## Разбивка на PR-и (малки, фокусирани промени)
 
-### PR 1: Core Models Foundation
+### ✅ PR 1: Core Models Foundation - **COMPLETED** (PR #17)
 
 **Файл:** `src/bnb_trading/core/models.py`
 
 ```python
-# Добави:
+# ✅ DONE - Добавени:
 Status = Literal["OK", "DEGRADED", "DISABLED", "ERROR"]
 SignalState = Literal["LONG", "SHORT", "HOLD", "UP", "DOWN", "NEUTRAL"]
 
@@ -25,31 +25,31 @@ class ModuleResult:
     meta: dict[str, Any]
 ```
 
-**Правило:** Ако `status != "OK"` → `contrib = 0.0`, `state = "NEUTRAL"`
+**✅ IMPLEMENTED:** Правило: Ако `status != "OK"` → `contrib = 0.0`, `state = "NEUTRAL"`
 
 ---
 
-### PR 2: Fix TREND Analyzer
+### ✅ PR 2: Fix TREND Analyzer - **COMPLETED** (PRs #18, #19, #21)
 
 **Файл:** `src/bnb_trading/analysis/trend/analyzer.py`
 
-**Задача:**
+**✅ IMPLEMENTED:**
 
-1. Имплементирай проста HH/HL логика (последни 20 дни)
+1. ✅ Проста HH/HL логика (последни 20 дни)
     - UP: ≥2 последователни Higher Highs & Higher Lows
     - DOWN: ≥2 последователни Lower Highs & Lower Lows
     - NEUTRAL: otherwise
-2. MA наклон check (EMA50 vs EMA200)
-3. Върни `ModuleResult` със:
+2. ✅ MA наклон check (EMA50 vs EMA200)
+3. ✅ Връща `ModuleResult` със:
     - `state`: "UP"/"NEUTRAL"/"DOWN"
     - `score`: 0.0-1.0 (не weight!)
     - `contrib`: score \* weight_from_config
 
-**Тестове:** Unit test за различни market conditions
+**✅ DONE:** Unit tests за различни market conditions
 
 ---
 
-### PR 3: Fix Moving Averages
+### 🎯 PR 3: Fix Moving Averages - **NEXT PRIORITY**
 
 **Файл:** `src/bnb_trading/analysis/moving_averages.py`
 
@@ -78,7 +78,7 @@ return ModuleResult(
 
 ---
 
-### PR 4: Fibonacci Returns HOLD
+### 🔄 PR 4: Fibonacci Returns HOLD - **PENDING**
 
 **Файл:** `src/bnb_trading/analysis/fibonacci/`
 
@@ -92,7 +92,7 @@ return ModuleResult(
 
 ---
 
-### PR 5: Unified Decision Engine
+### 🔄 PR 5: Unified Decision Engine - **PENDING**
 
 **Файл:** `src/bnb_trading/signals/decision.py`
 
@@ -114,7 +114,7 @@ def decide_long(ctx: DecisionContext) -> DecisionResult:
 
 ---
 
-### PR 6: Fix Output Formatting
+### 🔄 PR 6: Fix Output Formatting - **PENDING**
 
 **Файл:** `src/bnb_trading/main.py`
 
@@ -134,7 +134,7 @@ trend: UP | score=0.60 | contrib=0.06 (w=0.10)
 
 ---
 
-### PR 7: Stabilize Problem Modules
+### 🔄 PR 7: Stabilize Problem Modules - **PENDING**
 
 **Файлове:**
 
