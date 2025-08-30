@@ -58,7 +58,18 @@
       "Bash(PYTHONPATH=src python -m pytest tests/ -v --tb=short)",
       "Bash(PYTHONPATH=src python -m pytest tests/ --cov=bnb_trading --cov-report=term-missing)",
       "Bash(PYTHONPATH=src python -m pytest -v --collect-only)",
-      "Bash(PYTHONPATH=src python -m pytest tests/analysis/test_fibonacci.py -v)"
+      "Bash(PYTHONPATH=src python -m pytest tests/analysis/test_fibonacci.py -v)",
+      "Bash(PYTHONPATH=src python -m pytest tests/signals/test_decision.py -v)",
+      "Bash(PYTHONPATH=src python -m pytest tests/signals/test_decision.py::test_decide_long_health_gate_failure -v)",
+      "Bash(PYTHONPATH=src python -m pytest tests/signals/test_decision.py::test_decide_long_critical_modules_config -v)",
+      "Bash(PYTHONPATH=src python -m pytest tests/signals/test_decision.py::test_load_critical_modules_validation -v)",
+      "Bash(PYTHONPATH=src python -m pytest tests/unit/analysis/test_weekly_tails_analyzer.py -v)",
+      "Bash(PYTHONPATH=src python -m pytest tests/unit/analysis/test_weekly_tails_analyzer.py::TestWeeklyTailsAnalyzer::test_calculate_tail_strength_with_strong_pattern tests/unit/analysis/test_weekly_tails_analyzer.py::TestWeeklyTailsAnalyzer::test_analyzer_initialization_with_custom_config -v)",
+      "Bash(PYTHONPATH=src python -m pytest tests/unit/analysis/test_weekly_tails_analyzer.py -v --tb=short)",
+      "Bash(PYTHONPATH=src python -m pytest tests/unit/analysis/test_weekly_tails_analyzer.py --cov=bnb_trading.analysis.weekly_tails.analyzer --cov-report=term-missing)",
+      "Bash(PYTHONPATH=src python -m pytest tests/unit/analysis/test_weekly_tails_analyzer.py --cov=bnb_trading.analysis.weekly_tails.analyzer --cov-report=term-missing --quiet)",
+      "Bash(~/.local/bin/mypy tests/unit/analysis/test_weekly_tails_analyzer.py --no-error-summary)",
+      "Bash(PYTHONPATH=src python -m pytest tests/unit/analysis/test_weekly_tails_analyzer.py --quiet)"
     ],
     "deny": [],
     "ask": []

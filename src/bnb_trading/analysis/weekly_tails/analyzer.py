@@ -11,6 +11,8 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from ...core.models import ModuleResult
+
 logger = logging.getLogger(__name__)
 
 
@@ -346,6 +348,74 @@ class WeeklyTailsAnalyzer:
             "all_tails": [],
             "analysis_date": pd.Timestamp.now(),
         }
+
+    def analyze(self, daily_df: pd.DataFrame, weekly_df: pd.DataFrame) -> ModuleResult:
+        """
+        Analyze weekly tails and return ModuleResult.
+
+        Args:
+            daily_df: Daily OHLCV data (for context, not directly used)
+            weekly_df: Weekly OHLCV data for tail analysis
+
+        Returns:
+            ModuleResult with weekly tails analysis
+        """
+        try:
+            # Calculate tail strength using existing method
+            tail_result = self.calculate_tail_strength(weekly_df)
+
+            if not tail_result:
+                return ModuleResult(
+                    status="ERROR",
+                    state="NEUTRAL",
+                    score=0.0,
+                    contrib=0.0,
+                    reason="Failed to calculate tail strength",
+                    meta={},
+                )
+
+            # Extract signal and confidence
+            signal = tail_result.get("signal", "HOLD")
+            confidence = tail_result.get("confidence", 0.0)
+            strength = tail_result.get("strength", 0.0)
+            reason = tail_result.get("reason", "Weekly tail analysis")
+
+            # Map signal to state and calculate score
+            if signal == "LONG":
+                state = "LONG"
+                score = min(confidence, 1.0)  # Ensure score is within bounds
+            else:
+                state = "HOLD"
+                score = 0.3  # Neutral score for HOLD signals
+
+            # Calculate contribution (will be set by pipeline with weight)
+            contrib = score * 0.35  # Default weekly_tails weight from config
+
+            return ModuleResult(
+                status="OK",
+                state=state,
+                score=score,
+                contrib=contrib,
+                reason=reason,
+                meta={
+                    "tail_strength": strength,
+                    "confidence": confidence,
+                    "price_level": tail_result.get("price_level", 0.0),
+                    "all_tails_count": len(tail_result.get("all_tails", [])),
+                    "analysis_date": tail_result.get("analysis_date"),
+                },
+            )
+
+        except Exception as e:
+            logger.exception(f"Error in weekly tails analysis: {e}")
+            return ModuleResult(
+                status="ERROR",
+                state="NEUTRAL",
+                score=0.0,
+                contrib=0.0,
+                reason=f"Analysis error: {e!s}",
+                meta={},
+            )
 
     def validate_no_lookahead(
         self, df: pd.DataFrame, analysis_timestamp: pd.Timestamp
