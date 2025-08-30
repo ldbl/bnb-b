@@ -66,9 +66,7 @@ def decide_long(ctx: DecisionContext) -> DecisionResult:
 
         # Trend analysis
         try:
-            trend_result = trend_analyzer.analyze(
-                ctx.closed_daily_df, ctx.closed_weekly_df
-            )
+            trend_result = trend_analyzer.analyze(ctx.closed_daily_df)
             module_results["trend"] = trend_result
         except Exception as e:
             logger.exception(f"Trend analysis failed: {e}")
@@ -98,8 +96,8 @@ def decide_long(ctx: DecisionContext) -> DecisionResult:
 
         # Moving averages analysis
         try:
-            moving_avg_result = moving_avg_analyzer.analyze(
-                ctx.closed_daily_df, ctx.closed_weekly_df
+            moving_avg_result = moving_avg_analyzer.analyze_with_module_result(
+                ctx.closed_daily_df
             )
             module_results["moving_avg"] = moving_avg_result
         except Exception as e:

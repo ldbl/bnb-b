@@ -117,7 +117,7 @@ def test_decide_long_successful_signal(sample_context):
             reason="Near key Fibonacci level",
         )
 
-        mock_ma.return_value.analyze.return_value = ModuleResult(
+        mock_ma.return_value.analyze_with_module_result.return_value = ModuleResult(
             status="OK",
             state="UP",
             score=0.8,
@@ -127,7 +127,13 @@ def test_decide_long_successful_signal(sample_context):
 
         # Total confidence = 0.48 + 0.07 + 0.12 + 0.08 = 0.75
         # But we need >= 0.85, so let's increase tails contrib
-        mock_tails.return_value.analyze.return_value.contrib = 0.60  # Higher contrib
+        mock_tails.return_value.analyze.return_value = ModuleResult(
+            status="OK",
+            state="LONG",
+            score=1.0,
+            contrib=0.60,  # Higher contrib to reach threshold
+            reason="Very strong weekly tail detected",
+        )
         # New total = 0.60 + 0.07 + 0.12 + 0.08 = 0.87 >= 0.85
 
         result = decide_long(sample_context)
@@ -175,7 +181,7 @@ def test_decide_long_weekly_tails_gate_failure(sample_context):
             reason="Neutral Fibonacci",
         )
 
-        mock_ma.return_value.analyze.return_value = ModuleResult(
+        mock_ma.return_value.analyze_with_module_result.return_value = ModuleResult(
             status="OK", state="UP", score=0.7, contrib=0.07, reason="Above MA"
         )
 
@@ -244,7 +250,7 @@ def test_decide_long_insufficient_confidence(sample_context):
             reason="Far from key levels",
         )
 
-        mock_ma.return_value.analyze.return_value = ModuleResult(
+        mock_ma.return_value.analyze_with_module_result.return_value = ModuleResult(
             status="OK",
             state="DOWN",
             score=0.2,
@@ -296,7 +302,7 @@ def test_decide_long_partial_module_failures(sample_context):
         )
 
         # Moving averages disabled
-        mock_ma.return_value.analyze.return_value = ModuleResult(
+        mock_ma.return_value.analyze_with_module_result.return_value = ModuleResult(
             status="DISABLED",
             state="NEUTRAL",
             score=0.0,
@@ -368,7 +374,7 @@ def test_decide_long_config_threshold_override(sample_context):
             reason="Neutral Fibonacci",
         )
 
-        mock_ma.return_value.analyze.return_value = ModuleResult(
+        mock_ma.return_value.analyze_with_module_result.return_value = ModuleResult(
             status="OK", state="NEUTRAL", score=0.1, contrib=0.01, reason="Neutral MA"
         )
 
