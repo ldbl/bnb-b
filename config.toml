@@ -7,13 +7,19 @@ lookback_days = 500
 timeframes = ["1d", "1w"]
 
 [signals]
-# NEW WEIGHTS FOR LONG PRECISION ≥85% - Weekly Tails Dominant (RELAXED)
-weekly_tails_weight = 0.60  # Weekly tail pattern analysis (DOMINANT)
-fibonacci_weight = 0.20     # Fibonacci support/resistance
-trend_weight = 0.10         # Trend analysis
-volume_weight = 0.10        # Volume confirmation
+# Signal weights and thresholds for LONG precision ≥85%
 min_confirmations = 1
 confidence_threshold = 0.25  # FURTHER REDUCED for testing - will increase later
+
+[signals.weights]
+weekly_tails = 0.60  # gate + highest weight
+fibonacci = 0.20
+trend = 0.10
+moving_avg = 0.10
+sentiment = 0.00  # disabled for now
+
+[signals.thresholds]
+confidence_min = 0.85
 
 [weekly_tails]
 # Enhanced parameters for LONG precision ≥85% with correct ATR normalization (TESTING)
