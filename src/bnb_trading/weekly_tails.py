@@ -246,11 +246,18 @@ class WeeklyTailsAnalyzer:
         """
         try:
             # Извличаме стойностите като скаларни числа, не като Series
-            open_price = float(row["Open"])
-            high_price = float(row["High"])
-            low_price = float(row["Low"])
-            close_price = float(row["Close"])
-
+            ohlc = np.nan_to_num(
+                [
+                    row.get("Open", np.nan),
+                    row.get("High", np.nan),
+                    row.get("Low", np.nan),
+                    row.get("Close", np.nan),
+                ],
+                nan=0.0,
+                posinf=0.0,
+                neginf=0.0,
+            )
+            open_price, high_price, low_price, close_price = map(float, ohlc)
             # Изчисляваме размера на body (Open до Close)
             body_size = abs(close_price - open_price)
 
