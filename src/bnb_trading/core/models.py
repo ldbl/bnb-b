@@ -2,9 +2,32 @@
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Literal
 
 import pandas as pd
+
+# Module health status types
+Status = Literal["OK", "DEGRADED", "DISABLED", "ERROR"]
+# Signal state types
+SignalState = Literal["LONG", "SHORT", "HOLD", "UP", "DOWN", "NEUTRAL"]
+
+
+@dataclass
+class ModuleResult:
+    """Unified result structure for all analysis modules."""
+
+    status: Status  # Module health status
+    state: SignalState  # Semantic signal state
+    score: float  # 0.0-1.0 raw module strength
+    contrib: float  # 0.0-1.0 normalized contribution to final decision
+    reason: str  # Human readable explanation
+    meta: dict[str, Any] = field(default_factory=dict)  # Additional metadata
+
+    def __post_init__(self) -> None:
+        """Enforce business rule: if status != OK, then contrib=0.0 and state=NEUTRAL."""
+        if self.status != "OK":
+            self.contrib = 0.0
+            self.state = "NEUTRAL"
 
 
 @dataclass

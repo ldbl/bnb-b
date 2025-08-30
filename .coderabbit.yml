@@ -1,0 +1,46 @@
+reviews:
+  # Request review timeout in minutes
+  request_changes_workflow: false
+  poem: false
+
+  # Auto review settings
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches: ["main", "develop"]
+
+  # Files to ignore in reviews
+  ignore:
+    - "SONNET_TASK.md" # Task specifications - not code
+    - "CLAUDE.md" # Claude instructions - not code
+    - "TODO.md" # Task tracking - not code
+    - "README.md" # Documentation - not code
+    - "MODULES.md" # Documentation - not code
+    - "*.log" # Log files
+    - "data/*.csv" # Data files
+    - "data/*.md" # Data reports
+    - ".cursor/**" # Cursor IDE config
+
+  # Review settings
+  path_filters:
+    - "src/**/*.py" # Focus on Python code
+    - "tests/**/*.py" # Include tests
+    - "config.toml" # Include config
+    - "requirements.txt" # Include deps
+    - "pyproject.toml" # Include project config
+
+# AI reviewer configuration
+ai:
+  # Focus areas for the reviewer
+  review_areas:
+    - logic
+    - security
+    - performance
+    - maintainability
+    - testing
+
+  # Skip common patterns that don't need review
+  skip_patterns:
+    - "# type: ignore"
+    - "# noqa"
+    - "# pylint: disable"
