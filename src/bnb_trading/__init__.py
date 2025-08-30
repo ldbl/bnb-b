@@ -23,38 +23,90 @@ except ImportError:
     # Backtester will be imported on demand to avoid circular import issues
     Backtester = None
 
-from .data.fetcher import BNBDataFetcher
-from .divergence_detector import DivergenceDetector
-from .elliott_wave_analyzer import ElliottWaveAnalyzer
+try:
+    from .data.fetcher import BNBDataFetcher
+except ImportError:
+    # BNBDataFetcher will be imported on demand to avoid CI import issues
+    BNBDataFetcher = None
+
+try:
+    from .divergence_detector import DivergenceDetector
+except ImportError:
+    DivergenceDetector = None
+
+try:
+    from .elliott_wave_analyzer import ElliottWaveAnalyzer
+except ImportError:
+    ElliottWaveAnalyzer = None
 
 # Analysis modules
-from .fibonacci import FibonacciAnalyzer
-from .indicators import TechnicalIndicators
+try:
+    from .fibonacci import FibonacciAnalyzer
+except ImportError:
+    FibonacciAnalyzer = None
+
+try:
+    from .indicators import TechnicalIndicators
+except ImportError:
+    TechnicalIndicators = None
 
 # Pipeline architecture
-from .pipeline.orchestrator import TradingPipeline
-from .pipeline.runners import PipelineRunner
+try:
+    from .pipeline.orchestrator import TradingPipeline
+except ImportError:
+    TradingPipeline = None
+
+try:
+    from .pipeline.runners import PipelineRunner
+except ImportError:
+    PipelineRunner = None
 
 # Signal generation - using new modular structure
-from .signals.generator import SignalGenerator
-from .signals.smart_short.generator import SmartShortSignalGenerator
-from .trend_analyzer import TrendAnalyzer
-from .weekly_tails import WeeklyTailsAnalyzer
+try:
+    from .signals.generator import SignalGenerator
+except ImportError:
+    SignalGenerator = None
 
-__all__ = [
-    "BNBDataFetcher",
-    "DivergenceDetector",
-    "ElliottWaveAnalyzer",
-    "FibonacciAnalyzer",
-    "PipelineRunner",
-    "SignalGenerator",
-    "SmartShortSignalGenerator",
-    "TechnicalIndicators",
-    "TradingPipeline",
-    "TrendAnalyzer",
-    "WeeklyTailsAnalyzer",
-]
+try:
+    from .signals.smart_short.generator import SmartShortSignalGenerator
+except ImportError:
+    SmartShortSignalGenerator = None
 
-# Add Backtester to __all__ if successfully imported
+try:
+    from .trend_analyzer import TrendAnalyzer
+except ImportError:
+    TrendAnalyzer = None
+
+try:
+    from .weekly_tails import WeeklyTailsAnalyzer
+except ImportError:
+    WeeklyTailsAnalyzer = None
+
+# Build __all__ list dynamically based on successful imports
+__all__ = []
+
+# Add modules to __all__ if successfully imported
+if BNBDataFetcher is not None:
+    __all__.append("BNBDataFetcher")
 if Backtester is not None:
     __all__.append("Backtester")
+if DivergenceDetector is not None:
+    __all__.append("DivergenceDetector")
+if ElliottWaveAnalyzer is not None:
+    __all__.append("ElliottWaveAnalyzer")
+if FibonacciAnalyzer is not None:
+    __all__.append("FibonacciAnalyzer")
+if PipelineRunner is not None:
+    __all__.append("PipelineRunner")
+if SignalGenerator is not None:
+    __all__.append("SignalGenerator")
+if SmartShortSignalGenerator is not None:
+    __all__.append("SmartShortSignalGenerator")
+if TechnicalIndicators is not None:
+    __all__.append("TechnicalIndicators")
+if TradingPipeline is not None:
+    __all__.append("TradingPipeline")
+if TrendAnalyzer is not None:
+    __all__.append("TrendAnalyzer")
+if WeeklyTailsAnalyzer is not None:
+    __all__.append("WeeklyTailsAnalyzer")
