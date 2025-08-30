@@ -40,7 +40,19 @@
       "Bash(make:*)",
       "Bash(git pull:*)",
       "Bash(gh run list:*)",
-      "Bash(ruff format:*)"
+      "Bash(mkdir:*)",
+      "Bash(git stash:*)",
+      "Bash(ls:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(ruff:*)",
+      "Bash(ruff format:*)",
+      "Bash(pytest:*)",
+      "Bash(git status:*)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)",
+      "Bash(gh pr:*)",
+      "Bash(gh:*)"
     ],
     "deny": [],
     "ask": []
