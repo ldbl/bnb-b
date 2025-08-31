@@ -6,10 +6,13 @@ Focus: Simple but accurate, no look-ahead, weekly tails dominant weight
 """
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import pandas as pd
+
+if TYPE_CHECKING:
+    from bnb_trading.core.models import ModuleResult
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +33,21 @@ class WeeklyTailsAnalyzer:
         self.max_body_atr = tails_config.get("max_body_atr", 0.8)
         self.min_close_pos = tails_config.get("min_close_pos", 0.35)
 
+        # RESTORE ORIGINAL PERFECT LOGIC: Trend-based Weighting Parameters
+        self.trend_based_weighting = tails_config.get("trend_based_weighting", True)
+        self.bull_market_threshold = tails_config.get(
+            "bull_market_threshold", 0.15
+        )  # 15% gain
+        self.bear_market_threshold = tails_config.get(
+            "bear_market_threshold", -0.10
+        )  # 10% loss
+        self.long_tail_amplification = tails_config.get("long_tail_amplification", 1.5)
+        self.short_tail_suppression = tails_config.get("short_tail_suppression", 0.3)
+
         logger.info(
             f"Weekly Tails Analyzer initialized - min_tail_strength: {self.min_tail_strength}, "
-            f"min_tail_ratio: {self.min_tail_ratio}, max_body_atr: {self.max_body_atr}"
+            f"min_tail_ratio: {self.min_tail_ratio}, max_body_atr: {self.max_body_atr}, "
+            f"trend_based_weighting: {self.trend_based_weighting}"
         )
 
     def calculate_tail_strength(self, df: pd.DataFrame) -> dict[str, Any]:
@@ -372,3 +387,169 @@ class WeeklyTailsAnalyzer:
         except Exception as e:
             logger.exception(f"Error validating no look-ahead: {e}")
             return False
+
+    def analyze(
+        self, daily_df: pd.DataFrame, weekly_df: pd.DataFrame
+    ) -> "ModuleResult":
+        """
+        Unified analyze method returning ModuleResult for decision engine integration.
+
+        Args:
+            daily_df: Daily OHLCV data (unused for weekly tails)
+            weekly_df: Weekly OHLCV data for tail analysis
+
+        Returns:
+            ModuleResult with status, state, score, contrib, reason
+        """
+        from bnb_trading.core.models import ModuleResult
+
+        try:
+            # RESTORE ORIGINAL PERFECT LOGIC: Apply trend-based weighting
+            if self.trend_based_weighting:
+                # Analyze market trend first
+                market_trend = self._analyze_market_trend(weekly_df)
+
+                # Calculate tail strength using existing method
+                result = self.calculate_tail_strength(weekly_df)
+
+                # Apply trend-based weighting to results
+                weighted_result = self._apply_trend_weighting(result, market_trend)
+            else:
+                # Use original method without trend weighting
+                weighted_result = self.calculate_tail_strength(weekly_df)
+                market_trend = "NEUTRAL"
+
+            # Map result to ModuleResult format
+            signal = weighted_result.get("signal", "HOLD")
+            confidence = weighted_result.get("confidence", 0.0)
+            reason = weighted_result.get("reason", "No weekly tails pattern")
+
+            # Convert signal to state and calculate contribution
+            if signal == "LONG":
+                state = "LONG"
+                score = confidence
+                # Use default weight of 0.60 for weekly tails
+                contrib = score * 0.60
+            else:
+                state = "HOLD"
+                score = confidence
+                contrib = 0.0
+
+            return ModuleResult(
+                status="OK",
+                state=state,
+                score=score,
+                contrib=contrib,
+                reason=reason,
+                meta={"original_result": weighted_result, "market_trend": market_trend},
+            )
+
+        except Exception as e:
+            logger.exception(f"Weekly tails analysis failed: {e}")
+            return ModuleResult(
+                status="ERROR",
+                state="NEUTRAL",
+                score=0.0,
+                contrib=0.0,
+                reason=f"Weekly tails analysis error: {e}",
+                meta={},
+            )
+
+    def _analyze_market_trend(self, weekly_df: pd.DataFrame) -> str:
+        """
+        RESTORED ORIGINAL PERFECT LOGIC: Analyze market trend to determine appropriate tail weighting
+
+        Returns:
+            str: Market trend classification (BULL, BEAR, NEUTRAL)
+        """
+        try:
+            if len(weekly_df) < self.lookback_weeks:
+                return "NEUTRAL"
+
+            close_col = "close" if "close" in weekly_df.columns else "Close"
+            recent_weeks = weekly_df[close_col].tail(self.lookback_weeks)
+
+            # Calculate trend strength over lookback period
+            trend_change = (
+                recent_weeks.iloc[-1] - recent_weeks.iloc[0]
+            ) / recent_weeks.iloc[0]
+
+            # Determine trend classification
+            if trend_change >= self.bull_market_threshold:
+                return "BULL"
+            if trend_change <= self.bear_market_threshold:
+                return "BEAR"
+            return "NEUTRAL"
+
+        except Exception as e:
+            logger.error(f"Error analyzing market trend: {e}")
+            return "NEUTRAL"
+
+    def _apply_trend_weighting(
+        self, tails_result: dict[str, Any], market_trend: str
+    ) -> dict[str, Any]:
+        """
+        RESTORED ORIGINAL PERFECT LOGIC: Apply trend-based weighting to tail signals
+
+        Args:
+            tails_result: Original tails analysis result
+            market_trend: Current market trend classification
+
+        Returns:
+            Weighted tails result with trend-appropriate adjustments
+        """
+        try:
+            weighted_result = tails_result.copy()
+            original_strength = tails_result.get("strength", 0.0)
+            signal = tails_result.get("signal", "HOLD")
+            original_reason = tails_result.get("reason", "")
+
+            # Apply trend-based weighting logic
+            if market_trend == "BULL":
+                if signal == "LONG":
+                    # Amplify LONG tail signals in bull markets
+                    new_strength = min(
+                        original_strength * self.long_tail_amplification, 5.0
+                    )  # Cap at 5.0
+                    new_confidence = min(
+                        weighted_result.get("confidence", 0.0)
+                        * self.long_tail_amplification,
+                        1.0,
+                    )
+                    weighted_result.update(
+                        {
+                            "strength": new_strength,
+                            "confidence": new_confidence,
+                            "reason": f"{original_reason} (Bull market amplified)",
+                            "trend_adjustment": "BULL_AMPLIFIED",
+                        }
+                    )
+                    logger.debug(
+                        f"Bull market: LONG signal amplified from {original_strength:.2f} to {new_strength:.2f}"
+                    )
+
+            elif market_trend == "BEAR":
+                if signal == "LONG":
+                    # Reduce LONG tail signals in bear markets
+                    new_strength = original_strength * 0.7
+                    new_confidence = weighted_result.get("confidence", 0.0) * 0.7
+                    weighted_result.update(
+                        {
+                            "strength": new_strength,
+                            "confidence": new_confidence,
+                            "reason": f"{original_reason} (Bear market reduced)",
+                            "trend_adjustment": "BEAR_REDUCED",
+                        }
+                    )
+                    logger.debug(
+                        f"Bear market: LONG signal reduced from {original_strength:.2f} to {new_strength:.2f}"
+                    )
+
+            else:  # NEUTRAL
+                weighted_result["trend_adjustment"] = "NO_ADJUSTMENT"
+
+            return weighted_result
+
+        except Exception as e:
+            logger.error(f"Error applying trend weighting: {e}")
+            return tails_result

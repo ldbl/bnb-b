@@ -78,7 +78,7 @@ except ImportError:
     TrendAnalyzer = None
 
 try:
-    from .weekly_tails import WeeklyTailsAnalyzer
+    from .analysis.weekly_tails.analyzer import WeeklyTailsAnalyzer
 except ImportError:
     WeeklyTailsAnalyzer = None
 

@@ -126,9 +126,9 @@ class SignalGenerator:
 
         try:
             # Import analysis modules
+            from ..analysis.weekly_tails.analyzer import WeeklyTailsAnalyzer
             from ..fibonacci import FibonacciAnalyzer
             from ..indicators import TechnicalIndicators
-            from ..weekly_tails import WeeklyTailsAnalyzer
 
             logger.info("Executing all analysis modules...")
 
@@ -161,11 +161,14 @@ class SignalGenerator:
                 ):
                     logger.info("Weekly tails analysis starting...")
                     tails_analyzer = WeeklyTailsAnalyzer(self.config)
-                    tails_result = tails_analyzer.analyze_weekly_tails_trend(weekly_df)
+                    tails_result = tails_analyzer.calculate_tail_strength(weekly_df)
                     logger.info(
                         f"Tails result type: {type(tails_result)}, keys: {list(tails_result.keys()) if isinstance(tails_result, dict) else 'N/A'}"
                     )
-                    analyses["weekly_tails"] = tails_result.get("tails_signal", {})
+                    analyses["weekly_tails"] = {
+                        "signal": tails_result.get("signal", "HOLD"),
+                        "strength": tails_result.get("strength", 0.0),
+                    }
                     logger.info(
                         f"Weekly tails analysis completed: {analyses['weekly_tails'].get('signal', 'N/A')}"
                     )

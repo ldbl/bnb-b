@@ -149,6 +149,7 @@ class TradingPipeline:
             logger.info("🔍 Running comprehensive technical analysis...")
 
             # Import and run FULL suite of analysis modules
+            from ..analysis.weekly_tails.analyzer import WeeklyTailsAnalyzer
             from ..elliott_wave_analyzer import ElliottWaveAnalyzer
             from ..fibonacci import FibonacciAnalyzer
             from ..ichimoku_module import IchimokuAnalyzer
@@ -156,7 +157,6 @@ class TradingPipeline:
             from ..moving_averages import MovingAveragesAnalyzer
             from ..optimal_levels import OptimalLevelsAnalyzer
             from ..trend_analyzer import TrendAnalyzer
-            from ..weekly_tails import WeeklyTailsAnalyzer
             from ..whale_tracker import WhaleTracker
 
             # 1. 📐 Fibonacci Analysis (35% weight - PRIMARY)
@@ -177,11 +177,12 @@ class TradingPipeline:
             # 2. 🔍 Weekly Tails Analysis (40% weight - DOMINANT)
             try:
                 tails_analyzer = WeeklyTailsAnalyzer(self.config)
-                tails_result = tails_analyzer.analyze_weekly_tails_trend(weekly_df)
+                tails_result = tails_analyzer.calculate_tail_strength(weekly_df)
                 # Extract the signal part for combiner compatibility
-                analyses["weekly_tails"] = tails_result.get(
-                    "tails_signal", {"signal": "HOLD", "strength": 0.0}
-                )
+                analyses["weekly_tails"] = {
+                    "signal": tails_result.get("signal", "HOLD"),
+                    "strength": tails_result.get("strength", 0.0),
+                }
                 logger.info("✅ Weekly tails analysis completed")
             except Exception as e:
                 logger.warning(f"Weekly tails analysis failed: {e}")

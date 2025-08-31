@@ -118,17 +118,17 @@ import toml
 from tqdm import tqdm
 
 
-def _try_imports():
+def _try_imports() -> tuple[type, type, type, type, type]:
     """Try different import strategies until one works."""
     errors = []
 
     # Strategy 1: Try absolute imports (CI with installed package)
     try:
+        from bnb_trading.analysis.weekly_tails.analyzer import WeeklyTailsAnalyzer
         from bnb_trading.data.fetcher import BNBDataFetcher
         from bnb_trading.fibonacci import FibonacciAnalyzer
         from bnb_trading.indicators import TechnicalIndicators
         from bnb_trading.signals.generator import SignalGenerator
-        from bnb_trading.weekly_tails import WeeklyTailsAnalyzer
 
         return (
             BNBDataFetcher,
@@ -142,11 +142,11 @@ def _try_imports():
 
     # Strategy 2: Try relative imports (local development)
     try:
+        from .analysis.weekly_tails.analyzer import WeeklyTailsAnalyzer
         from .data.fetcher import BNBDataFetcher
         from .fibonacci import FibonacciAnalyzer
         from .indicators import TechnicalIndicators
         from .signals.generator import SignalGenerator
-        from .weekly_tails import WeeklyTailsAnalyzer
 
         return (
             BNBDataFetcher,
@@ -166,11 +166,11 @@ def _try_imports():
         if src_path.name == "src" and str(src_path) not in sys.path:
             sys.path.insert(0, str(src_path))
 
+        from bnb_trading.analysis.weekly_tails.analyzer import WeeklyTailsAnalyzer
         from bnb_trading.data.fetcher import BNBDataFetcher
         from bnb_trading.fibonacci import FibonacciAnalyzer
         from bnb_trading.indicators import TechnicalIndicators
         from bnb_trading.signals.generator import SignalGenerator
-        from bnb_trading.weekly_tails import WeeklyTailsAnalyzer
 
         return (
             BNBDataFetcher,
@@ -190,11 +190,11 @@ def _try_imports():
         if src_path.exists() and str(src_path) not in sys.path:
             sys.path.insert(0, str(src_path))
 
+        from bnb_trading.analysis.weekly_tails.analyzer import WeeklyTailsAnalyzer
         from bnb_trading.data.fetcher import BNBDataFetcher
         from bnb_trading.fibonacci import FibonacciAnalyzer
         from bnb_trading.indicators import TechnicalIndicators
         from bnb_trading.signals.generator import SignalGenerator
-        from bnb_trading.weekly_tails import WeeklyTailsAnalyzer
 
         return (
             BNBDataFetcher,
@@ -209,11 +209,11 @@ def _try_imports():
     # Strategy 5: Use PYTHONPATH if available (CI PYTHONPATH=src)
     try:
         # PYTHONPATH should already be in sys.path, just try the imports
+        from bnb_trading.analysis.weekly_tails.analyzer import WeeklyTailsAnalyzer
         from bnb_trading.data.fetcher import BNBDataFetcher
         from bnb_trading.fibonacci import FibonacciAnalyzer
         from bnb_trading.indicators import TechnicalIndicators
         from bnb_trading.signals.generator import SignalGenerator
-        from bnb_trading.weekly_tails import WeeklyTailsAnalyzer
 
         return (
             BNBDataFetcher,
@@ -229,7 +229,9 @@ def _try_imports():
     error_msg = "All import strategies failed:\n" + "\n".join(
         f"  - {err}" for err in errors
     )
-    raise ImportError(error_msg)
+    from bnb_trading.core.exceptions import ConfigurationError
+
+    raise ConfigurationError(error_msg)
 
 
 # Execute import strategy

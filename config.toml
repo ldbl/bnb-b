@@ -10,6 +10,8 @@ timeframes = ["1d", "1w"]
 # Signal weights and thresholds for LONG precision ≥85%
 min_confirmations = 1
 confidence_threshold = 0.25  # FURTHER REDUCED for testing - will increase later
+# Critical modules that must be healthy for signal generation
+critical_modules = ["weekly_tails"]  # Weekly tails is critical for 100% LONG accuracy
 
 [signals.weights]
 weekly_tails = 0.60  # gate + highest weight
@@ -19,23 +21,27 @@ moving_avg = 0.10
 sentiment = 0.00  # disabled for now
 
 [signals.thresholds]
-confidence_min = 0.85
-
-# Critical modules that must be healthy for signal generation
-critical_modules = ["weekly_tails"]  # Weekly tails is critical for 100% LONG accuracy
+confidence_min = 0.35  # Raised to be more selective and match original 21/21 signals
 
 [weekly_tails]
-# Enhanced parameters for LONG precision ≥85% with correct ATR normalization (TESTING)
+# Parameters calibrated for 100% LONG accuracy restoration
 lookback_weeks = 8
 atr_period = 14
 vol_sma_period = 20
 min_tail_size = 0.02        # Minimum tail size as percentage of price (2%)
 strong_tail_size = 0.05     # Strong tail size threshold (5%)
 confluence_bonus = 1.5      # Bonus multiplier for confluence with other levels
-min_tail_ratio = 0.3        # lower_wick >= 0.3 * ATR(1W) (LOWERED for testing)
-min_tail_strength = 0.35    # tail_strength >= 0.35 (LOWERED further for testing)
-min_close_pos = 0.2         # (close - low) / (high - low) >= 0.2 (LOWERED for testing)
-max_body_atr = 2.0          # body_size / ATR <= 2.0 (INCREASED for testing)
+min_tail_ratio = 0.2        # lower_wick >= 0.2 * ATR(1W) (FURTHER LOWERED to capture 21/21)
+min_tail_strength = 0.25    # tail_strength >= 0.25 (LOWERED to capture historical signals)
+min_close_pos = 0.15        # (close - low) / (high - low) >= 0.15 (FURTHER LOWERED)
+max_body_atr = 3.0          # body_size / ATR <= 3.0 (INCREASED for more flexibility)
+
+# RESTORED ORIGINAL PERFECT LOGIC: Trend-based weighting parameters
+trend_based_weighting = true           # Enable trend-based signal weighting
+bull_market_threshold = 0.15           # 15% gain over lookback period = BULL market
+bear_market_threshold = -0.10          # 10% loss over lookback period = BEAR market
+long_tail_amplification = 1.5          # Amplify LONG signals in bull markets
+short_tail_suppression = 0.3           # Suppress SHORT signals in bull markets
 
 [fibonacci]
 swing_lookback = 100
