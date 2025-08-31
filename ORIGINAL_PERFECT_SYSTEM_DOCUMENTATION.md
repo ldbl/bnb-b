@@ -159,24 +159,30 @@ strongest_tail = max(long_tails, key=lambda x: x["strength"])
 
 ```toml
 [signals]
-weekly_tails_weight = 0.60     # Weekly tails dominant weight
-fibonacci_weight = 0.20        # Fibonacci contribution
-trend_weight = 0.10           # Trend analysis weight
-volume_weight = 0.10          # Volume confirmation weight
-confidence_threshold = 0.25    # CRITICAL: Low threshold for high recall
+# NEW WEIGHTS FOR LONG PRECISION ≥85% - Weekly Tails Dominant (RELAXED)
+weekly_tails_weight = 0.60  # Weekly tail pattern analysis (DOMINANT)
+fibonacci_weight = 0.20     # Fibonacci support/resistance
+trend_weight = 0.10         # Trend analysis
+volume_weight = 0.10        # Volume confirmation
+min_confirmations = 1
+confidence_threshold = 0.25  # FURTHER REDUCED for testing - will increase later
 ```
 
 ### **Weekly Tails Configuration**
 
 ```toml
 [weekly_tails]
-lookback_weeks = 8             # Analysis window
-atr_period = 14               # ATR calculation period
-vol_sma_period = 20           # Volume SMA period
-min_tail_strength = 0.35      # Minimum strength threshold
-min_tail_ratio = 0.3          # Minimum ATR-normalized ratio
-max_body_atr = 2.0           # Maximum body size relative to ATR
-min_close_pos = 0.2          # Minimum close position in candle range
+# Enhanced parameters for LONG precision ≥85% with correct ATR normalization (TESTING)
+lookback_weeks = 8
+atr_period = 14
+vol_sma_period = 20
+min_tail_size = 0.02        # Minimum tail size as percentage of price (2%)
+strong_tail_size = 0.05     # Strong tail size threshold (5%)
+confluence_bonus = 1.5      # Bonus multiplier for confluence with other levels
+min_tail_ratio = 0.3        # lower_wick >= 0.3 * ATR(1W) (LOWERED for testing)
+min_tail_strength = 0.35    # tail_strength >= 0.35 (LOWERED further for testing)
+min_close_pos = 0.2         # (close - low) / (high - low) >= 0.2 (LOWERED for testing)
+max_body_atr = 2.0          # body_size / ATR <= 2.0 (INCREASED for testing)
 ```
 
 ### **Data Configuration**
@@ -186,6 +192,31 @@ min_close_pos = 0.2          # Minimum close position in candle range
 symbol = "BNB/USDT"
 lookback_days = 500
 timeframes = ["1d", "1w"]
+```
+
+### **Additional Configuration Sections**
+
+```toml
+[fibonacci]
+swing_lookback = 100
+key_levels = [0.382, 0.618]
+proximity_threshold = 0.03
+min_swing_size = 0.15
+
+[indicators]
+rsi_period = 14
+rsi_overbought = 70
+rsi_oversold = 30
+macd_fast = 8
+macd_slow = 17
+macd_signal = 9
+atr_period = 14
+bb_period = 20
+bb_std = 2
+
+[trend_analysis]
+trend_lookback_days = 30
+trend_threshold = 0.015
 ```
 
 ---
