@@ -253,17 +253,20 @@ make test  # Must pass all tests
 ### **Core Principles**
 
 1. **PRESERVE PERFECTION** - Never compromise 100.0% LONG accuracy
-2. **Quality over Quantity** - Better few perfect signals than many poor ones
-3. **Risk Management First** - Capital preservation is priority #1
-4. **Incremental Enhancement** - Small, measurable improvements only
-5. **Data-Driven Decisions** - All changes validated with backtest data
+2. **KEEP IT SIMPLE** - No over-engineering, simple solutions that work
+3. **Quality over Quantity** - Better few perfect signals than many poor ones
+4. **Risk Management First** - Capital preservation is priority #1
+5. **Incremental Enhancement** - Small, measurable improvements only
+6. **Data-Driven Decisions** - All changes validated with backtest data
 
 ### **Innovation Approach**
 
+-   **Simple Solutions First** - prefer straightforward implementations over complex ones
 -   **Additive Development** - new features don't modify proven systems
 -   **Separate Modules** - isolate new development from perfect components
 -   **Conservative Testing** - extensive validation before deployment
 -   **Performance Monitoring** - continuous accuracy tracking
+-   **No Premature Optimization** - build working solutions first, optimize later
 
 ---
 
