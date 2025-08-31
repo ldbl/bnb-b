@@ -68,7 +68,7 @@ lint:
 	@echo "📋 Running bandit security checks..."
 	bandit -r src/ -f json -o bandit-report.json || true
 	@echo "📋 Running pytest unit tests..."
-	PYTHONPATH=src pytest tests/ -v || true
+	PYTHONPATH=src pytest tests/test_*.py -v || true
 	@echo "✅ All code quality checks completed"
 
 # Отделни команди за всеки tool
@@ -86,7 +86,7 @@ bandit:
 
 pytest:
 	@echo "📋 Running pytest unit tests..."
-	PYTHONPATH=src pytest tests/ -v
+	PYTHONPATH=src pytest tests/test_*.py -v
 
 # Форматиране на кода
 format:
