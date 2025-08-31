@@ -3,12 +3,14 @@ Minimal test fixtures for KISS testing strategy.
 Simple, predictable test data without complex abstractions.
 """
 
+from typing import Any
+
 import pandas as pd
 import pytest
 
 
 @pytest.fixture
-def test_config():
+def test_config() -> dict[str, Any]:
     """Minimal test configuration with essential parameters."""
     return {
         "signals": {
@@ -47,7 +49,7 @@ def test_config():
 
 
 @pytest.fixture
-def sample_daily_data():
+def sample_daily_data() -> pd.DataFrame:
     """Simple daily price data for testing."""
     dates = pd.date_range("2024-01-01", periods=100, freq="D")
     return pd.DataFrame(
@@ -63,7 +65,7 @@ def sample_daily_data():
 
 
 @pytest.fixture
-def sample_weekly_data():
+def sample_weekly_data() -> pd.DataFrame:
     """Simple weekly price data for testing."""
     weekly_dates = pd.date_range("2024-01-01", periods=15, freq="W")
     return pd.DataFrame(

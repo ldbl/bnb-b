@@ -8,8 +8,13 @@ import pandas as pd
 
 from bnb_trading.trend_analyzer import TrendAnalyzer
 
+# Set random seed for deterministic test results
+np.random.seed(42)
 
-def create_trend_data(direction="uptrend", strength="moderate", periods=200):
+
+def create_trend_data(
+    direction: str = "uptrend", strength: str = "moderate", periods: int = 200
+) -> pd.DataFrame:
     """Create test data with specific trend characteristics."""
     dates = pd.date_range("2024-01-01", periods=periods, freq="D")
 
@@ -58,7 +63,7 @@ def create_trend_data(direction="uptrend", strength="moderate", periods=200):
     return pd.DataFrame(data, index=dates)
 
 
-def create_weekly_data(periods=20):
+def create_weekly_data(periods: int = 20) -> pd.DataFrame:
     """Create simple weekly data."""
     dates = pd.date_range("2024-01-01", periods=periods, freq="W")
     return pd.DataFrame(

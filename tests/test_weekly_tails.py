@@ -3,6 +3,8 @@ Focused WeeklyTailsAnalyzer tests for KISS testing strategy.
 Direct unit tests for core functionality - no complex mocking.
 """
 
+import copy
+
 import pandas as pd
 
 from bnb_trading.analysis.weekly_tails.analyzer import WeeklyTailsAnalyzer
@@ -85,7 +87,7 @@ def test_calculate_tail_strength_no_qualifying_tails(test_config):
 def test_tail_ratio_validation(test_config):
     """Test tail ratio validation rule."""
     # Set strict tail ratio requirement
-    config = test_config.copy()
+    config = copy.deepcopy(test_config)
     config["weekly_tails"]["min_tail_ratio"] = 2.0
 
     analyzer = WeeklyTailsAnalyzer(config)
@@ -112,7 +114,7 @@ def test_tail_ratio_validation(test_config):
 def test_body_size_validation(test_config):
     """Test body size validation rule."""
     # Set strict body size limit
-    config = test_config.copy()
+    config = copy.deepcopy(test_config)
     config["weekly_tails"]["max_body_atr"] = 0.5
 
     analyzer = WeeklyTailsAnalyzer(config)
@@ -138,7 +140,7 @@ def test_body_size_validation(test_config):
 def test_close_position_validation(test_config):
     """Test close position validation rule."""
     # Set minimum close position
-    config = test_config.copy()
+    config = copy.deepcopy(test_config)
     config["weekly_tails"]["min_close_pos"] = 0.7
 
     analyzer = WeeklyTailsAnalyzer(config)
@@ -188,7 +190,7 @@ def test_error_handling_invalid_data(test_config):
 
 def test_configuration_parameter_loading(test_config):
     """Test configuration parameters load correctly."""
-    config = test_config.copy()
+    config = copy.deepcopy(test_config)
     config["weekly_tails"] = {
         "lookback_weeks": 12,
         "min_tail_strength": 2.5,

@@ -13,7 +13,9 @@ from bnb_trading.signals.decision import decide_long
 
 
 @pytest.fixture
-def integration_context(test_config, sample_daily_data, sample_weekly_data):
+def integration_context(
+    test_config, sample_daily_data, sample_weekly_data
+) -> DecisionContext:
     """Create integration test context."""
     return DecisionContext(
         closed_daily_df=sample_daily_data,
