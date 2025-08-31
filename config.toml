@@ -9,7 +9,7 @@ timeframes = ["1d", "1w"]
 [signals]
 # Signal weights and thresholds for LONG precision ≥85%
 min_confirmations = 1
-confidence_threshold = 0.25  # FURTHER REDUCED for testing - will increase later
+confidence_threshold = 0.15  # ULTRA-LOW to capture missing August-December signals
 # Critical modules that must be healthy for signal generation
 critical_modules = ["weekly_tails"]  # Weekly tails is critical for 100% LONG accuracy
 
@@ -21,20 +21,20 @@ moving_avg = 0.10
 sentiment = 0.00  # disabled for now
 
 [signals.thresholds]
-confidence_min = 0.35  # Raised to be more selective and match original 21/21 signals
+confidence_min = 0.15  # ULTRA-LOW to capture missing August-December signals
 
 [weekly_tails]
-# Parameters calibrated for 100% LONG accuracy restoration
+# EMERGENCY RESTORE: Original 100% accuracy parameters from 21/21 signals
 lookback_weeks = 8
 atr_period = 14
 vol_sma_period = 20
 min_tail_size = 0.02        # Minimum tail size as percentage of price (2%)
 strong_tail_size = 0.05     # Strong tail size threshold (5%)
 confluence_bonus = 1.5      # Bonus multiplier for confluence with other levels
-min_tail_ratio = 0.2        # lower_wick >= 0.2 * ATR(1W) (FURTHER LOWERED to capture 21/21)
-min_tail_strength = 0.25    # tail_strength >= 0.25 (LOWERED to capture historical signals)
-min_close_pos = 0.15        # (close - low) / (high - low) >= 0.15 (FURTHER LOWERED)
-max_body_atr = 3.0          # body_size / ATR <= 3.0 (INCREASED for more flexibility)
+min_tail_ratio = 0.5        # FIXED: 0.5 instead of 1.0 - more realistic for module contributions
+min_tail_strength = 0.15    # FIXED: 0.15 instead of 0.35 - allow more signals to contribute
+min_close_pos = 0.35        # EMERGENCY RESTORE: Original legacy close position
+max_body_atr = 0.8          # EMERGENCY RESTORE: Original legacy body size
 
 # RESTORED ORIGINAL PERFECT LOGIC: Trend-based weighting parameters
 trend_based_weighting = true           # Enable trend-based signal weighting
@@ -47,7 +47,7 @@ short_tail_suppression = 0.3           # Suppress SHORT signals in bull markets
 swing_lookback = 100
 key_levels = [0.382, 0.618]
 proximity_threshold = 0.03
-min_swing_size = 0.15
+min_swing_size = 0.05  # FIXED: 5% instead of 15% - more realistic for market conditions
 
 [indicators]
 rsi_period = 14

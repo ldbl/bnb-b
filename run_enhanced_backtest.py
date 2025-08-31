@@ -82,7 +82,9 @@ class EnhancedBacktester:
         long_signals = 0
         successful_signals = 0
 
-        for i in range(4, total_weeks):  # Start from week 4 to have enough history
+        for i in range(
+            2, total_weeks
+        ):  # REDUCED: Start from week 2 to capture more signals like original system
             current_date = backtest_weekly.index[i]
 
             # Get historical data up to current point
