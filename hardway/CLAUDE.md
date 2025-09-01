@@ -176,6 +176,7 @@ quality_over_quantity = true
 -   **Documentation integrity** - Automatic health check runs on every commit via pre-commit hook
 -   **🔥 MANDATORY: Update task files before main branch updates** - Always mark completed work in SONNET_TASK.md, TODO.md before updating main branch
 -   **🧪 MANDATORY: Fix failing tests immediately** - Any test failures must be resolved before proceeding, ensure deterministic test data and proper imports
+-   **🚨 SACRED RULE: Never change formulas that are working** - If a formula achieved proven results (like 21/21 LONG signals), it is UNTOUCHABLE during refactoring. Refactoring = reorganizing code structure WITHOUT changing business logic or mathematical calculations. Preserve working formulas EXACTLY. See REFACTORING_RULES.md for details.
 
 ### Testing Philosophy (PROVEN)
 
