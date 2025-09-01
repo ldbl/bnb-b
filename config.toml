@@ -9,7 +9,7 @@ timeframes = ["1d", "1w"]
 [signals]
 # Signal weights and thresholds for LONG precision ≥85%
 min_confirmations = 1
-confidence_threshold = 0.15  # ULTRA-LOW to capture missing August-December signals
+confidence_threshold = 0.25  # CHANGE FROM 0.15
 # Critical modules that must be healthy for signal generation
 critical_modules = ["weekly_tails"]  # Weekly tails is critical for 100% LONG accuracy
 
@@ -21,7 +21,7 @@ moving_avg = 0.10
 sentiment = 0.00  # disabled for now
 
 [signals.thresholds]
-confidence_min = 0.15  # ULTRA-LOW to capture missing August-December signals
+confidence_min = 0.25  # EXACT working threshold from original system
 
 [weekly_tails]
 # EMERGENCY RESTORE: Original 100% accuracy parameters from 21/21 signals
@@ -31,10 +31,10 @@ vol_sma_period = 20
 min_tail_size = 0.02        # Minimum tail size as percentage of price (2%)
 strong_tail_size = 0.05     # Strong tail size threshold (5%)
 confluence_bonus = 1.5      # Bonus multiplier for confluence with other levels
-min_tail_ratio = 0.5        # FIXED: 0.5 instead of 1.0 - more realistic for module contributions
-min_tail_strength = 0.15    # FIXED: 0.15 instead of 0.35 - allow more signals to contribute
-min_close_pos = 0.35        # EMERGENCY RESTORE: Original legacy close position
-max_body_atr = 0.8          # EMERGENCY RESTORE: Original legacy body size
+min_tail_ratio = 0.15       # More permissive to capture August signals
+min_tail_strength = 0.25    # Slightly lower to capture more signals
+min_close_pos = 0.15        # More permissive for tail analysis
+max_body_atr = 3.0          # More permissive body size limit
 
 # RESTORED ORIGINAL PERFECT LOGIC: Trend-based weighting parameters
 trend_based_weighting = true           # Enable trend-based signal weighting

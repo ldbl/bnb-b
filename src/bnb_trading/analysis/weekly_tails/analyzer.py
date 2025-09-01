@@ -73,9 +73,13 @@ class WeeklyTailsAnalyzer:
             high_price = float(latest.get("high", latest.get("High", 0)))
             low_price = float(latest.get("low", latest.get("Low", 0)))
             close_price = float(latest.get("close", latest.get("Close", 0)))
+            volume = float(latest.get("volume", latest.get("Volume", 0)))
 
             if any(x <= 0 for x in [open_price, high_price, low_price, close_price]):
                 return self._empty_result("Invalid price data")
+
+            if volume <= 0:
+                return self._empty_result("Invalid volume data")
 
             # RESTORE ORIGINAL WEEKLY TAIL CALCULATION (21/21 perfect logic)
             body_size = abs(close_price - open_price)
@@ -96,26 +100,62 @@ class WeeklyTailsAnalyzer:
             if price_range <= 0:
                 return self._empty_result("Invalid price range")
 
-            # RESTORE ORIGINAL PERFECT FORMULA: tail_strength = tail_size / body_size
-            body_size = abs(close_price - open_price)
-            body_size = max(body_size, 0.01)  # Minimum body size protection
+            # Calculate ATR from previous weeks (no look-ahead)
+            atr_w = self._calculate_atr_shifted(df, self.atr_period)
+            if atr_w <= 0:
+                return self._empty_result("Invalid ATR")
 
-            # Original perfect calculation that achieved 21/21 signals
-            tail_strength = lower_wick / body_size
+            # Calculate volume SMA from previous weeks (no look-ahead)
+            vol_sma = self._calculate_volume_sma_shifted(df, self.volume_ma_period)
 
-            # EXACT ORIGINAL SELECTION LOGIC FROM legacy_weekly_tails.py:313
-            # Check if it's a bullish candle with lower tail dominance
+            # Enhanced tail strength formula (EXACT WORKING FORMULA)
+            epsilon = 1e-8 * close_price
+            tail_ratio = lower_wick / max(atr_w, epsilon)
+            body_control = min(body_size / max(atr_w, epsilon), 1.0)
+            body_factor = 1.0 - 0.5 * body_control  # Range: 0.5 to 1.0
+            volume_ratio = np.clip(volume / max(vol_sma, epsilon), 0.5, 2.0)
+            vol_factor = volume_ratio
+
+            tail_strength = tail_ratio * body_factor * vol_factor
+
+            # Validation rules for LONG signals (EXACT ORIGINAL)
+            min_tail_ratio = getattr(self, "min_tail_ratio", 0.3)  # From config
+            max_body_atr = getattr(self, "max_body_atr", 2.0)  # From config
+            min_close_pos = getattr(self, "min_close_pos", 0.2)  # From config
+            min_tail_strength = getattr(self, "min_tail_strength", 0.35)  # From config
+
+            # Rule 1: lower_wick / atr_w >= min_tail_ratio
+            if tail_ratio < min_tail_ratio:
+                return self._empty_result(
+                    f"Tail ratio {tail_ratio:.2f} < {min_tail_ratio}"
+                )
+
+            # Rule 2: tail_strength >= min_tail_strength
+            if tail_strength < min_tail_strength:
+                return self._empty_result(
+                    f"Tail strength {tail_strength:.2f} < {min_tail_strength}"
+                )
+
+            # Rule 3: body_size / atr_w <= max_body_atr
+            if (body_size / max(atr_w, epsilon)) > max_body_atr:
+                return self._empty_result("Body too large relative to ATR")
+
+            # Rule 4: close position validation
+            price_range = max(high_price - low_price, epsilon)
+            close_pos = (close_price - low_price) / price_range
+            if close_pos < min_close_pos:
+                return self._empty_result(
+                    f"Close position {close_pos:.2f} < {min_close_pos}"
+                )
+
+            # Signal classification (prefer bullish candles for LONG)
             is_bullish = close_price > open_price
             dominant_tail = "lower" if lower_wick > upper_wick else "upper"
 
-            # ULTRA-LOW THRESHOLD to capture all 21 original signals (including August $400 signals)
-            if dominant_tail == "lower" and is_bullish and tail_strength >= 0.15:
-                # GENERATE LONG SIGNAL - exact original success logic
+            if is_bullish and dominant_tail == "lower":
                 signal = "LONG"
-                reason = f"Weekly lower tail: strength={tail_strength:.2f}"
-                confidence = min(
-                    tail_strength * 0.5, 1.0
-                )  # Conservative confidence mapping
+                confidence = min(tail_strength / 5.0, 1.0)  # Normalize to 0-1
+                reason = f"Weekly lower tail: strength={tail_strength:.2f}, ratio={tail_ratio:.2f}"
 
                 return {
                     "signal": signal,
