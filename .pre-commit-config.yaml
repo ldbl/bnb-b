@@ -39,9 +39,16 @@ repos:
         args: [--config-file=pyproject.toml]
         files: ^src/
 
-  # Documentation health check and make lint (custom)
+  # Critical regression protection and quality checks
   - repo: local
     hooks:
+      - id: golden-regression-test
+        name: 🚨 Golden 21/21 Regression Test
+        entry: python3 tests/test_golden_regression.py
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+
       - id: docs-health-check
         name: Documentation Health Check
         entry: python3 docs_framework.py health-check

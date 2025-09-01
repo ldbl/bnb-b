@@ -176,67 +176,7 @@ quality_over_quantity = true
 -   **Documentation integrity** - Automatic health check runs on every commit via pre-commit hook
 -   **🔥 MANDATORY: Update task files before main branch updates** - Always mark completed work in SONNET_TASK.md, TODO.md before updating main branch
 -   **🧪 MANDATORY: Fix failing tests immediately** - Any test failures must be resolved before proceeding, ensure deterministic test data and proper imports
-
-## 🔒 SACRED ELEMENTS (NEVER CHANGE)
-
-**Golden Rule**: Any change that breaks 21/21 signals is wrong by definition.
-
-### Core Formula (Working - UNTOUCHABLE)
-
-```python
-# Weekly Tails Calculation - UNTOUCHABLE
-tail_strength = tail_ratio * body_factor * vol_factor
-
-# Where:
-tail_ratio = lower_wick / max(atr_w, epsilon)
-body_control = min(body_size / max(atr_w, epsilon), 1.0)
-body_factor = 1.0 - 0.5 * body_control  # Range: 0.5 to 1.0
-volume_ratio = np.clip(volume / max(vol_sma, epsilon), 0.5, 2.0)
-vol_factor = volume_ratio
-```
-
-### Sacred Thresholds (DO NOT CHANGE)
-
-```toml
-[weekly_tails]
-min_tail_ratio = 0.3        # DO NOT CHANGE
-min_tail_strength = 0.35    # DO NOT CHANGE
-min_close_pos = 0.2         # DO NOT CHANGE
-max_body_atr = 2.0          # DO NOT CHANGE
-
-[signals]
-weekly_tails_weight = 0.60  # Primary signal generator
-fibonacci_weight = 0.20     # Secondary confirmation
-trend_weight = 0.10         # Trend alignment
-volume_weight = 0.10        # Additional confirmation
-confidence_threshold = 0.25 # DO NOT CHANGE
-```
-
-### 4-Gate Validation (Proven)
-
-```python
-def validate_long_signal(candle_data):
-    # Gate 1: Tail vs volatility
-    if tail_ratio < 0.3: return False
-
-    # Gate 2: Combined strength
-    if tail_strength < 0.35: return False
-
-    # Gate 3: Body size control
-    if body_atr_ratio > 2.0: return False
-
-    # Gate 4: Close position
-    if close_pos < 0.2: return False
-
-    return True  # All gates passed
-```
-
-### Sacred Files (Contains Working Formula)
-
--   `src/bnb_trading/weekly_tails.py` (formula)
--   `src/bnb_trading/signals/decision.py` (logic)
--   `config.toml` (thresholds)
--   `data/enhanced_backtest_2025-08-30.csv` (golden dataset)
+-   **🚨 SACRED RULE: Never change formulas that are working** - If a formula achieved proven results (like 21/21 LONG signals), it is UNTOUCHABLE during refactoring. Refactoring = reorganizing code structure WITHOUT changing business logic or mathematical calculations. Preserve working formulas EXACTLY. See REFACTORING_RULES.md for details.
 
 ### Testing Philosophy (PROVEN)
 
@@ -245,22 +185,6 @@ def validate_long_signal(candle_data):
 -   **Walk-forward testing**: Chronological signal generation
 -   **Quality focus**: Better selective high-quality signals than quantity
 -   **Performance tracking**: All changes documented with before/after metrics
-
-## 🚨 REGRESSION PROTECTION
-
-### Automated Testing (MANDATORY)
-
-Every commit/PR must pass:
-
-```bash
-# Core regression test (MUST PASS)
-python3 tests/test_golden_regression.py
-# Must output: ✅ 21/21 signals maintained
-
-# Full backtest verification (MANDATORY)
-python3 run_enhanced_backtest.py
-# Must show: LONG Signals: 21, Accuracy: 100.0%
-```
 
 ### Pull Request Validation Rules
 
@@ -278,15 +202,6 @@ python3 run_enhanced_backtest.py
 3. **100.0% LONG accuracy requirement**: Any PR that breaks 21/21 LONG signals is immediately rejected
 
 4. **No exceptions**: Signal accuracy is THE ONLY metric that matters for merge approval
-
-### Pre-commit Hooks
-
-Automatically runs on every commit:
-
--   Code formatting (ruff)
--   Type checking (mypy)
--   **21/21 regression test** ⭐
--   Documentation health check
 
 ### Git Commit Best Practices
 
@@ -387,48 +302,6 @@ git clean -fd         # Remove untracked files if needed
 2. ✅ Stash empty (no stashed changes)
 3. ✅ Minimal untracked files
 4. ✅ Branch synced with remote
-
-## 🚨 EMERGENCY PROCEDURES
-
-### If Regression Detected
-
-```bash
-# 1. Immediate rollback
-git reset --hard HEAD~1
-
-# 2. Investigate
-git diff HEAD~1 HEAD -- src/bnb_trading/
-git diff HEAD~1 HEAD -- config.toml
-
-# 3. Fix and verify
-python3 tests/test_golden_regression.py  # Must pass
-git commit -m "Fix regression"
-```
-
-### If System Completely Broken
-
-```bash
-# Return to last known working state
-git checkout 50d5636  # Known working commit
-python3 run_enhanced_backtest.py  # Should show 21/21
-
-# Create recovery branch from working state
-git checkout -b recovery/restore-working-system
-```
-
-### Development Workflow Protection
-
-```bash
-# Always start from working main
-git checkout main
-python3 run_enhanced_backtest.py  # Verify 21/21
-git checkout -b feature/your-improvement
-
-# Make changes and test
-python3 tests/test_golden_regression.py  # Must pass
-git add -A
-git commit -m "Description"  # Pre-commit runs automatically
-```
 
 ## Performance Status & Achievements
 

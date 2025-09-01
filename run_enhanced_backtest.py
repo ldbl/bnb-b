@@ -4,19 +4,23 @@ Enhanced Backtest with Detailed Signal Analysis
 Записва подробна информация за всеки сигнал за анализ
 """
 
+# Only add src to path if it's not already accessible
+import importlib.util
 import logging
 import sys
 from datetime import datetime
 
-# Add src to path
+# Add src to path if needed (for local runs)
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
 
-current_dir = Path(__file__).parent.absolute()
-src_dir = current_dir / "src"
-sys.path.insert(0, str(src_dir))
+if importlib.util.find_spec("bnb_trading") is None:
+    current_dir = Path(__file__).parent.absolute()
+    src_dir = current_dir / "src"
+    if src_dir.exists():
+        sys.path.insert(0, str(src_dir))
 
 try:
     import toml
