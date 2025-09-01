@@ -35,6 +35,9 @@ venv.bak/
 *.swo
 *~
 
+# Claude Code settings (local user preferences)
+.claude/settings.local.json
+
 # OS
 .DS_Store
 .DS_Store?
@@ -99,3 +102,4 @@ tests/analysis/
 .env.local
 .env.*.local
 bandit-report.json
+.claude/settings.local.json

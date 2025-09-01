@@ -39,6 +39,31 @@ repos:
         args: [--config-file=pyproject.toml]
         files: ^src/
 
+  # Critical regression protection and quality checks
+  - repo: local
+    hooks:
+      - id: golden-regression-test
+        name: 🚨 Golden 21/21 Regression Test
+        entry: python3 tests/test_golden_regression.py
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+
+      - id: docs-health-check
+        name: Documentation Health Check
+        entry: python3 docs_framework.py health-check
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+
+      - id: make-lint
+        name: Make Lint - Full Code Quality Check
+        entry: make
+        args: [lint]
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+
   # NOTE: Additional CI checks that run on GitHub but not locally:
   # - bandit security scan: runs in CI to catch security issues
   # - pytest tests: runs in CI with full test suite

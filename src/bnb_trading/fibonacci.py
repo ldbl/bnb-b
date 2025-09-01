@@ -73,6 +73,8 @@ from typing import Any
 
 import pandas as pd
 
+from .core.models import ModuleResult
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -681,6 +683,144 @@ class FibonacciAnalyzer:
         except Exception as e:
             logger.exception(f"Грешка при изчисляване на Fibonacci extensions: {e}")
             return {}
+
+    def analyze(self, daily_df: pd.DataFrame, weekly_df: pd.DataFrame) -> ModuleResult:
+        """
+        PR #4: Fibonacci Returns HOLD - ModuleResult implementation
+
+        Fibonacci не дава directional сигнали (LONG/SHORT), вместо това предоставя
+        качество на текущото ценово ниво за decision engine.
+
+        Args:
+            daily_df: Daily OHLCV data
+            weekly_df: Weekly OHLCV data (unused in Fibonacci)
+
+        Returns:
+            ModuleResult with:
+                - state: винаги "HOLD" (не е directional)
+                - score: 0.6-0.8 ако близо до key levels, 0.2-0.4 за neutral
+                - contrib: score * weight_from_config
+        """
+        try:
+            # Get weight from config
+            weight = (
+                self.config.get("signals", {}).get("weights", {}).get("fibonacci", 0.20)
+            )
+
+            # Намираме swing points
+            swing_high, swing_low, _, _ = self.find_swing_points(daily_df)
+
+            if swing_high is None or swing_low is None:
+                return ModuleResult(
+                    status="DISABLED",
+                    state="NEUTRAL",
+                    score=0.0,
+                    contrib=0.0,
+                    reason="Insufficient data for swing point detection",
+                )
+
+            # Изчисляваме Fibonacci levels
+            fib_levels = self.calculate_fibonacci_levels(swing_high, swing_low)
+            if not fib_levels:
+                return ModuleResult(
+                    status="DISABLED",
+                    state="NEUTRAL",
+                    score=0.0,
+                    contrib=0.0,
+                    reason="Failed to calculate Fibonacci levels",
+                )
+
+            # Текущата цена
+            current_price = daily_df["Close"].iloc[-1]
+
+            # Check proximity to key levels
+            proximity_info = self.check_fib_proximity(current_price, fib_levels)
+
+            # Determine score based on proximity to important levels
+            score = self._calculate_fib_score(proximity_info)
+
+            # Reason
+            nearest_level = proximity_info.get("nearest_level", 0.0)
+            reason = f"Fibonacci analysis: nearest {nearest_level * 100:.1f}% level"
+
+            if proximity_info.get("active_levels"):
+                active_level = proximity_info["active_levels"][0]["level"]
+                if active_level in self.key_levels:
+                    reason += f" - at key {active_level * 100:.1f}% level"
+
+            return ModuleResult(
+                status="OK",
+                state="HOLD",  # Fibonacci винаги връща HOLD
+                score=score,
+                contrib=score * weight,
+                reason=reason,
+                meta={
+                    "fib_levels": fib_levels,
+                    "proximity": proximity_info,
+                    "swing_high": swing_high,
+                    "swing_low": swing_low,
+                    "current_price": current_price,
+                },
+            )
+
+        except Exception as e:
+            logger.exception(f"Error in Fibonacci analyze: {e}")
+            return ModuleResult(
+                status="ERROR",
+                state="NEUTRAL",
+                score=0.0,
+                contrib=0.0,
+                reason=f"Fibonacci analysis error: {e}",
+            )
+
+    def _calculate_fib_score(self, proximity_info: dict[str, Any]) -> float:
+        """
+        Calculate Fibonacci score based on proximity to important levels.
+
+        Scoring logic:
+        - 0.7: Close to golden ratio (61.8%)
+        - 0.6-0.8: Close to key levels (38.2%, 61.8%)
+        - 0.2-0.4: Neutral zones
+
+        Returns:
+            float: Score between 0.0-1.0
+        """
+        try:
+            if not proximity_info.get("active_levels"):
+                # Not close to any level - neutral score
+                return 0.3
+
+            # Check active levels
+            active_level = proximity_info["active_levels"][0]["level"]
+            distance_pct = proximity_info["active_levels"][0]["distance_percentage"]
+
+            # Golden ratio gets highest score
+            if active_level == 0.618:
+                return 0.7
+
+            # Key levels get good scores
+            if active_level in self.key_levels:
+                # Closer = higher score
+                if distance_pct <= 0.01:  # Very close (1%)
+                    return 0.8
+                if distance_pct <= 0.02:  # Close (2%)
+                    return 0.6
+                # Within threshold but not very close
+                return 0.5
+
+            # Other levels get moderate scores
+            if active_level in [0.236, 0.786]:
+                return 0.4
+
+            # 50% level is neutral
+            if active_level == 0.5:
+                return 0.3
+
+            return 0.2  # Other levels
+
+        except Exception as e:
+            logger.exception(f"Error calculating Fibonacci score: {e}")
+            return 0.2
 
 
 if __name__ == "__main__":
