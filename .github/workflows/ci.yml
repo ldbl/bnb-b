@@ -49,7 +49,7 @@ jobs:
     - name: 🚨 CRITICAL - Golden 21/21 Regression Test
       run: |
         echo "Running critical regression test to verify 21/21 signals maintained..."
-        python3 tests/test_golden_regression.py
+        pytest tests/test_golden_regression.py -v --tb=short
       env:
         PYTHONPATH: src
 

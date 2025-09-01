@@ -345,18 +345,18 @@ All components accessed directly from **PROVEN modular packages**:
 
 ```python
 # Perfect data layer
-from src.bnb_trading.data.fetcher import BNBDataFetcher
+from bnb_trading.data.fetcher import BNBDataFetcher
 
 # PERFECT signal generation (100.0% LONG accuracy)
-from src.bnb_trading.signals.generator import SignalGenerator
+from bnb_trading.signals.generator import SignalGenerator
 
 # Perfect pipeline orchestration
-from src.bnb_trading.pipeline.orchestrator import TradingPipeline
-from src.bnb_trading.pipeline.runners import PipelineRunner
+from bnb_trading.pipeline.orchestrator import TradingPipeline
+from bnb_trading.pipeline.runners import PipelineRunner
 
 # PROVEN validation and testing
-from src.bnb_trading.validation.protocol import ValidationProtocol
-from src.bnb_trading.testing.backtester import Backtester
+from bnb_trading.validation.protocol import ValidationProtocol
+from bnb_trading.testing.backtester import Backtester
 ```
 
 ---

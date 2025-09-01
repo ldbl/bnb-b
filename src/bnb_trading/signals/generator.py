@@ -7,9 +7,8 @@ import pandas as pd
 
 from bnb_trading.core.exceptions import AnalysisError
 from bnb_trading.core.types import SignalResult
-
-from .combiners import combine_signals
-from .confidence import calculate_confidence
+from bnb_trading.signals.combiners import combine_signals
+from bnb_trading.signals.confidence import calculate_confidence
 
 # from .filters import apply_signal_filters  # Temporarily disabled for new architecture
 
