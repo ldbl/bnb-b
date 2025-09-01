@@ -176,6 +176,7 @@ quality_over_quantity = true
 -   **Documentation integrity** - Automatic health check runs on every commit via pre-commit hook
 -   **🔥 MANDATORY: Update task files before main branch updates** - Always mark completed work in SONNET_TASK.md, TODO.md before updating main branch
 -   **🧪 MANDATORY: Fix failing tests immediately** - Any test failures must be resolved before proceeding, ensure deterministic test data and proper imports
+-   **🚫 NEVER push directly to main** - All changes must go through Pull Request review process
 
 ## 🔒 SACRED ELEMENTS (NEVER CHANGE)
 
@@ -364,10 +365,11 @@ git branch --show-current
 
 **ABSOLUTE RULES:**
 
+-   ❌ **NEVER push directly to main branch** - Always create Pull Requests
 -   ❌ **NEVER `git push --force` to main branch**
 -   ❌ **NEVER `git push --force-with-lease` to main branch**
--   ✅ **Always use regular `git push` for main branch**
--   ✅ **If push fails, use `git pull` then `git push`**
+-   ✅ **Always work on feature branches** and create PRs for main
+-   ✅ **All changes to main must go through PR review process**
 
 ### Clean Repository Rules
 
@@ -421,6 +423,7 @@ git checkout -b recovery/restore-working-system
 ```bash
 # Always start from working main
 git checkout main
+git pull origin main  # Ensure up to date
 python3 run_enhanced_backtest.py  # Verify 21/21
 git checkout -b feature/your-improvement
 
@@ -428,6 +431,53 @@ git checkout -b feature/your-improvement
 python3 tests/test_golden_regression.py  # Must pass
 git add -A
 git commit -m "Description"  # Pre-commit runs automatically
+
+# Push feature branch and create PR
+git push -u origin feature/your-improvement
+gh pr create --title "Description" --body "PR details"
+```
+
+### Pull Request Workflow (MANDATORY)
+
+**ALL changes to main branch must go through Pull Requests:**
+
+```bash
+# 1. Create feature branch from main
+git checkout main && git pull origin main
+git checkout -b feature/descriptive-name
+
+# 2. Make changes, commit, and push
+git add -A && git commit -m "Descriptive message"
+git push -u origin feature/descriptive-name
+
+# 3. Create PR (never push to main directly)
+gh pr create --title "Brief description" --body "
+## Changes Made
+- Specific change 1
+- Specific change 2
+
+## Testing
+✅ 21/21 signals maintained
+✅ All tests passing
+✅ Linting clean
+
+## Regression Test Results
+\`\`\`
+$(python3 run_enhanced_backtest.py | grep -E 'LONG Signals|Accuracy')
+\`\`\`
+"
+
+# 4. After PR approval and merge, clean up
+git checkout main && git pull origin main
+git branch -d feature/descriptive-name
+```
+
+**NEVER do this:**
+
+```bash
+# ❌ WRONG - Direct push to main
+git checkout main
+git push origin main  # FORBIDDEN!
 ```
 
 ## Performance Status & Achievements

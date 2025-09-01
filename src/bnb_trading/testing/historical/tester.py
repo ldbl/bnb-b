@@ -7,8 +7,8 @@ from pathlib import Path
 
 import toml
 
-from ...core.exceptions import AnalysisError
-from ...core.models import BaselineMetrics, TestResult
+from bnb_trading.core.exceptions import AnalysisError
+from bnb_trading.core.models import BaselineMetrics, TestResult
 
 logger = logging.getLogger(__name__)
 
@@ -35,9 +35,9 @@ class HistoricalTester:
         self.config = toml.load(config_path)
 
         # Import here to avoid circular imports
-        from ...backtester import Backtester
-        from ...data_fetcher import BNBDataFetcher
-        from ...signal_generator import SignalGenerator
+        from bnb_trading.backtester import Backtester
+        from bnb_trading.data_fetcher import BNBDataFetcher
+        from bnb_trading.signal_generator import SignalGenerator
 
         self.data_fetcher = BNBDataFetcher(self.config["data"]["symbol"])
         self.signal_generator = SignalGenerator(self.config)

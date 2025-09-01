@@ -15,10 +15,10 @@ if __name__ == "__main__":
     if src_dir not in sys.path:
         sys.path.insert(0, src_dir)
 
-# Use relative imports for package structure
-from ..core.exceptions import AnalysisError
-from ..data.fetcher import BNBDataFetcher
-from ..signals.generator import SignalGenerator
+# Use absolute imports for package structure
+from bnb_trading.core.exceptions import AnalysisError
+from bnb_trading.data.fetcher import BNBDataFetcher
+from bnb_trading.signals.generator import SignalGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -149,15 +149,15 @@ class TradingPipeline:
             logger.info("🔍 Running comprehensive technical analysis...")
 
             # Import and run FULL suite of analysis modules
-            from ..elliott_wave_analyzer import ElliottWaveAnalyzer
-            from ..fibonacci import FibonacciAnalyzer
-            from ..ichimoku_module import IchimokuAnalyzer
-            from ..indicators import TechnicalIndicators
-            from ..moving_averages import MovingAveragesAnalyzer
-            from ..optimal_levels import OptimalLevelsAnalyzer
-            from ..trend_analyzer import TrendAnalyzer
-            from ..weekly_tails import WeeklyTailsAnalyzer
-            from ..whale_tracker import WhaleTracker
+            from bnb_trading.elliott_wave_analyzer import ElliottWaveAnalyzer
+            from bnb_trading.fibonacci import FibonacciAnalyzer
+            from bnb_trading.ichimoku_module import IchimokuAnalyzer
+            from bnb_trading.indicators import TechnicalIndicators
+            from bnb_trading.moving_averages import MovingAveragesAnalyzer
+            from bnb_trading.optimal_levels import OptimalLevelsAnalyzer
+            from bnb_trading.trend_analyzer import TrendAnalyzer
+            from bnb_trading.weekly_tails import WeeklyTailsAnalyzer
+            from bnb_trading.whale_tracker import WhaleTracker
 
             # 1. 📐 Fibonacci Analysis (35% weight - PRIMARY)
             try:
@@ -278,7 +278,7 @@ class TradingPipeline:
 
             # 10. 🧠 Sentiment Analysis
             try:
-                from ..sentiment_module import SentimentAnalyzer
+                from bnb_trading.sentiment_module import SentimentAnalyzer
 
                 sentiment_analyzer = SentimentAnalyzer(self.config)
                 # Get dummy sentiment data for now

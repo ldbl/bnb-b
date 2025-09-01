@@ -5,8 +5,8 @@ from typing import Any
 
 import pandas as pd
 
-from ...core.exceptions import AnalysisError
-from ...core.models import ShortSignalCandidate
+from bnb_trading.core.exceptions import AnalysisError
+from bnb_trading.core.models import ShortSignalCandidate
 
 logger = logging.getLogger(__name__)
 

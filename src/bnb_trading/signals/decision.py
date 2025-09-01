@@ -8,8 +8,8 @@ from typing import Any
 
 import pandas as pd
 
-from ..analysis.weekly_tails.analyzer import WeeklyTailsAnalyzer
-from ..core.models import DecisionContext, DecisionResult
+from bnb_trading.analysis.weekly_tails.analyzer import WeeklyTailsAnalyzer
+from bnb_trading.core.models import DecisionContext, DecisionResult
 
 logger = logging.getLogger(__name__)
 
