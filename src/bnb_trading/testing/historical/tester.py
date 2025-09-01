@@ -36,8 +36,8 @@ class HistoricalTester:
 
         # Import here to avoid circular imports
         from bnb_trading.backtester import Backtester
-        from bnb_trading.data_fetcher import BNBDataFetcher
-        from bnb_trading.signal_generator import SignalGenerator
+        from bnb_trading.data.fetcher import BNBDataFetcher
+        from bnb_trading.signals.generator import SignalGenerator
 
         self.data_fetcher = BNBDataFetcher(self.config["data"]["symbol"])
         self.signal_generator = SignalGenerator(self.config)

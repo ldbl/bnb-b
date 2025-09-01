@@ -125,10 +125,10 @@ def _try_imports():
     # Strategy 1: Try absolute imports (CI with installed package)
     try:
         from bnb_trading.data.fetcher import BNBDataFetcher
-        from bnb_trading.fibonacci import FibonacciAnalyzer
-        from bnb_trading.indicators import TechnicalIndicators
+        from bnb_trading.analysis.fibonacci.analyzer import FibonacciAnalyzer
+        from bnb_trading.analysis.indicators import TechnicalIndicators
         from bnb_trading.signals.generator import SignalGenerator
-        from bnb_trading.weekly_tails import WeeklyTailsAnalyzer
+        from bnb_trading.analysis.weekly_tails.analyzer import WeeklyTailsAnalyzer
 
         return (
             BNBDataFetcher,
@@ -167,10 +167,10 @@ def _try_imports():
             sys.path.insert(0, str(src_path))
 
         from bnb_trading.data.fetcher import BNBDataFetcher
-        from bnb_trading.fibonacci import FibonacciAnalyzer
-        from bnb_trading.indicators import TechnicalIndicators
+        from bnb_trading.analysis.fibonacci.analyzer import FibonacciAnalyzer
+        from bnb_trading.analysis.indicators import TechnicalIndicators
         from bnb_trading.signals.generator import SignalGenerator
-        from bnb_trading.weekly_tails import WeeklyTailsAnalyzer
+        from bnb_trading.analysis.weekly_tails.analyzer import WeeklyTailsAnalyzer
 
         return (
             BNBDataFetcher,
@@ -191,10 +191,10 @@ def _try_imports():
             sys.path.insert(0, str(src_path))
 
         from bnb_trading.data.fetcher import BNBDataFetcher
-        from bnb_trading.fibonacci import FibonacciAnalyzer
-        from bnb_trading.indicators import TechnicalIndicators
+        from bnb_trading.analysis.fibonacci.analyzer import FibonacciAnalyzer
+        from bnb_trading.analysis.indicators import TechnicalIndicators
         from bnb_trading.signals.generator import SignalGenerator
-        from bnb_trading.weekly_tails import WeeklyTailsAnalyzer
+        from bnb_trading.analysis.weekly_tails.analyzer import WeeklyTailsAnalyzer
 
         return (
             BNBDataFetcher,
@@ -210,10 +210,10 @@ def _try_imports():
     try:
         # PYTHONPATH should already be in sys.path, just try the imports
         from bnb_trading.data.fetcher import BNBDataFetcher
-        from bnb_trading.fibonacci import FibonacciAnalyzer
-        from bnb_trading.indicators import TechnicalIndicators
+        from bnb_trading.analysis.fibonacci.analyzer import FibonacciAnalyzer
+        from bnb_trading.analysis.indicators import TechnicalIndicators
         from bnb_trading.signals.generator import SignalGenerator
-        from bnb_trading.weekly_tails import WeeklyTailsAnalyzer
+        from bnb_trading.analysis.weekly_tails.analyzer import WeeklyTailsAnalyzer
 
         return (
             BNBDataFetcher,
