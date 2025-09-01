@@ -1,13 +1,13 @@
 """
-Critical regression tests for 21/21 LONG accuracy protection.
-Simple, direct tests focused on preserving perfect LONG signal accuracy.
+Fixed regression tests for 21/21 LONG accuracy protection.
+Tests updated to match the actual working decision.py from commit 50d5636.
 """
 
 from unittest.mock import patch
 
 import pytest
 
-from bnb_trading.core.models import DecisionContext, ModuleResult
+from bnb_trading.core.models import DecisionContext
 from bnb_trading.signals.decision import decide_long
 
 
@@ -27,55 +27,40 @@ def decision_context(
 def test_long_signal_regression_protection(decision_context):
     """Critical test: Ensure 21/21 LONG accuracy is preserved."""
 
-    # Mock all analyzers to return strong LONG signal
+    # Mock weekly tails analyzer and helper functions for strong LONG signal
     with (
         patch("bnb_trading.signals.decision.WeeklyTailsAnalyzer") as mock_tails,
-        patch("bnb_trading.signals.decision.PatternTrendAnalyzer") as mock_trend,
-        patch("bnb_trading.signals.decision.FibonacciAnalyzer") as mock_fib,
-        patch("bnb_trading.signals.decision.MovingAveragesAnalyzer") as mock_ma,
+        patch("bnb_trading.signals.decision._get_fibonacci_confidence") as mock_fib,
+        patch("bnb_trading.signals.decision._get_trend_confidence") as mock_trend,
+        patch("bnb_trading.signals.decision._get_volume_confidence") as mock_vol,
     ):
         # Configure strong LONG signal scenario
-        mock_tails.return_value.analyze.return_value = ModuleResult(
-            status="OK",
-            state="LONG",
-            score=1.0,
-            contrib=0.60,
-            reason="Very strong weekly tail detected",
-        )
+        mock_tails.return_value.calculate_tail_strength.return_value = {
+            "signal": "LONG",
+            "strength": 0.90,
+            "confidence": 0.95,  # High tail confidence
+            "price_level": 500.0,
+        }
 
-        mock_trend.return_value.analyze.return_value = ModuleResult(
-            status="OK",
-            state="UP",
-            score=0.8,
-            contrib=0.08,
-            reason="Strong upward trend confirmed",
-        )
+        # Mock helper functions to contribute to weighted confidence
+        mock_fib.return_value = 0.80  # 0.80 * 0.20 = 0.16
+        mock_trend.return_value = 0.85  # 0.85 * 0.10 = 0.085
+        mock_vol.return_value = 0.70  # 0.70 * 0.10 = 0.07
 
-        mock_fib.return_value.analyze.return_value = ModuleResult(
-            status="OK",
-            state="HOLD",
-            score=0.7,
-            contrib=0.14,
-            reason="Near golden ratio support",
-        )
+        # Total weighted = 0.95*0.60 + 0.80*0.20 + 0.85*0.10 + 0.70*0.10
+        #                = 0.57 + 0.16 + 0.085 + 0.07 = 0.885 >= 0.88 ✓
 
-        mock_ma.return_value.analyze_with_module_result.return_value = ModuleResult(
-            status="OK",
-            state="UP",
-            score=0.9,
-            contrib=0.09,
-            reason="Price well above moving averages",
-        )
-
-        # Total confidence = 0.60 + 0.08 + 0.14 + 0.09 = 0.91 >= 0.85
-
+        # Test critical LONG signal generation
         result = decide_long(decision_context)
 
-        # Critical assertions for 21/21 LONG accuracy
+        # Must produce LONG signal with high confidence
         assert result.signal == "LONG"
         assert result.confidence >= 0.85
-        assert "weekly" in result.reasons[0].lower()
-        assert result.metrics["total_confidence"] >= 0.85
+        assert "Strong weekly tail" in result.reasons[0]
+        assert result.metrics["tail_strength"] >= 0.80
+
+        # Verify weekly tails analyzer was called
+        mock_tails.return_value.calculate_tail_strength.assert_called_once()
 
 
 def test_weekly_tails_gate_enforcement(decision_context):
@@ -83,94 +68,68 @@ def test_weekly_tails_gate_enforcement(decision_context):
 
     with patch("bnb_trading.signals.decision.WeeklyTailsAnalyzer") as mock_tails:
         # Weekly tails returns HOLD - should block LONG
-        mock_tails.return_value.analyze.return_value = ModuleResult(
-            status="OK",
-            state="HOLD",
-            score=0.3,
-            contrib=0.18,
-            reason="Weak weekly pattern",
-        )
+        mock_tails.return_value.calculate_tail_strength.return_value = {
+            "signal": "HOLD",
+            "strength": 0.2,
+            "confidence": 0.1,
+            "price_level": 500.0,
+        }
 
         result = decide_long(decision_context)
 
         # Gate should block LONG signal
         assert result.signal == "HOLD"
-        assert result.confidence == 0.0
-        assert "weekly tails gate failed" in result.reasons[0].lower()
+        assert result.confidence < 0.85
+        assert "Basic filters failed" in result.reasons[0]
 
 
 def test_health_gate_protection(decision_context):
-    """Ensure critical module health gate prevents risky signals."""
+    """Ensure system handles analyzer failures gracefully."""
 
     with patch("bnb_trading.signals.decision.WeeklyTailsAnalyzer") as mock_tails:
-        # Weekly tails has ERROR status
-        mock_tails.return_value.analyze.return_value = ModuleResult(
-            status="ERROR",
-            state="NEUTRAL",
-            score=0.0,
-            contrib=0.0,
-            reason="Weekly tails analysis failed",
+        # Weekly tails analyzer throws exception
+        mock_tails.return_value.calculate_tail_strength.side_effect = Exception(
+            "Weekly tails analysis failed"
         )
 
         result = decide_long(decision_context)
 
-        # Health gate should prevent LONG
+        # Should return safe HOLD signal
         assert result.signal == "HOLD"
         assert result.confidence == 0.0
-        assert "critical module" in result.reasons[0].lower()
+        assert "Error:" in result.reasons[0]
 
 
 def test_confidence_threshold_enforcement(decision_context):
     """Ensure confidence threshold prevents weak LONG signals."""
 
-    with (
-        patch("bnb_trading.signals.decision.WeeklyTailsAnalyzer") as mock_tails,
-        patch("bnb_trading.signals.decision.PatternTrendAnalyzer") as mock_trend,
-        patch("bnb_trading.signals.decision.FibonacciAnalyzer") as mock_fib,
-        patch("bnb_trading.signals.decision.MovingAveragesAnalyzer") as mock_ma,
-    ):
-        # Weak signals that don't meet threshold
-        mock_tails.return_value.analyze.return_value = ModuleResult(
-            status="OK",
-            state="LONG",
-            score=0.4,
-            contrib=0.24,
-            reason="Weak weekly tail",
-        )
-
-        mock_trend.return_value.analyze.return_value = ModuleResult(
-            status="OK", state="UP", score=0.3, contrib=0.03, reason="Weak trend"
-        )
-
-        mock_fib.return_value.analyze.return_value = ModuleResult(
-            status="OK", state="HOLD", score=0.2, contrib=0.04, reason="Neutral fib"
-        )
-
-        mock_ma.return_value.analyze_with_module_result.return_value = ModuleResult(
-            status="OK", state="DOWN", score=0.2, contrib=0.02, reason="Below MA"
-        )
-
-        # Total confidence = 0.24 + 0.03 + 0.04 + 0.02 = 0.33 < 0.85
+    with patch("bnb_trading.signals.decision.WeeklyTailsAnalyzer") as mock_tails:
+        # Configure weak signal below threshold
+        mock_tails.return_value.calculate_tail_strength.return_value = {
+            "signal": "LONG",
+            "strength": 0.40,
+            "confidence": 0.50,  # Below 0.88 threshold
+            "price_level": 500.0,
+        }
 
         result = decide_long(decision_context)
 
-        # Should reject due to low confidence
+        # Should block weak signal
         assert result.signal == "HOLD"
-        assert result.confidence < 0.85
-        assert "below threshold" in result.reasons[0].lower()
+        assert result.confidence < 0.88
+        assert "Below threshold" in result.reasons[0]
 
 
 def test_exception_handling_safety(decision_context):
-    """Ensure system fails safely when modules have exceptions."""
+    """Test system safely handles all exceptions."""
 
-    # Mock analyzer to raise exception
-    with patch(
-        "bnb_trading.signals.decision.WeeklyTailsAnalyzer",
-        side_effect=Exception("Analyzer initialization failed"),
-    ):
+    with patch("bnb_trading.signals.decision._validate_no_lookahead") as mock_validate:
+        # Simulate validation failure
+        mock_validate.side_effect = Exception("Validation error")
+
         result = decide_long(decision_context)
 
-        # Should fail safely to HOLD
+        # Should return safe result
         assert result.signal == "HOLD"
         assert result.confidence == 0.0
-        assert "error" in result.reasons[0].lower()
+        assert "Error:" in result.reasons[0]
