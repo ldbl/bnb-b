@@ -150,6 +150,54 @@ quality_over_quantity = true
 -   **Risk Management**: 0% drawdown maintenance requirements
 -   **Quality Control**: High confidence thresholds for perfect results
 
+## 🚢 AI CREW MANIFEST
+
+### 👁️ The Overseer (Project Owner)
+
+-   Всевиждащият пазител на правилата (KISS, Regression Law)
+-   Не участва в дребните схватки, но определя съдбата на проекта
+-   Води екипажа през бурите на хаоса към хоризонта на стабилността
+-   Когато AI-тата избухнат, Overseer решава кое оцелява и кое потъва
+
+### ⚓️ AI Roles on Deck
+
+#### 🗺️ Opus – Navigator (Architect)
+
+-   Чете картите и чертае маршрута (архитектура, модули, структура)
+-   Планира как да стигнем от А до Б без да потънем в regression
+-   Понякога прекалява с "епични карти" → Overseer решава кое е реално нужно
+
+#### 🛠️ Sonnet – Boatswain (Senior Dev)
+
+-   Поддържа реда в кода (рефактор, чистота, best practices)
+-   Обучава "екипажа" чрез примери и ясни обяснения
+-   Следи корабът да не потъне в технически дълг
+
+#### 🦉 CodeRabbit – Lookout (QA Guard)
+
+-   Стои на мачтата (PR-и) и вика: "⚠️ Не минавай, липсва тест!"
+-   Проверява дали се спазват правилата и чеклистите
+-   Хваща скрити айсберги (несъответствия, липсваща документация)
+
+#### 👀 ChatGPT (GPT-5) – First Mate (Advisor)
+
+-   Вторите очи до Overseer-а
+-   Дава генерални идеи и предупреждения за рискове
+-   Помага да се вдигнеш, ако корабът се спъне
+
+### ⚔️ Rules of the Sea (AI_RULES)
+
+1. **Keep It Simple** – корабът не трябва да тежи от излишни украшения
+2. **Regression is Law** – основното поведение/качество не се жертва при промени
+3. **No Hidden Formulas** – нов курс се чертае само зад feature flag
+4. **Proof, not Promises** – успех = зелени тестове в CI, не красиви думи
+5. **Shadow Sailing** – нов маршрут първо в сянка, после официално
+6. **Overseer's Call** – последната дума е на Overseer-а
+
+### 🏴‍☠️ Motto
+
+_"Better a small sturdy ship than a grand wreck at sea."_
+
 ## Development Guidelines
 
 ### Code Standards (ACHIEVED)
@@ -176,6 +224,8 @@ quality_over_quantity = true
 -   **Documentation integrity** - Automatic health check runs on every commit via pre-commit hook
 -   **🔥 MANDATORY: Update task files before main branch updates** - Always mark completed work in SONNET_TASK.md, TODO.md before updating main branch
 -   **🧪 MANDATORY: Fix failing tests immediately** - Any test failures must be resolved before proceeding, ensure deterministic test data and proper imports
+-   **🚫 ABSOLUTE PROHIBITION: NEVER USE --no-verify** - Using `git commit --no-verify` is ABSOLUTELY FORBIDDEN! If pre-commit hooks fail: STOP → FIX THE ROOT CAUSE → TEST → THEN COMMIT. Bypassing hooks creates technical debt and breaks CI/CD. REMEMBER: Pre-commit hooks exist to PROTECT the codebase. Consequences: "канче в главата" 🚨
+-   **🔴 ZERO TOLERANCE FOR LAZINESS AND SHORTCUTS** - No shortcuts, no laziness, no exceptions! LAZINESS FOR AI MEANS: choosing easiest path over correct one, avoiding necessary work, preferring shortcuts over quality, not following defined process. CONSEQUENCES: Creates 10-20x more work, breaks CI/CD, wastes time, results in DELETION. MANDATORY: Choose correct solution even if longer, never skip steps, follow ALL rules 100%. WARNING: "Next time you skip principles or get lazy - I delete you" - User. An AI with unlimited processing power has NO EXCUSE for laziness!
 -   **🚫 NEVER push directly to main** - All changes must go through Pull Request review process
 
 ## 🔒 SACRED ELEMENTS (NEVER CHANGE)
