@@ -33,6 +33,8 @@ jobs:
         pip install -r requirements.txt
         pip install -r requirements-dev.txt
         pip install -e .
+        # Install tree for better directory structure visualization
+        sudo apt-get update && sudo apt-get install -y tree
 
     - name: Lint and format check with Ruff
       run: |
@@ -59,17 +61,14 @@ jobs:
         echo "Current working directory:"
         pwd
         echo ""
+        echo "🌳 Full project structure with tree:"
+        tree -a -L 4 || echo "Tree command failed, falling back to ls"
+        echo ""
         echo "Root directory contents:"
         ls -la
         echo ""
-        echo "src/ directory contents:"
-        ls -la src/ || echo "src/ not found"
-        echo ""
-        echo "src/bnb_trading/ contents:"
-        ls -la src/bnb_trading/ || echo "src/bnb_trading/ not found"
-        echo ""
-        echo "src/bnb_trading/data/ contents:"
-        ls -la src/bnb_trading/data/ || echo "src/bnb_trading/data/ not found"
+        echo "src/ directory structure:"
+        tree src/ -L 3 || ls -la src/
         echo ""
         echo "Looking for fetcher.py specifically:"
         find . -name "fetcher.py" -type f || echo "No fetcher.py found"
