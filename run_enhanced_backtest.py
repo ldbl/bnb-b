@@ -16,60 +16,83 @@ from typing import Any
 
 import pandas as pd
 
-# Ensure src is in path - robust approach for both local and CI environments
-current_dir = Path(__file__).parent.absolute()
-src_dir = current_dir / "src"
 
-# Always add src to path if it exists and isn't already there
-if src_dir.exists() and str(src_dir) not in sys.path:
-    sys.path.insert(0, str(src_dir))
+def _try_imports():
+    """Try different import strategies until one works - based on backtester approach."""
+    errors = []
 
-# Also check PYTHONPATH environment variable and add to sys.path if needed
+    def _import_components():
+        """Import all required components - DRY helper"""
+        import toml
 
-pythonpath = os.environ.get("PYTHONPATH", "")
-if pythonpath:
-    for path in pythonpath.split(os.pathsep):
-        abs_path = os.path.abspath(path)
-        if abs_path not in sys.path:
-            sys.path.insert(0, abs_path)
+        from bnb_trading.core.models import DecisionContext
+        from bnb_trading.data.fetcher import BNBDataFetcher
+        from bnb_trading.signals.decision import decide_long
 
+        return toml, DecisionContext, BNBDataFetcher, decide_long
+
+    # Strategy 1: Try absolute imports (CI with installed package)
+    try:
+        return _import_components()
+    except ImportError as e:
+        errors.append(f"Absolute imports failed: {e}")
+
+    # Strategy 2: Add src to path and try absolute (CI fallback)
+    try:
+        current_file = Path(__file__).resolve()
+        # Go up from project root to src/
+        project_root = current_file.parent
+        src_path = project_root / "src"
+        if src_path.exists() and str(src_path) not in sys.path:
+            sys.path.insert(0, str(src_path))
+
+        return _import_components()
+    except ImportError as e:
+        errors.append(f"Path-adjusted imports failed: {e}")
+
+    # Strategy 3: Use PYTHONPATH if available (CI PYTHONPATH=src)
+    try:
+        # Process PYTHONPATH environment variable
+        pythonpath = os.environ.get("PYTHONPATH", "")
+        if pythonpath:
+            for path in pythonpath.split(os.pathsep):
+                abs_path = os.path.abspath(path)
+                if abs_path not in sys.path:
+                    sys.path.insert(0, abs_path)
+
+        return _import_components()
+    except ImportError as e:
+        errors.append(f"PYTHONPATH imports failed: {e}")
+
+    # Strategy 4: Try relative to current working directory
+    try:
+        cwd = Path.cwd()
+        src_path = cwd / "src"
+        if src_path.exists() and str(src_path) not in sys.path:
+            sys.path.insert(0, str(src_path))
+
+        return _import_components()
+    except ImportError as e:
+        errors.append(f"CWD-based imports failed: {e}")
+
+    # If all strategies fail, raise detailed error
+    error_msg = "All import strategies failed:\n" + "\n".join(
+        f"  - {err}" for err in errors
+    )
+    error_msg += "\n\nDEBUG INFO:"
+    error_msg += f"\n  sys.path: {sys.path}"
+    error_msg += f"\n  PYTHONPATH: {os.environ.get('PYTHONPATH', 'NOT SET')}"
+    error_msg += f"\n  CWD: {Path.cwd()}"
+    error_msg += f"\n  Script location: {Path(__file__).parent.absolute()}"
+    raise ImportError(error_msg)
+
+
+# Try imports using robust strategy
 try:
-    import toml
-
-    # Debug: Print sys.path and PYTHONPATH for troubleshooting CI issues
-    print("DEBUG - sys.path contents:")
-    for i, path in enumerate(sys.path):
-        print(f"  {i}: {path}")
-    print(f"DEBUG - PYTHONPATH env var: {os.environ.get('PYTHONPATH', 'NOT SET')}")
-    print(f"DEBUG - Current working directory: {Path.cwd()}")
-    print(f"DEBUG - Script location: {Path(__file__).parent.absolute()}")
-
-    from bnb_trading.core.models import DecisionContext
-    from bnb_trading.data.fetcher import BNBDataFetcher  # Updated path
-    from bnb_trading.signals.decision import decide_long
-
-    print("DEBUG - All imports successful!")
+    toml, DecisionContext, BNBDataFetcher, decide_long = _try_imports()
 except ImportError as e:
     print(f"Import error: {e}")
     print("Please ensure all modules are properly installed and configured.")
-    print("DEBUG - Import failed, checking if modules exist...")
-
-    # Check if modules exist
-    import importlib.util
-
-    modules_to_check = [
-        "bnb_trading",
-        "bnb_trading.core",
-        "bnb_trading.data",
-        "bnb_trading.signals",
-    ]
-
-    for module in modules_to_check:
-        spec = importlib.util.find_spec(module)
-        print(f"DEBUG - Module {module}: {'FOUND' if spec else 'NOT FOUND'}")
-        if spec and spec.origin:
-            print(f"       Location: {spec.origin}")
-
     sys.exit(1)
 
 # Setup logging
