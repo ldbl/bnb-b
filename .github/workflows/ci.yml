@@ -87,6 +87,22 @@ jobs:
       env:
         PYTHONPATH: src
 
+    - name: 🔍 Debug file structure AFTER backtest
+      run: |
+        echo "=== Post-backtest file structure analysis ==="
+        echo "🌳 Project structure after backtest:"
+        tree -a -L 3 || ls -la
+        echo ""
+        echo "📊 Data directory contents (backtest output):"
+        tree data/ || ls -la data/ 2>/dev/null || echo "No data directory found"
+        echo ""
+        echo "🔍 Any new files created:"
+        find . -name "*.csv" -newer .git -type f 2>/dev/null || echo "No new CSV files"
+        find . -name "*.log" -newer .git -type f 2>/dev/null || echo "No new log files"
+        echo ""
+        echo "📁 Working directory status:"
+        pwd && ls -la | head -10
+
     - name: Security check with bandit
       run: |
         bandit -r src/ -f json
