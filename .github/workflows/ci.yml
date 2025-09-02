@@ -53,6 +53,33 @@ jobs:
       env:
         PYTHONPATH: src
 
+    - name: 🔍 Debug file structure before backtest
+      run: |
+        echo "=== Debugging CI file structure ==="
+        echo "Current working directory:"
+        pwd
+        echo ""
+        echo "Root directory contents:"
+        ls -la
+        echo ""
+        echo "src/ directory contents:"
+        ls -la src/ || echo "src/ not found"
+        echo ""
+        echo "src/bnb_trading/ contents:"
+        ls -la src/bnb_trading/ || echo "src/bnb_trading/ not found"
+        echo ""
+        echo "src/bnb_trading/data/ contents:"
+        ls -la src/bnb_trading/data/ || echo "src/bnb_trading/data/ not found"
+        echo ""
+        echo "Looking for fetcher.py specifically:"
+        find . -name "fetcher.py" -type f || echo "No fetcher.py found"
+        echo ""
+        echo "Python path verification:"
+        python3 -c "import sys; print('sys.path:', sys.path)"
+        echo ""
+        echo "PYTHONPATH env var:"
+        echo "PYTHONPATH: $PYTHONPATH"
+
     - name: 📊 Validate make backtest consistency
       run: |
         echo "Testing make backtest command for CI/local consistency..."
