@@ -30,7 +30,7 @@ def test_21_signals_regression() -> None:
     print("🛡️ Running Golden 21/21 Regression Test...")
 
     try:
-        # Run backtest from project root
+        # Run make backtest from project root (same command used locally and in CI)
         project_root = Path(__file__).parent.parent
 
         # Ensure data directory exists for backtest output files
@@ -38,7 +38,7 @@ def test_21_signals_regression() -> None:
 
         # Set up environment with absolute src path prepended to PYTHONPATH
         env = os.environ.copy()
-        src_path = os.path.abspath(project_root / "src")
+        src_path = str((project_root / "src").resolve())
         existing_pythonpath = env.get("PYTHONPATH", "")
         if existing_pythonpath:
             env["PYTHONPATH"] = f"{src_path}{os.pathsep}{existing_pythonpath}"
@@ -46,7 +46,7 @@ def test_21_signals_regression() -> None:
             env["PYTHONPATH"] = src_path
 
         result = subprocess.run(
-            [sys.executable, str(project_root / "run_enhanced_backtest.py")],
+            ["make", "backtest"],
             check=False,
             cwd=project_root,
             capture_output=True,
@@ -56,10 +56,10 @@ def test_21_signals_regression() -> None:
         )
 
         if result.returncode != 0:
-            print("❌ REGRESSION: Backtest failed with error")
+            print("❌ REGRESSION: Make backtest failed with error")
             print("STDERR:", result.stderr)
             print("STDOUT:", result.stdout)
-            raise AssertionError("Backtest failed with errors")
+            raise AssertionError("Make backtest failed with errors")
 
         output = result.stdout
 
@@ -67,7 +67,8 @@ def test_21_signals_regression() -> None:
         signal_match = re.search(r"LONG Signals:\s*(\d+)", output)
         if not signal_match:
             print("❌ REGRESSION: Could not find LONG Signals count in output")
-            print("Output:", output[-500:])  # Last 500 chars
+            print("Output (head):", output[:500])
+            print("Output (tail):", output[-500:])
             raise AssertionError("Could not find LONG Signals count in output")
 
         signals = int(signal_match.group(1))
@@ -93,9 +94,9 @@ def test_21_signals_regression() -> None:
         print("✅ 100% accuracy preserved")
 
     except subprocess.TimeoutExpired:
-        print("❌ REGRESSION: Backtest timed out (>5 minutes)")
+        print("❌ REGRESSION: Make backtest timed out (>5 minutes)")
         print("This suggests the system is broken or hanging")
-        raise AssertionError("Backtest timed out (>5 minutes)") from None
+        raise AssertionError("Make backtest timed out (>5 minutes)") from None
 
     except Exception as e:
         print(f"❌ REGRESSION: Test failed with exception: {e}")
