@@ -72,7 +72,10 @@
       "Bash(PYTHONPATH=src python -m pytest tests/ -v --tb=short --collect-only)",
       "Bash(PYTHONPATH=src python run_enhanced_backtest_robust.py)",
       "Bash(PYTHONPATH=src python -m pytest tests/test_golden_regression.py -v)",
-      "Bash(PYTHONPATH=src python run_enhanced_backtest.py)"
+      "Bash(PYTHONPATH=src python run_enhanced_backtest.py)",
+      "Bash(PYTHONPATH=src python -m bnb_trading.backtester)",
+      "Bash(PYTHONPATH=src python -m pytest tests/test_golden_regression.py -v --tb=short)",
+      "Bash(PYTHONPATH=src python -m pytest tests/test_golden_regression.py::test_21_signals_regression -v --tb=short)"
     ],
     "deny": [],
     "ask": []

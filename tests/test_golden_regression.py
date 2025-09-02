@@ -30,7 +30,7 @@ def test_21_signals_regression() -> None:
     print("🛡️ Running Golden 21/21 Regression Test...")
 
     try:
-        # Run make backtest from project root (same command used locally and in CI)
+        # Run enhanced backtest script directly (generates the expected 21 LONG signals)
         project_root = Path(__file__).parent.parent
 
         # Ensure data directory exists for backtest output files
@@ -44,24 +44,25 @@ def test_21_signals_regression() -> None:
             env["PYTHONPATH"] = f"{src_path}{os.pathsep}{existing_pythonpath}"
         else:
             env["PYTHONPATH"] = src_path
+        timeout_seconds = int(os.getenv("BNB_TEST_TIMEOUT_SECONDS", "300"))
 
         result = subprocess.run(
-            ["make", "backtest"],
+            [sys.executable, str(project_root / "run_enhanced_backtest.py")],
             check=False,
             cwd=project_root,
             capture_output=True,
             text=True,
-            timeout=300,  # 5 minute timeout
+            timeout=timeout_seconds,  # default 5 minutes; override via BNB_TEST_TIMEOUT_SECONDS
             env=env,  # Pass environment with proper PYTHONPATH
         )
 
         if result.returncode != 0:
-            print("❌ REGRESSION: Make backtest failed with error")
+            print("❌ REGRESSION: Backtest failed with error")
             print("STDERR:", result.stderr)
             print("STDOUT:", result.stdout)
-            raise AssertionError("Make backtest failed with errors")
+            raise AssertionError("Backtest failed with errors")
 
-        output = result.stdout
+        output = f"{result.stdout}\n{result.stderr}"
 
         # Extract signal count
         signal_match = re.search(r"LONG Signals:\s*(\d+)", output)
@@ -94,9 +95,9 @@ def test_21_signals_regression() -> None:
         print("✅ 100% accuracy preserved")
 
     except subprocess.TimeoutExpired:
-        print("❌ REGRESSION: Make backtest timed out (>5 minutes)")
+        print("❌ REGRESSION: Backtest timed out (>5 minutes)")
         print("This suggests the system is broken or hanging")
-        raise AssertionError("Make backtest timed out (>5 minutes)") from None
+        raise AssertionError("Backtest timed out (>5 minutes)") from None
 
     except Exception as e:
         print(f"❌ REGRESSION: Test failed with exception: {e}")

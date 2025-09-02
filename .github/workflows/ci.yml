@@ -48,14 +48,7 @@ jobs:
         # Use same relaxed mypy config as pre-commit hooks
         python -m mypy src/ --config-file=pyproject.toml
 
-    - name: 🚨 CRITICAL - Golden 21/21 Regression Test
-      run: |
-        echo "Running critical regression test to verify 21/21 signals maintained..."
-        pytest tests/test_golden_regression.py -v --tb=short
-      env:
-        PYTHONPATH: src
-
-    - name: 🔍 Debug file structure before backtest
+    - name: 🔍 Debug file structure before tests
       run: |
         echo "=== Debugging CI file structure ==="
         echo "Current working directory:"
@@ -78,6 +71,13 @@ jobs:
         echo ""
         echo "PYTHONPATH env var:"
         echo "PYTHONPATH: $PYTHONPATH"
+
+    - name: 🚨 CRITICAL - Golden 21/21 Regression Test
+      run: |
+        echo "Running critical regression test to verify 21/21 signals maintained..."
+        pytest tests/test_golden_regression.py -v --tb=short
+      env:
+        PYTHONPATH: src
 
     - name: 📊 Validate make backtest consistency
       run: |
