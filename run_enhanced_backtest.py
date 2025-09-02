@@ -27,52 +27,66 @@ def _try_imports():
 
         from bnb_trading.core.models import DecisionContext
 
-        # Try specific import strategies for the problematic data module
+        # RADICAL APPROACH: Skip data module entirely, import fetcher directly
         bnb_data_fetcher = None
-        data_errors = []
 
-        # Strategy A: Direct import from data.fetcher
         try:
+            # Strategy 1: Try normal import
             from bnb_trading.data.fetcher import BNBDataFetcher
 
             bnb_data_fetcher = BNBDataFetcher
-        except ImportError as e:
-            data_errors.append(f"Direct data.fetcher import failed: {e}")
-
-            # Strategy B: Import data module then get fetcher
+        except ImportError:
+            # Strategy 2: Import fetcher file directly, bypass data module
             try:
-                import bnb_trading.data
+                import importlib.util
+                import sys
+                from pathlib import Path
 
-                bnb_data_fetcher = bnb_trading.data.BNBDataFetcher
-            except (ImportError, AttributeError) as e:
-                data_errors.append(f"Data module import failed: {e}")
+                # Find fetcher.py file
+                script_dir = Path(__file__).parent
+                fetcher_paths = [
+                    script_dir / "src" / "bnb_trading" / "data" / "fetcher.py",
+                    Path.cwd() / "src" / "bnb_trading" / "data" / "fetcher.py",
+                ]
 
-                # Strategy C: Import fetcher directly without data module
+                fetcher_path = None
+                for path in fetcher_paths:
+                    if path.exists():
+                        fetcher_path = path
+                        break
+
+                if not fetcher_path:
+                    raise ImportError("Cannot find fetcher.py file")
+
+                # Add parent directories to path for dependencies
+                bnb_trading_dir = fetcher_path.parent.parent
+                if str(bnb_trading_dir) not in sys.path:
+                    sys.path.insert(0, str(bnb_trading_dir))
+
+                src_dir = bnb_trading_dir.parent
+                if str(src_dir) not in sys.path:
+                    sys.path.insert(0, str(src_dir))
+
+                # Load fetcher module directly
+                spec = importlib.util.spec_from_file_location("fetcher", fetcher_path)
+                fetcher_module = importlib.util.module_from_spec(spec)
+
+                # Execute with proper error handling
                 try:
-                    import sys
-                    from pathlib import Path
+                    spec.loader.exec_module(fetcher_module)
+                    bnb_data_fetcher = fetcher_module.BNBDataFetcher
+                except Exception as exec_error:
+                    raise ImportError(
+                        f"Failed to execute fetcher module: {exec_error}"
+                    ) from exec_error
 
-                    # Add data directory directly to path
-                    data_dir = Path(__file__).parent / "src" / "bnb_trading" / "data"
-                    if data_dir.exists():
-                        sys.path.insert(0, str(data_dir.parent.parent))
-
-                    import importlib.util
-
-                    fetcher_path = data_dir / "fetcher.py"
-                    if fetcher_path.exists():
-                        spec = importlib.util.spec_from_file_location(
-                            "fetcher", fetcher_path
-                        )
-                        fetcher_module = importlib.util.module_from_spec(spec)
-                        spec.loader.exec_module(fetcher_module)
-                        bnb_data_fetcher = fetcher_module.BNBDataFetcher
-                except Exception as e:
-                    data_errors.append(f"Direct file import failed: {e}")
+            except Exception as direct_error:
+                raise ImportError(
+                    f"All import strategies failed. Direct file import error: {direct_error}"
+                ) from direct_error
 
         if bnb_data_fetcher is None:
-            error_msg = "All data import strategies failed: " + "; ".join(data_errors)
-            raise ImportError(error_msg)
+            raise ImportError("Could not obtain BNBDataFetcher class")
 
         from bnb_trading.signals.decision import decide_long
 
