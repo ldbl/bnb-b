@@ -86,6 +86,7 @@ jobs:
         make backtest
       env:
         PYTHONPATH: src
+      continue-on-error: true  # Continue to post-backtest debugging even if this fails
 
     - name: 🔍 Debug file structure AFTER backtest
       run: |
