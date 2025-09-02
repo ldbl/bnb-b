@@ -5,8 +5,8 @@ Enhanced Backtest with Detailed Signal Analysis
 """
 
 # Only add src to path if it's not already accessible
-import importlib.util
 import logging
+import os
 import sys
 from datetime import datetime
 
@@ -16,11 +16,22 @@ from typing import Any
 
 import pandas as pd
 
-if importlib.util.find_spec("bnb_trading") is None:
-    current_dir = Path(__file__).parent.absolute()
-    src_dir = current_dir / "src"
-    if src_dir.exists():
-        sys.path.insert(0, str(src_dir))
+# Ensure src is in path - robust approach for both local and CI environments
+current_dir = Path(__file__).parent.absolute()
+src_dir = current_dir / "src"
+
+# Always add src to path if it exists and isn't already there
+if src_dir.exists() and str(src_dir) not in sys.path:
+    sys.path.insert(0, str(src_dir))
+
+# Also check PYTHONPATH environment variable and add to sys.path if needed
+
+pythonpath = os.environ.get("PYTHONPATH", "")
+if pythonpath:
+    for path in pythonpath.split(os.pathsep):
+        abs_path = os.path.abspath(path)
+        if abs_path not in sys.path:
+            sys.path.insert(0, abs_path)
 
 try:
     import toml
