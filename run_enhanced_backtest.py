@@ -36,12 +36,40 @@ if pythonpath:
 try:
     import toml
 
+    # Debug: Print sys.path and PYTHONPATH for troubleshooting CI issues
+    print("DEBUG - sys.path contents:")
+    for i, path in enumerate(sys.path):
+        print(f"  {i}: {path}")
+    print(f"DEBUG - PYTHONPATH env var: {os.environ.get('PYTHONPATH', 'NOT SET')}")
+    print(f"DEBUG - Current working directory: {Path.cwd()}")
+    print(f"DEBUG - Script location: {Path(__file__).parent.absolute()}")
+
     from bnb_trading.core.models import DecisionContext
     from bnb_trading.data.fetcher import BNBDataFetcher  # Updated path
     from bnb_trading.signals.decision import decide_long
+
+    print("DEBUG - All imports successful!")
 except ImportError as e:
     print(f"Import error: {e}")
     print("Please ensure all modules are properly installed and configured.")
+    print("DEBUG - Import failed, checking if modules exist...")
+
+    # Check if modules exist
+    import importlib.util
+
+    modules_to_check = [
+        "bnb_trading",
+        "bnb_trading.core",
+        "bnb_trading.data",
+        "bnb_trading.signals",
+    ]
+
+    for module in modules_to_check:
+        spec = importlib.util.find_spec(module)
+        print(f"DEBUG - Module {module}: {'FOUND' if spec else 'NOT FOUND'}")
+        if spec and spec.origin:
+            print(f"       Location: {spec.origin}")
+
     sys.exit(1)
 
 # Setup logging
