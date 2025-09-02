@@ -21,7 +21,7 @@ import sys
 from pathlib import Path
 
 
-def test_21_signals_regression():
+def test_21_signals_regression() -> None:
     """
     CRITICAL: Verify system maintains 21/21 LONG signals with 100% accuracy
 
@@ -33,18 +33,23 @@ def test_21_signals_regression():
         # Run backtest from project root
         project_root = Path(__file__).parent.parent
 
-        # Set up environment with PYTHONPATH=src for CI compatibility
+        # Set up environment with absolute src path prepended to PYTHONPATH
         env = os.environ.copy()
-        env["PYTHONPATH"] = "src"
+        src_path = os.path.abspath(project_root / "src")
+        existing_pythonpath = env.get("PYTHONPATH", "")
+        if existing_pythonpath:
+            env["PYTHONPATH"] = f"{src_path}{os.pathsep}{existing_pythonpath}"
+        else:
+            env["PYTHONPATH"] = src_path
 
         result = subprocess.run(
-            ["python3", "run_enhanced_backtest.py"],
+            [sys.executable, str(project_root / "run_enhanced_backtest.py")],
             check=False,
             cwd=project_root,
             capture_output=True,
             text=True,
             timeout=300,  # 5 minute timeout
-            env=env,  # Pass environment with PYTHONPATH
+            env=env,  # Pass environment with proper PYTHONPATH
         )
 
         if result.returncode != 0:
@@ -94,7 +99,7 @@ def test_21_signals_regression():
         raise AssertionError(f"Test failed with exception: {e}") from e
 
 
-def main():
+def main() -> None:
     """Run regression test and exit with proper code"""
     try:
         test_21_signals_regression()
