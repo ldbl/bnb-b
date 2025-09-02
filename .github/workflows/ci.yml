@@ -53,6 +53,14 @@ jobs:
       env:
         PYTHONPATH: src
 
+    - name: 📊 Validate make backtest consistency
+      run: |
+        echo "Testing make backtest command for CI/local consistency..."
+        echo "This should produce identical results to local execution..."
+        make backtest
+      env:
+        PYTHONPATH: src
+
     - name: Security check with bandit
       run: |
         bandit -r src/ -f json
