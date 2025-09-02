@@ -40,6 +40,8 @@ ai:
     - performance
     - maintainability
     - testing
+    - code_style
+    - imports
 
   # Skip common patterns that don't need review
   skip_patterns:

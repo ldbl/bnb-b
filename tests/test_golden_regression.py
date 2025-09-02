@@ -14,6 +14,7 @@ Expected output:
 If this fails, the system is broken and needs immediate attention.
 """
 
+import os
 import re
 import subprocess
 import sys
@@ -31,6 +32,11 @@ def test_21_signals_regression():
     try:
         # Run backtest from project root
         project_root = Path(__file__).parent.parent
+
+        # Set up environment with PYTHONPATH=src for CI compatibility
+        env = os.environ.copy()
+        env["PYTHONPATH"] = "src"
+
         result = subprocess.run(
             ["python3", "run_enhanced_backtest.py"],
             check=False,
@@ -38,6 +44,7 @@ def test_21_signals_regression():
             capture_output=True,
             text=True,
             timeout=300,  # 5 minute timeout
+            env=env,  # Pass environment with PYTHONPATH
         )
 
         if result.returncode != 0:
