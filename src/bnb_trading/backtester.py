@@ -140,23 +140,7 @@ def _try_imports():
     except ImportError as e:
         errors.append(f"Absolute imports failed: {e}")
 
-    # Strategy 2: Try relative imports (local development)
-    try:
-        from .data.fetcher import BNBDataFetcher
-        from .fibonacci import FibonacciAnalyzer
-        from .indicators import TechnicalIndicators
-        from .signals.generator import SignalGenerator
-        from .weekly_tails import WeeklyTailsAnalyzer
-
-        return (
-            BNBDataFetcher,
-            FibonacciAnalyzer,
-            TechnicalIndicators,
-            SignalGenerator,
-            WeeklyTailsAnalyzer,
-        )
-    except ImportError as e:
-        errors.append(f"Relative imports failed: {e}")
+    # Strategy 2 removed to enforce absolute imports only (Phase 1.1 standard)
 
     # Strategy 3: Add src to path and try absolute (CI fallback)
     try:
