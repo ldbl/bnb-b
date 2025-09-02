@@ -33,6 +33,9 @@ def test_21_signals_regression() -> None:
         # Run backtest from project root
         project_root = Path(__file__).parent.parent
 
+        # Ensure data directory exists for backtest output files
+        project_root.joinpath("data").mkdir(parents=True, exist_ok=True)
+
         # Set up environment with absolute src path prepended to PYTHONPATH
         env = os.environ.copy()
         src_path = os.path.abspath(project_root / "src")

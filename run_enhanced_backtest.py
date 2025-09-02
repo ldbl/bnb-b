@@ -22,14 +22,61 @@ def _try_imports():
     errors = []
 
     def _import_components():
-        """Import all required components - DRY helper"""
+        """Import all required components - DRY helper with bulletproof data import"""
         import toml
 
         from bnb_trading.core.models import DecisionContext
-        from bnb_trading.data.fetcher import BNBDataFetcher
+
+        # Try specific import strategies for the problematic data module
+        bnb_data_fetcher = None
+        data_errors = []
+
+        # Strategy A: Direct import from data.fetcher
+        try:
+            from bnb_trading.data.fetcher import BNBDataFetcher
+
+            bnb_data_fetcher = BNBDataFetcher
+        except ImportError as e:
+            data_errors.append(f"Direct data.fetcher import failed: {e}")
+
+            # Strategy B: Import data module then get fetcher
+            try:
+                import bnb_trading.data
+
+                bnb_data_fetcher = bnb_trading.data.BNBDataFetcher
+            except (ImportError, AttributeError) as e:
+                data_errors.append(f"Data module import failed: {e}")
+
+                # Strategy C: Import fetcher directly without data module
+                try:
+                    import sys
+                    from pathlib import Path
+
+                    # Add data directory directly to path
+                    data_dir = Path(__file__).parent / "src" / "bnb_trading" / "data"
+                    if data_dir.exists():
+                        sys.path.insert(0, str(data_dir.parent.parent))
+
+                    import importlib.util
+
+                    fetcher_path = data_dir / "fetcher.py"
+                    if fetcher_path.exists():
+                        spec = importlib.util.spec_from_file_location(
+                            "fetcher", fetcher_path
+                        )
+                        fetcher_module = importlib.util.module_from_spec(spec)
+                        spec.loader.exec_module(fetcher_module)
+                        bnb_data_fetcher = fetcher_module.BNBDataFetcher
+                except Exception as e:
+                    data_errors.append(f"Direct file import failed: {e}")
+
+        if bnb_data_fetcher is None:
+            error_msg = "All data import strategies failed: " + "; ".join(data_errors)
+            raise ImportError(error_msg)
+
         from bnb_trading.signals.decision import decide_long
 
-        return toml, DecisionContext, BNBDataFetcher, decide_long
+        return toml, DecisionContext, bnb_data_fetcher, decide_long
 
     # Strategy 1: Try absolute imports (CI with installed package)
     try:
