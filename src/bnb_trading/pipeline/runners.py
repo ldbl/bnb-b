@@ -13,7 +13,8 @@ if __name__ == "__main__":
         sys.path.insert(0, src_dir)
 
 # Use relative imports for package structure
-from ..core.exceptions import AnalysisError
+from bnb_trading.core.exceptions import AnalysisError
+
 from .orchestrator import TradingPipeline
 
 logger = logging.getLogger(__name__)

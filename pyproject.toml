@@ -115,7 +115,6 @@ ignore = [
     "PLR0912", # too many branches
     "TRY003",  # avoid specifying messages outside exception class
     "B008",    # do not perform function calls in argument defaults
-    "TID252",  # prefer absolute imports over relative imports from parent modules
 
     # Trading system specific ignores (practical for production code)
     "T201",    # print statements (needed for user interaction & debugging)

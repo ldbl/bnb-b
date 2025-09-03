@@ -5,10 +5,10 @@ from typing import Any
 
 import pandas as pd
 
-from ..core.exceptions import AnalysisError
-from ..core.types import SignalResult
-from .combiners import combine_signals
-from .confidence import calculate_confidence
+from bnb_trading.core.exceptions import AnalysisError
+from bnb_trading.core.types import SignalResult
+from bnb_trading.signals.combiners import combine_signals
+from bnb_trading.signals.confidence import calculate_confidence
 
 # from .filters import apply_signal_filters  # Temporarily disabled for new architecture
 
@@ -126,9 +126,9 @@ class SignalGenerator:
 
         try:
             # Import analysis modules
-            from ..fibonacci import FibonacciAnalyzer
-            from ..indicators import TechnicalIndicators
-            from ..weekly_tails import WeeklyTailsAnalyzer
+            from bnb_trading.fibonacci import FibonacciAnalyzer
+            from bnb_trading.indicators import TechnicalIndicators
+            from bnb_trading.weekly_tails import WeeklyTailsAnalyzer
 
             logger.info("Executing all analysis modules...")
 
@@ -276,7 +276,7 @@ class SignalGenerator:
             # 4. Moving Averages Analysis (if weight > 0)
             try:
                 if self.ma_weight > 0:
-                    from ..moving_averages import MovingAveragesAnalyzer
+                    from bnb_trading.moving_averages import MovingAveragesAnalyzer
 
                     ma_analyzer = MovingAveragesAnalyzer(self.config)
                     # Use the available methods to build a simple MA analysis

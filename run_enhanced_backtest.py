@@ -5,8 +5,8 @@ Enhanced Backtest with Detailed Signal Analysis
 """
 
 # Only add src to path if it's not already accessible
-import importlib.util
 import logging
+import os
 import sys
 from datetime import datetime
 
@@ -16,18 +16,141 @@ from typing import Any
 
 import pandas as pd
 
-if importlib.util.find_spec("bnb_trading") is None:
-    current_dir = Path(__file__).parent.absolute()
-    src_dir = current_dir / "src"
-    if src_dir.exists():
-        sys.path.insert(0, str(src_dir))
 
+def _try_imports():
+    """Try different import strategies until one works - based on backtester approach."""
+    errors = []
+
+    def _import_components():
+        """Import all required components - DRY helper with bulletproof data import"""
+        import toml
+
+        from bnb_trading.core.models import DecisionContext
+
+        # RADICAL APPROACH: Skip data module entirely, import fetcher directly
+        bnb_data_fetcher = None
+
+        try:
+            # Strategy 1: Try normal import
+            from bnb_trading.data.fetcher import BNBDataFetcher
+
+            bnb_data_fetcher = BNBDataFetcher
+        except ImportError:
+            # Strategy 2: Import fetcher file directly, bypass data module
+            try:
+                import importlib.util
+                import sys
+                from pathlib import Path
+
+                # Find fetcher.py file
+                script_dir = Path(__file__).parent
+                fetcher_paths = [
+                    script_dir / "src" / "bnb_trading" / "data" / "fetcher.py",
+                    Path.cwd() / "src" / "bnb_trading" / "data" / "fetcher.py",
+                ]
+
+                fetcher_path = None
+                for path in fetcher_paths:
+                    if path.exists():
+                        fetcher_path = path
+                        break
+
+                if not fetcher_path:
+                    raise ImportError("Cannot find fetcher.py file")
+
+                # Add parent directories to path for dependencies
+                bnb_trading_dir = fetcher_path.parent.parent
+                if str(bnb_trading_dir) not in sys.path:
+                    sys.path.insert(0, str(bnb_trading_dir))
+
+                src_dir = bnb_trading_dir.parent
+                if str(src_dir) not in sys.path:
+                    sys.path.insert(0, str(src_dir))
+
+                # Load fetcher module directly
+                spec = importlib.util.spec_from_file_location("fetcher", fetcher_path)
+                fetcher_module = importlib.util.module_from_spec(spec)
+
+                # Execute with proper error handling
+                try:
+                    spec.loader.exec_module(fetcher_module)
+                    bnb_data_fetcher = fetcher_module.BNBDataFetcher
+                except Exception as exec_error:
+                    raise ImportError(
+                        f"Failed to execute fetcher module: {exec_error}"
+                    ) from exec_error
+
+            except Exception as direct_error:
+                raise ImportError(
+                    f"All import strategies failed. Direct file import error: {direct_error}"
+                ) from direct_error
+
+        if bnb_data_fetcher is None:
+            raise ImportError("Could not obtain BNBDataFetcher class")
+
+        from bnb_trading.signals.decision import decide_long
+
+        return toml, DecisionContext, bnb_data_fetcher, decide_long
+
+    # Strategy 1: Try absolute imports (CI with installed package)
+    try:
+        return _import_components()
+    except ImportError as e:
+        errors.append(f"Absolute imports failed: {e}")
+
+    # Strategy 2: Add src to path and try absolute (CI fallback)
+    try:
+        current_file = Path(__file__).resolve()
+        # Go up from project root to src/
+        project_root = current_file.parent
+        src_path = project_root / "src"
+        if src_path.exists() and str(src_path) not in sys.path:
+            sys.path.insert(0, str(src_path))
+
+        return _import_components()
+    except ImportError as e:
+        errors.append(f"Path-adjusted imports failed: {e}")
+
+    # Strategy 3: Use PYTHONPATH if available (CI PYTHONPATH=src)
+    try:
+        # Process PYTHONPATH environment variable
+        pythonpath = os.environ.get("PYTHONPATH", "")
+        if pythonpath:
+            for path in pythonpath.split(os.pathsep):
+                abs_path = os.path.abspath(path)
+                if abs_path not in sys.path:
+                    sys.path.insert(0, abs_path)
+
+        return _import_components()
+    except ImportError as e:
+        errors.append(f"PYTHONPATH imports failed: {e}")
+
+    # Strategy 4: Try relative to current working directory
+    try:
+        cwd = Path.cwd()
+        src_path = cwd / "src"
+        if src_path.exists() and str(src_path) not in sys.path:
+            sys.path.insert(0, str(src_path))
+
+        return _import_components()
+    except ImportError as e:
+        errors.append(f"CWD-based imports failed: {e}")
+
+    # If all strategies fail, raise detailed error
+    error_msg = "All import strategies failed:\n" + "\n".join(
+        f"  - {err}" for err in errors
+    )
+    error_msg += "\n\nDEBUG INFO:"
+    error_msg += f"\n  sys.path: {sys.path}"
+    error_msg += f"\n  PYTHONPATH: {os.environ.get('PYTHONPATH', 'NOT SET')}"
+    error_msg += f"\n  CWD: {Path.cwd()}"
+    error_msg += f"\n  Script location: {Path(__file__).parent.absolute()}"
+    raise ImportError(error_msg)
+
+
+# Try imports using robust strategy
 try:
-    import toml
-
-    from bnb_trading.core.models import DecisionContext
-    from bnb_trading.data.fetcher import BNBDataFetcher  # Updated path
-    from bnb_trading.signals.decision import decide_long
+    toml, DecisionContext, BNBDataFetcher, decide_long = _try_imports()
 except ImportError as e:
     print(f"Import error: {e}")
     print("Please ensure all modules are properly installed and configured.")

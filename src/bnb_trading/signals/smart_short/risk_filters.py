@@ -3,13 +3,13 @@
 import logging
 from typing import Any
 
-from ...core.constants import (
+from bnb_trading.core.constants import (
     ATH_PROXIMITY_MAX,
     ATH_PROXIMITY_MIN,
     DEFAULT_STOP_LOSS_PCT,
     MIN_RISK_REWARD_RATIO,
 )
-from ...core.exceptions import AnalysisError
+from bnb_trading.core.exceptions import AnalysisError
 
 logger = logging.getLogger(__name__)
 

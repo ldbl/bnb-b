@@ -56,6 +56,9 @@ logs/
 !tests/fixtures/*.csv
 data/
 !data/sample_*
+
+# IMPORTANT: Allow src/bnb_trading/data/ - this is code, not data files!
+!src/bnb_trading/data/
 results/
 
 # ML models

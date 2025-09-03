@@ -5,7 +5,7 @@ Simple but clear console output showing decision breakdown
 
 import logging
 
-from ..core.models import DecisionResult
+from bnb_trading.core.models import DecisionResult
 
 logger = logging.getLogger(__name__)
 

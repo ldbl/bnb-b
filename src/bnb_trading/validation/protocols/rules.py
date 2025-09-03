@@ -3,8 +3,8 @@
 import logging
 from typing import Any
 
-from ...core.exceptions import ValidationError
-from ...core.models import ValidationPoint
+from bnb_trading.core.exceptions import ValidationError
+from bnb_trading.core.models import ValidationPoint
 
 logger = logging.getLogger(__name__)
 

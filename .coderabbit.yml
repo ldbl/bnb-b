@@ -17,6 +17,7 @@ reviews:
     - "README.md" # Documentation - not code
     - "MODULES.md" # Documentation - not code
     - "ideas.md" # Architecture ideas - not code
+    - "docs/**" # Documentation directory - not code
     - "*.log" # Log files
     - "data/*.csv" # Data files
     - "data/*.md" # Data reports
@@ -39,6 +40,8 @@ ai:
     - performance
     - maintainability
     - testing
+    - code_style
+    - imports
 
   # Skip common patterns that don't need review
   skip_patterns:

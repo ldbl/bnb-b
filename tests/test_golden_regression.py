@@ -14,13 +14,14 @@ Expected output:
 If this fails, the system is broken and needs immediate attention.
 """
 
+import os
 import re
 import subprocess
 import sys
 from pathlib import Path
 
 
-def test_21_signals_regression():
+def test_21_signals_regression() -> None:
     """
     CRITICAL: Verify system maintains 21/21 LONG signals with 100% accuracy
 
@@ -29,15 +30,30 @@ def test_21_signals_regression():
     print("🛡️ Running Golden 21/21 Regression Test...")
 
     try:
-        # Run backtest from project root
+        # Run enhanced backtest script directly (generates the expected 21 LONG signals)
         project_root = Path(__file__).parent.parent
+
+        # Ensure data directory exists for backtest output files
+        project_root.joinpath("data").mkdir(parents=True, exist_ok=True)
+
+        # Set up environment with absolute src path prepended to PYTHONPATH
+        env = os.environ.copy()
+        src_path = str((project_root / "src").resolve())
+        existing_pythonpath = env.get("PYTHONPATH", "")
+        if existing_pythonpath:
+            env["PYTHONPATH"] = f"{src_path}{os.pathsep}{existing_pythonpath}"
+        else:
+            env["PYTHONPATH"] = src_path
+        timeout_seconds = int(os.getenv("BNB_TEST_TIMEOUT_SECONDS", "300"))
+
         result = subprocess.run(
-            ["python3", "run_enhanced_backtest.py"],
+            [sys.executable, str(project_root / "run_enhanced_backtest.py")],
             check=False,
             cwd=project_root,
             capture_output=True,
             text=True,
-            timeout=300,  # 5 minute timeout
+            timeout=timeout_seconds,  # default 5 minutes; override via BNB_TEST_TIMEOUT_SECONDS
+            env=env,  # Pass environment with proper PYTHONPATH
         )
 
         if result.returncode != 0:
@@ -46,13 +62,14 @@ def test_21_signals_regression():
             print("STDOUT:", result.stdout)
             raise AssertionError("Backtest failed with errors")
 
-        output = result.stdout
+        output = f"{result.stdout}\n{result.stderr}"
 
         # Extract signal count
         signal_match = re.search(r"LONG Signals:\s*(\d+)", output)
         if not signal_match:
             print("❌ REGRESSION: Could not find LONG Signals count in output")
-            print("Output:", output[-500:])  # Last 500 chars
+            print("Output (head):", output[:500])
+            print("Output (tail):", output[-500:])
             raise AssertionError("Could not find LONG Signals count in output")
 
         signals = int(signal_match.group(1))
@@ -87,7 +104,7 @@ def test_21_signals_regression():
         raise AssertionError(f"Test failed with exception: {e}") from e
 
 
-def main():
+def main() -> None:
     """Run regression test and exit with proper code"""
     try:
         test_21_signals_regression()

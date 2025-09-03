@@ -6,13 +6,13 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from ...core.constants import (
+from bnb_trading.core.constants import (
     REGIME_BEAR,
     REGIME_MODERATE_BULL,
     REGIME_NEUTRAL,
     REGIME_STRONG_BULL,
 )
-from ...core.exceptions import AnalysisError
+from bnb_trading.core.exceptions import AnalysisError
 
 logger = logging.getLogger(__name__)
 
